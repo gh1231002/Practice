@@ -44,6 +44,13 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     [SerializeField, Tooltip("최대 하강 속도")] float MaxVelocityY;
     [SerializeField] float RayDistance = 0.3f;
     [SerializeField] LayerMask GroundLayer;
+    [Header("경사면 미끄러짐 설정(캐릭터 컨트롤러와 동일)")]
+    [SerializeField] float SlopeLimitAngle;
+    [SerializeField] float SlideSpeed;
+    //isground()에서 계산할 벡터
+    Vector3 GroundNormal = Vector3.zero;
+    //미끄러지는중인지 체크
+    bool CheckSliding;
 
     CharacterController ContPlayer;
     Animator Anim;
@@ -472,7 +479,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             CheckGround = true;
             VelocityY = -2f;
         }
-        //아니라면 점점 떨어지게
+        //땅이 아니거나 경사가 가파르면
         else
         {
             CheckGround = false;
@@ -481,6 +488,17 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
         //최대 하강 속도 제한
         VelocityY = Mathf.Max(VelocityY, MaxVelocityY);
+
+        if (CheckSliding == true)
+        {
+            //경사면 경사방향계산(하방벡터 추출)
+            Vector3 SlideDir = new Vector3(GroundNormal.x, -GroundNormal.y, GroundNormal.z);
+            //중력낙하값에 미끄러지는속도 결합, 최종 반환
+            Vector3 FinalSlideVelocity = SlideDir * SlideSpeed;
+            //기존 중력은 유지
+            FinalSlideVelocity.y = VelocityY;
+            return FinalSlideVelocity;
+        }
 
         return new Vector3(0f, VelocityY, 0f);
     }
@@ -555,7 +573,28 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         float Radius = ContPlayer.radius;
         Vector3 Origin = transform.position + Vector3.up * Radius;
 
-        return Physics.SphereCast(Origin, Radius, Vector3.down, out RaycastHit Hit, RayDistance, GroundLayer);
+        if(Physics.SphereCast(Origin, Radius, Vector3.down,
+                              out RaycastHit Hit, RayDistance, GroundLayer))
+        {
+            //부딫힌 경사방향을 저장
+            GroundNormal = Hit.normal;
+            //지면과 수직벡터사이 각도구함
+            float SlopeAngle = Vector3.Angle(Vector3.up, GroundNormal);
+            //한계값보다 경가사 크면 미끄러짐
+            if(SlopeAngle > SlopeLimitAngle)
+            {
+                CheckSliding = true;
+                return false;
+            }
+            CheckSliding = false;
+            return true;
+        }
+        //공중에 떠있다면 초기화
+        CheckSliding = false;
+        GroundNormal = Vector3.up;
+        return false;
+
+        //return Physics.SphereCast(Origin, Radius, Vector3.down, out RaycastHit Hit, RayDistance, GroundLayer);
     }
 
     /// <summary>
