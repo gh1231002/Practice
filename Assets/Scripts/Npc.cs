@@ -17,9 +17,10 @@ public class Npc : MonoBehaviour
     }
     [Header("NPC설정")]
     [SerializeField] float NpcSpeed;
-    [SerializeField] float MinWatiTimer;
-    [SerializeField] float MaxWatiTimer;
+    [SerializeField] float MinWaitTimer;
+    [SerializeField] float MaxWaitTimer;
     [SerializeField] float PatrolRadius;
+    [SerializeField] float ArriveRadius;
     [SerializeField] NpcType Type;
     [SerializeField]int IdleIndex;
     NpcState State;
@@ -40,6 +41,7 @@ public class Npc : MonoBehaviour
     private void Start()
     {
         State = NpcState.Idle;
+        NpcAgent.avoidancePriority = Random.Range(50, 99);
         StartCoroutine(PatrolMove());
     }
 
@@ -56,7 +58,7 @@ public class Npc : MonoBehaviour
             //Range(int,int)는 마지막 최댓값이 제외이므로 1 더함
             int RandomIndex = Random.Range(0, IdleIndex + 1);
             NpcAnim.SetInteger("IdleIndex", RandomIndex);
-            float RandomWaitTime = Random.Range(MinWatiTimer, MaxWatiTimer);
+            float RandomWaitTime = Random.Range(MinWaitTimer, MaxWaitTimer);
             float timer = 0f;
 
             while(timer < RandomWaitTime)
@@ -65,12 +67,16 @@ public class Npc : MonoBehaviour
                 //waittime값만큼 대기
                 yield return null;
             }
-
+            //본인의 위치 반경에서 랜덤좌표얻음
             State = NpcState.Patrol;
             Vector3 RandomPos = Random.insideUnitSphere * PatrolRadius;
             RandomPos += StartPos;
+            //얻은 랜덤좌표에서 한번더 랜덤으로 좌표얻음
+            //최대한 서로 안겹치게
+            Vector3 RandomOffset = Random.insideUnitSphere * ArriveRadius;
+            Vector3 FinalPos = RandomPos + RandomOffset;
 
-            if(NavMesh.SamplePosition(RandomPos, out NavMeshHit Hit, PatrolRadius, NavMesh.AllAreas))
+            if(NavMesh.SamplePosition(FinalPos, out NavMeshHit Hit, PatrolRadius, NavMesh.AllAreas))
             {
                 NpcAgent.isStopped = false;
                 isPatrol = true;
@@ -79,6 +85,7 @@ public class Npc : MonoBehaviour
             else
             {
                 yield return null;
+                continue;
             }
             yield return new WaitUntil(() => !NpcAgent.pathPending
                              && NpcAgent.remainingDistance <= NpcAgent.stoppingDistance);

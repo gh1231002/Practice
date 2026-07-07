@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Knight Patrol Npc
+  m_Controller: {fileID: 9100000, guid: 6aa09cd35f87b8f4ca43ecb02404d081, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: 3ad3ba0c22c9ba14d97127b746360668, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 187b6824f20c83b42ab2eca2ab815c16, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: 16d4158e1ea4ec2488f00c4302065786, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: ddc5dce0f1021594da7319c985aa7e9b, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: 8eddd56ec03299a4bb4208a54e63f80f, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 920f471a4b1fa934fb6a4be7425a2933, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: ec1520f1b66a41743b8c24f6aeabfcce, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: b3f3e7de30d5010448b58f768ab6ea12, type: 2}

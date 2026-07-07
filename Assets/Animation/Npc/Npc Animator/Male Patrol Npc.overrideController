@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!221 &22100000
+AnimatorOverrideController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Male Patrol Npc
+  m_Controller: {fileID: 9100000, guid: 6aa09cd35f87b8f4ca43ecb02404d081, type: 2}
+  m_Clips:
+  - m_OriginalClip: {fileID: 7400000, guid: 16d4158e1ea4ec2488f00c4302065786, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 0a4edfc9c152d6048854d7d42d0ce864, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: 90a285225ee66c64b87ed8e5bc6af640, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 90a285225ee66c64b87ed8e5bc6af640, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: 3ad3ba0c22c9ba14d97127b746360668, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 1f4daece9a35bc9418af551c7a66da7a, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: 8eddd56ec03299a4bb4208a54e63f80f, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: 394d5cd16bbb7f946b0e75e823c272ce, type: 2}
+  - m_OriginalClip: {fileID: 7400000, guid: ec1520f1b66a41743b8c24f6aeabfcce, type: 2}
+    m_OverrideClip: {fileID: 7400000, guid: ec1520f1b66a41743b8c24f6aeabfcce, type: 2}
