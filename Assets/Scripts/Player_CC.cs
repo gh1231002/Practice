@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices.WindowsRuntime;
@@ -83,6 +84,8 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     bool CheckKnockBack;
     bool isAttack;
 
+    public event Action<float,float> ChangeHp;
+
     private void Awake()
     {
         CurHp = MaxHp;
@@ -113,6 +116,8 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         //커서잠금
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+        //초기 체력바 설정
+        ChangeHp?.Invoke(CurHp, MaxHp);
     }
 
     private void OnInputAction()
@@ -625,6 +630,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         if (CheckHit == true || CheckDeath == true) return;
 
         CurHp -= Damage;
+        ChangeHp?.Invoke(CurHp, MaxHp);
         
         //비전투상태일때 맞으면 피격애니메이션만 진행
         if (CheckCombat == false)

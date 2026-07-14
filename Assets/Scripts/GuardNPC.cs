@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -10,12 +11,14 @@ public class GuardNPC : MonoBehaviour
     [SerializeField] float NpcSpeed;
     [SerializeField] float MinWaitTimer;
     [SerializeField] float MaxWaitTimer;
+    [SerializeField] float ArriveRadius;
     [SerializeField] int IdleIndex;
 
     NavMeshAgent GuardAgent;
     NavMeshObstacle GuardObstacle;
     Animator GuardAnim;
     bool isPatrol;
+    int WayPointsIndex;
 
     private void Awake()
     {
@@ -43,9 +46,10 @@ public class GuardNPC : MonoBehaviour
         //순찰 포인트 순서대로 이동
         while(true)
         {
-            GuardAgent.enabled = false;
-            GuardObstacle.enabled = true;
             isPatrol = false;
+            GuardAgent.enabled = false;
+            yield return null;
+            GuardObstacle.enabled = true;
 
             int RandomIndex = Random.Range(0, IdleIndex + 1);
             GuardAnim.SetInteger("IdleIndex", RandomIndex);
@@ -58,26 +62,51 @@ public class GuardNPC : MonoBehaviour
                 yield return null;
             }
 
-            for(int WayPointsIndex = 0; WayPointsIndex < WayPoints.Count; WayPointsIndex++)
+            if (WayPointsIndex >= WayPoints.Count) WayPointsIndex = 0;
+            Vector3 MovePos = WayPoints[WayPointsIndex].position;
+
+            if (NavMesh.SamplePosition(MovePos, out NavMeshHit Hit, ArriveRadius, NavMesh.AllAreas))
             {
-                Vector3 MovePos = WayPoints[WayPointsIndex].position;
-                if(NavMesh.SamplePosition(MovePos, out NavMeshHit Hit, 2.0f, NavMesh.AllAreas))
-                {
-                    GuardObstacle.enabled = false;
-                    GuardAgent.enabled = true;
-                    isPatrol = true;
-                    GuardAgent.SetDestination(Hit.position);
-                }
-                else
-                {
-                    yield return null;
-                    continue;
-                }
-                //1프레임대기 후 기다림
+                isPatrol = true;
+                GuardObstacle.enabled = false;
                 yield return null;
-                yield return new WaitUntil(() => !GuardAgent.pathPending
-                                           && GuardAgent.remainingDistance <= GuardAgent.stoppingDistance);
+                GuardAgent.enabled = true;
+                yield return null;
+                GuardAgent.SetDestination(Hit.position);
+                WayPointsIndex++;
             }
+            else
+            {
+                yield return null;
+                continue;
+            }
+            yield return new WaitUntil(() => !GuardAgent.pathPending
+                                       && GuardAgent.remainingDistance <= GuardAgent.stoppingDistance);
+            
+            yield return null;
+            
+
+            ////웨이포인트 순서대로 이동
+            //for (int WayPointsIndex = 0; WayPointsIndex < WayPoints.Count; WayPointsIndex++)
+            //{
+            //    Vector3 MovePos = WayPoints[WayPointsIndex].position;
+            //    if (NavMesh.SamplePosition(MovePos, out NavMeshHit Hit, ArriveRadius, NavMesh.AllAreas))
+            //    {
+            //        isPatrol = true;
+            //        GuardObstacle.enabled = false;
+            //        GuardAgent.enabled = true;
+            //        GuardAgent.SetDestination(Hit.position);
+            //    }
+            //    else
+            //    {
+            //        yield return null;
+            //        continue;
+            //    }
+            //    //1프레임대기 후 기다림
+            //    yield return null;
+            //    yield return new WaitUntil(() => !GuardAgent.pathPending
+            //                               && GuardAgent.remainingDistance <= GuardAgent.stoppingDistance);
+            //}
         }
     }
 
