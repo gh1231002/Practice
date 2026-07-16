@@ -5,13 +5,22 @@ public class InteractSensor : MonoBehaviour
 {
     public event Action OnInteract;
     public event Action<Collider> StayInteract;
-    public event Action<Collider> OffInteract;
+    public event Action OffInteract;
+
+    Player_CC Player;
+
+    private void Start()
+    {
+        GameObject obj = GameObject.FindWithTag("Player");
+        Player = obj.GetComponent<Player_CC>();
+    }
 
     private void OnTriggerEnter(Collider other)
     {
         if(other.CompareTag("Player"))
         {
             OnInteract?.Invoke();
+            Player.SetInteract(true);
         }
     }
 
@@ -27,7 +36,8 @@ public class InteractSensor : MonoBehaviour
     {
         if (other.CompareTag("Player"))
         {
-            OffInteract?.Invoke(other);
+            OffInteract?.Invoke();
+            Player.SetInteract(false);
         }
     }
 }

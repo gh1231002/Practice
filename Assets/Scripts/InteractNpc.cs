@@ -5,43 +5,53 @@ using UnityEngine.InputSystem;
 public class InteractNpc : MonoBehaviour
 {
     [SerializeField] InteractSensor InSensor;
-    [SerializeField] GameObject Interactpanel;
-    [SerializeField] TextMeshProUGUI InteractText;
-    [SerializeField] InputActionAsset inputActions;
     [SerializeField] float RotateSpeed;
-    [SerializeField] string NpcName;
+    [Header("대화 데이터")]
+    [SerializeField] DialogueData TalkData;
 
     string InteractKey;
     string DeviceGroup;
     Quaternion OriginRotation;
-    Vector3 PlayerPos;
     bool isRestore;
+
+    Player_CC Player;
 
     void Start()
     {
-        Interactpanel.SetActive(false);
-        InSensor.OnInteract += OnPanel;
-        InSensor.OffInteract += OffPanel;
+        GameObject objPlayer = GameObject.FindWithTag("Player");
+        Player = objPlayer.GetComponent<Player_CC>();
+
+        InSensor.OnInteract += OnInteractPanel;
+        InSensor.OffInteract += OffInteractPanel;
         InSensor.StayInteract += Rotation;
-        InputSystem.onActionChange += SaveDevice;
+        Player.OnDialogue += OnDialogue;
+        Player.OffDialogue += OffDialogue;
+
         OriginRotation = transform.rotation;
     }
 
-    private void OnPanel()
+    private void OnInteractPanel()
     {
-        Interactpanel.SetActive(true);
+        TalkManager.Instance.OnInteractPanel();
         isRestore = false;
-        InteractKey = inputActions.FindActionMap("Player")
-                .FindAction("Interact").GetBindingDisplayString(group: DeviceGroup);
-
-        InteractText.text = $"[{InteractKey}] 대화하기";
     }
-    private void OffPanel(Collider other)
+    private void OffInteractPanel()
     {
-        Interactpanel.SetActive(false);
-        PlayerPos = other.transform.position;
+        TalkManager.Instance.OffInteractPanel();
         isRestore = true;
     }
+
+    private void OnDialogue()
+    {
+        //이름과 대사들을 넘겨줌
+        TalkManager.Instance.StartDialoguePanel(TalkData.name, TalkData.dialogues);
+    }
+
+    private void OffDialogue()
+    {
+        TalkManager.Instance.OffDialoguePanel();
+    }
+
     private void Rotation(Collider other)
     {
         Vector3 Dir = other.transform.position - transform.position;
@@ -50,33 +60,6 @@ public class InteractNpc : MonoBehaviour
         transform.rotation = Quaternion.RotateTowards(transform.rotation, TargetPos, RotateSpeed * Time.deltaTime);
     }
 
-    /// <summary>
-    /// 최근 조작된 기기의 이름을 저장하는 함수
-    /// </summary>
-    /// <param name="Obj"></param>
-    /// <param name="Change"></param>
-    private void SaveDevice(object Obj, InputActionChange Change)
-    {
-        //버튼이 눌리거나 조작되는 순간인지
-        if (Change == InputActionChange.ActionStarted || Change == InputActionChange.ActionPerformed)
-        {
-            var Action = Obj as InputAction;
-            //존재한다면 장치를 분석
-            if (Action != null && Action.activeControl != null)
-            {
-                var DeviceName = Action.activeControl.device.name;
-
-                if(DeviceName.Contains("Keyboard") || DeviceName.Contains("Mouse"))
-                {
-                    DeviceGroup = "Keyboard&Mouse";
-                }
-                else if(DeviceName.Contains("Gamepad"))
-                {
-                    DeviceGroup = "Gamepad";
-                }
-            }
-        }
-    }
 
     private void Update()
     {

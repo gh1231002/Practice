@@ -17,6 +17,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     [SerializeField] InputActionProperty IapCombat;
     [SerializeField] InputActionProperty IapAttack;
     [SerializeField] InputActionProperty IapLook;
+    [SerializeField] InputActionProperty IapInteract;
     [Header("무기 관련")]
     [SerializeField] Transform TrsWeapons;
     [SerializeField] Transform AtkPoint;
@@ -83,8 +84,17 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     [SerializeField] bool CheckHit;
     bool CheckKnockBack;
     bool isAttack;
-
+    bool isInteract;
+    bool isDialogue;
+    //이벤트 함수들
     public event Action<float,float> ChangeHp;
+    public event Action OnDialogue;
+    public event Action OffDialogue;
+
+    public void SetInteract(bool State)
+    {
+        isInteract = State;
+    }
 
     private void Awake()
     {
@@ -109,14 +119,17 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         OnInputAction();
         ObjWeapons.SetActive(false);
         Anim.applyRootMotion = false;
+
         if (Camera.main != null)
         {
             TrsMainCam = Camera.main.transform;
         }
+
         //커서잠금
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-        //초기 체력바 설정
+
+        //이벤트 설정
         ChangeHp?.Invoke(CurHp, MaxHp);
     }
 
@@ -129,11 +142,12 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         IapCombat.action?.Enable();
         IapWalk.action?.Enable();
         IapAttack.action?.Enable();
+        IapInteract.action?.Enable();
     }
 
     void Update()
     {
-        if (CheckDeath == true) return;
+        if (CheckDeath == true || isDialogue == true) return;
 
         isAttack = Anim.GetCurrentAnimatorStateInfo(0).IsTag("Attack");
 
@@ -147,6 +161,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             InputCombat();
             InputWalk();
             InputAttack();
+            InputInteract();
         }
         CheckAni();
         CheckAniState();
@@ -376,6 +391,28 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         }
     }
 
+    private void InputInteract()
+    {
+        if (isInteract == false)
+        {
+            isDialogue = false;
+            OffDialogue?.Invoke();
+        }
+        //플레이어가 npc트리거에 닿아있고 상호작용키를 누른다면
+        if(isInteract == true && IapInteract.action.WasPressedThisFrame())
+        {
+            isInteract = false;
+            isDialogue = true;
+            OnDialogue?.Invoke();
+        }
+        //현재 대화상태중이고 이동불가상태이며 상호작용키 입력이 들어왔을때
+        if(isDialogue == true && IapInteract.action.WasPressedThisFrame())
+        {
+            //다음대사로 넘어가라고 talkmanager에게 전달
+
+        }
+    }
+
     /// <summary>
     /// 애니메이터에게 변수값 전달하는 함수
     /// </summary>
@@ -449,7 +486,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     private void FixedUpdate()
     {
-        if (CheckDeath == true) return;
+        if (CheckDeath == true || isDialogue == true) return;
 
         PlayerRotation();
         Vector3 MoveVelocity = MovingVelocity();
