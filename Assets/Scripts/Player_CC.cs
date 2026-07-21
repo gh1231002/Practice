@@ -131,6 +131,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
         //이벤트 설정
         ChangeHp?.Invoke(CurHp, MaxHp);
+        TalkManager.Instance.OffTalk += UnlockMove;
     }
 
     private void OnInputAction()
@@ -147,20 +148,23 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     void Update()
     {
-        if (CheckDeath == true || isDialogue == true) return;
+        if (CheckDeath == true) return;
 
         isAttack = Anim.GetCurrentAnimatorStateInfo(0).IsTag("Attack");
 
         if (CheckHit == true) { }
         else
         {
-            InputMove();
-            InputJump();
-            InputRoll();
-            InputCrouch();
-            InputCombat();
-            InputWalk();
-            InputAttack();
+            if(!isDialogue)
+            {
+                InputMove();
+                InputJump();
+                InputRoll();
+                InputCrouch();
+                InputCombat();
+                InputWalk();
+                InputAttack();
+            }
             InputInteract();
         }
         CheckAni();
@@ -399,17 +403,16 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             OffDialogue?.Invoke();
         }
         //플레이어가 npc트리거에 닿아있고 상호작용키를 누른다면
-        if(isInteract == true && IapInteract.action.WasPressedThisFrame())
+        if(isInteract == true && isDialogue == false && IapInteract.action.WasPressedThisFrame())
         {
-            isInteract = false;
             isDialogue = true;
             OnDialogue?.Invoke();
         }
         //현재 대화상태중이고 이동불가상태이며 상호작용키 입력이 들어왔을때
-        if(isDialogue == true && IapInteract.action.WasPressedThisFrame())
+        else if(isDialogue == true && IapInteract.action.WasPressedThisFrame())
         {
             //다음대사로 넘어가라고 talkmanager에게 전달
-
+            TalkManager.Instance.NextDialogueText();
         }
     }
 
@@ -726,6 +729,11 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     private void DisalbeCombo()
     {
         CanCombo = false;
+    }
+
+    private void UnlockMove()
+    {
+        isDialogue = false;
     }
 
     private void OnDrawGizmosSelected()

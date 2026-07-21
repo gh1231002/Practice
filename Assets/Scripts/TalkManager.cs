@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -14,10 +15,13 @@ public class TalkManager : MonoBehaviour
 
     string InteractKey;
     string DeviceGroup;
+    string[] DialoguesList;
 
     int DialogueIndex;
 
     Player_CC Player;
+
+    public event Action OffTalk;
 
     public static TalkManager Instance;
 
@@ -64,11 +68,11 @@ public class TalkManager : MonoBehaviour
         InteractPanel.SetActive(false);
     }
 
-    public void StartDialoguePanel(string Name, string[] Dialogue)
+    public void StartDialoguePanel(DialogueData data)
     {
         InteractPanel.SetActive(false);
         DialoguePanel.SetActive(true);
-        SetDialogue(Name, Dialogue);
+        SetDialogue(data.npcname, data.dialogues);
     }
 
     public void OffDialoguePanel()
@@ -79,14 +83,29 @@ public class TalkManager : MonoBehaviour
     private void SetDialogue(string Name, string[] Dialogue)
     {
         NpcNameText.text = Name;
+        DialoguesList = Dialogue;
         NextText.text = $"[{InteractKey}] 다음으로";
         DialogueIndex = 0;
-        DisplayDialogueText(Dialogue);
+        NextDialogueText();
     }
 
-    private void DisplayDialogueText(string[] Dialogue)
+    public void NextDialogueText()
     {
-        DialogueText.text = Dialogue[DialogueIndex];
+        if(DialogueIndex >= DialoguesList.Length)
+        {
+            EndDialogue();
+            return;
+        }
+        DialogueText.text = DialoguesList[DialogueIndex];
+        DialogueIndex++;
+    }
+
+    private void EndDialogue()
+    {
+        DialogueIndex = 0;
+        DialoguesList = null;
+        DialoguePanel.SetActive(false);
+        OffTalk?.Invoke();
     }
 
     private void SaveDevice(object Obj, InputActionChange Change)
