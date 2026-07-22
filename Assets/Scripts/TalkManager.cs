@@ -7,6 +7,7 @@ public class TalkManager : MonoBehaviour
 {
     [SerializeField] GameObject InteractPanel;
     [SerializeField] GameObject DialoguePanel;
+    [SerializeField] QuestUi questUi;
     [SerializeField] TextMeshProUGUI InteractText;
     [SerializeField] TextMeshProUGUI NpcNameText;
     [SerializeField] TextMeshProUGUI DialogueText;
@@ -47,6 +48,7 @@ public class TalkManager : MonoBehaviour
         DialoguePanel.SetActive(false);
 
         InputSystem.onActionChange += SaveDevice;
+        Player.OnDialogue += StartDialogue;
     }
 
     public void OnInteractPanel()
@@ -68,18 +70,22 @@ public class TalkManager : MonoBehaviour
         InteractPanel.SetActive(false);
     }
 
-    public void StartDialoguePanel(DialogueData data)
+    public void StartDialogue()
     {
         InteractPanel.SetActive(false);
+        questUi.SetVisible(false);
         DialoguePanel.SetActive(true);
-        SetDialogue(data.npcname, data.dialogues);
     }
 
-    public void OffDialoguePanel()
+    public void StartDialoguePanel(string Name, string[] Dialogue)
     {
-        DialoguePanel.SetActive(false);
+        SetDialogue(Name, Dialogue);
     }
-
+    /// <summary>
+    /// 대화창 설정
+    /// </summary>
+    /// <param name="Name"></param>
+    /// <param name="Dialogue"></param>
     private void SetDialogue(string Name, string[] Dialogue)
     {
         NpcNameText.text = Name;
@@ -105,6 +111,8 @@ public class TalkManager : MonoBehaviour
         DialogueIndex = 0;
         DialoguesList = null;
         DialoguePanel.SetActive(false);
+        questUi.SetVisible(true);
+        InteractPanel.SetActive(true);
         OffTalk?.Invoke();
     }
 

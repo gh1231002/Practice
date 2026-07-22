@@ -421,6 +421,8 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     /// </summary>
     private void CheckAni()
     {
+        if (isDialogue == true) return;
+
         Anim.SetFloat("MoveValue", MoveValue);
         Anim.SetFloat("CombatValue", CombatValue);
         Anim.SetInteger("CrouchMove", CrouchMove);
