@@ -18,6 +18,10 @@ public class InteractNpc : MonoBehaviour
     [SerializeField] List<QuestData> QuestList = new List<QuestData>();
     [Header("기본 대사(진행 가능한 퀘스트가 없을 때)")]
     [SerializeField] string[] DefalutDialogues;
+    [Header("npc의 머리 위치")]
+    [SerializeField] Transform CamLookTarget;
+
+    public Transform LookTarget => CamLookTarget;
 
     string InteractKey;
     string DeviceGroup;

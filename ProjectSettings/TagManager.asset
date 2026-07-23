@@ -8,6 +8,7 @@ TagManager:
   - Ground
   - Wall
   - Monster
+  - Npc
   layers:
   - Default
   - TransparentFX
@@ -21,7 +22,7 @@ TagManager:
   - Wall
   - Monster
   - props
-  - 
+  - Npc
   - 
   - 
   - 

@@ -7,7 +7,7 @@ public class TalkManager : MonoBehaviour
 {
     [SerializeField] GameObject InteractPanel;
     [SerializeField] GameObject DialoguePanel;
-    [SerializeField] QuestUi questUi;
+    [SerializeField] GameObject MainUi;
     [SerializeField] TextMeshProUGUI InteractText;
     [SerializeField] TextMeshProUGUI NpcNameText;
     [SerializeField] TextMeshProUGUI DialogueText;
@@ -48,7 +48,7 @@ public class TalkManager : MonoBehaviour
         DialoguePanel.SetActive(false);
 
         InputSystem.onActionChange += SaveDevice;
-        Player.OnDialogue += StartDialogue;
+        Player.OnDialogue += StartDialoguePanel;
     }
 
     public void OnInteractPanel()
@@ -70,14 +70,14 @@ public class TalkManager : MonoBehaviour
         InteractPanel.SetActive(false);
     }
 
-    public void StartDialogue()
+    public void StartDialoguePanel()
     {
         InteractPanel.SetActive(false);
-        questUi.SetVisible(false);
+        MainUi.SetActive(false);
         DialoguePanel.SetActive(true);
     }
 
-    public void StartDialoguePanel(string Name, string[] Dialogue)
+    public void StartDialogue(string Name, string[] Dialogue)
     {
         SetDialogue(Name, Dialogue);
     }
@@ -111,7 +111,9 @@ public class TalkManager : MonoBehaviour
         DialogueIndex = 0;
         DialoguesList = null;
         DialoguePanel.SetActive(false);
-        questUi.SetVisible(true);
+        //대화캠 종료 후 플레이어 카메라로 전환
+        DialogueCamManager.Instance.EnddialogueCam();
+        MainUi.SetActive(true);
         InteractPanel.SetActive(true);
         OffTalk?.Invoke();
     }

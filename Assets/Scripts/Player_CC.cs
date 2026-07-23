@@ -406,6 +406,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         if(isInteract == true && isDialogue == false && IapInteract.action.WasPressedThisFrame())
         {
             isDialogue = true;
+            ResetAni();
             OnDialogue?.Invoke();
         }
         //현재 대화상태중이고 이동불가상태이며 상호작용키 입력이 들어왔을때
@@ -414,6 +415,18 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             //다음대사로 넘어가라고 talkmanager에게 전달
             TalkManager.Instance.NextDialogueText();
         }
+    }
+
+    private void ResetAni()
+    {
+        Anim.SetFloat("MoveValue", 0f);
+        Anim.SetFloat("CombatValue", 0f);
+        Anim.SetInteger("CrouchMove", 0);
+        Anim.ResetTrigger("Jump");
+        Anim.ResetTrigger("RunningJump");
+        Anim.ResetTrigger("Attack");
+        Anim.ResetTrigger("Crouch");
+        Anim.ResetTrigger("Roll");
     }
 
     /// <summary>
