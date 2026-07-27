@@ -17,7 +17,7 @@ MonoBehaviour:
     \uB3CC\uC544\uC624\uC790."
   Type: 1
   TargetCount: 10
-  ParentQuest: {fileID: 0}
+  ParentQuest: {fileID: 11400000, guid: 7875095731bc16e4599fa08f793ffbfa, type: 2}
   StartNpcName: Npc_Guard
   TargetNpcName: Npc_Guard
   StartDialogues:

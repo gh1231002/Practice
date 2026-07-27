@@ -63,7 +63,7 @@ public class QuestManager : MonoBehaviour
 
     private void Start()
     {
-        TalkManager.Instance.OffTalk += OnDialogueEnd;
+        UiManager.Instance.OffTalk += OnDialogueEnd;
     }
 
     /// <summary>
@@ -80,7 +80,7 @@ public class QuestManager : MonoBehaviour
         //대화카메라에게 npc의 위치정보 전달
         DialogueCamManager.Instance.StartDialogueCam(currentNpc);
         //talkmanager에게 대화창 출력 요청
-        TalkManager.Instance.StartDialogue(currentNpc.npcName, currentDialogues, currentQuest);
+        UiManager.Instance.StartDialogue(currentNpc.npcName, currentDialogues, currentQuest);
     }
     /// <summary>
     /// npc에게 말을 걸때 진행 중인 퀘스트의 방문/대화 목표를 달성시키는 함수

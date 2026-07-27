@@ -22,7 +22,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     [SerializeField] Transform TrsWeapons;
     [SerializeField] Transform AtkPoint;
     [SerializeField] Vector3 AtkHalfBox;
-    [SerializeField] GameObject ObjWeapons;
+    GameObject CurrentWeapon;
     [SerializeField] LayerMask TargetLayer;
     [SerializeField] float PlayerAtkDuration;
     float PlayerAtkTimer = 0f;
@@ -72,17 +72,18 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     int CrouchMove;
 
-    bool CheckGround;
-    bool CheckCrouch;
-    bool CheckWalk;
-    bool CheckRoll;
-    bool CheckCombat;
-    bool CheckJump;
+    bool isGround;
+    bool isCrouch;
+    bool isWalk;
+    bool isRoll;
+    bool isCombat;
+    bool isJump;
     [SerializeField] bool CanCombo = false;
-    bool CheckBackJump;
-    bool CheckDeath;
-    [SerializeField] bool CheckHit;
-    bool CheckKnockBack;
+    [SerializeField] bool isHit;
+    [SerializeField] bool isHaveWeapon;
+    bool isBackJump;
+    bool isDeath;
+    bool isKnockBack;
     bool isAttack;
     bool isInteract;
     bool isDialogue;
@@ -117,7 +118,6 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
         //인풋액션이 연결되있다면 활성화
         OnInputAction();
-        ObjWeapons.SetActive(false);
         Anim.applyRootMotion = false;
 
         if (Camera.main != null)
@@ -125,13 +125,9 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             TrsMainCam = Camera.main.transform;
         }
 
-        //커서잠금
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-
         //이벤트 설정
         ChangeHp?.Invoke(CurHp, MaxHp);
-        TalkManager.Instance.OffTalk += UnlockMove;
+        UiManager.Instance.OffTalk += UnlockMove;
     }
 
     private void OnInputAction()
@@ -148,11 +144,11 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     void Update()
     {
-        if (CheckDeath == true) return;
+        if (isDeath == true) return;
 
         isAttack = Anim.GetCurrentAnimatorStateInfo(0).IsTag("Attack");
 
-        if (CheckHit == true) { }
+        if (isHit == true) { }
         else
         {
             if(!isDialogue)
@@ -183,27 +179,26 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         {
             move = IapMove.action.ReadValue<Vector2>();
         }
+
         //시네머신 메인 카메라 기준 벡터값 추출
         Vector3 CamForward = TrsMainCam.forward;
         Vector3 CamRight = TrsMainCam.right;
-
-        CamForward.y = 0f;
-        CamRight.y = 0f;
-        CamForward.Normalize();
-        CamRight.Normalize();
-
-        MoveDir = (CamForward * move.y + CamRight * move.x).normalized;
-    }
-    /// <summary>
-    /// 카메라 입력받는 함수
-    /// </summary>
-    private void InputLook()
-    {
-        if (IapLook.action != null)
+        //커서가 보이고있는 상태라면 카메라 회전만 금지
+        if (UiManager.Instance.CurrentCursorState())
         {
-            LookInput = IapLook.action.ReadValue<Vector2>();
+            MoveDir = new Vector3(move.x, 0f, move.y).normalized;
+        }
+        else
+        {
+            CamForward.y = 0f;
+            CamRight.y = 0f;
+            CamForward.Normalize();
+            CamRight.Normalize();
+
+            MoveDir = (CamForward * move.y + CamRight * move.x).normalized;
         }
     }
+
     /// <summary>
     /// 점프입력받았는지 체크하고, 점프실행
     /// </summary>
@@ -211,7 +206,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     {
         if (IapJump.action == null || isAttack == true) return;
         //점프키가 눌리고 캐릭터가 땅에 닿아있다면 점프실행
-        if (IapJump.action.WasPressedThisFrame() && CheckGround == true)
+        if (IapJump.action.WasPressedThisFrame() && isGround == true)
         {
             StartCoroutine(JumpRoutine());
         }
@@ -222,20 +217,20 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     /// <returns></returns>
     IEnumerator JumpRoutine()
     {
-        if (CheckJump == true) yield break;
+        if (isJump == true) yield break;
 
-        CheckJump = true;
+        isJump = true;
         CurBackJumpSpeed = BackJumpSpeed;
 
         if(MoveValue == 0f)//제자리일때
         {
             Anim.SetTrigger("Jump");
-            if(CheckCombat == true)//캐릭터가 보는 방향 뒷방향으로 점프
+            if(isCombat == true)//캐릭터가 보는 방향 뒷방향으로 점프
             {
-                CheckBackJump = true;
+                isBackJump = true;
                 VelocityY = BackJumpForce;
             }
-            if(CheckCombat == false)
+            if(isCombat == false)
             {
                 VelocityY = JumpForce;
             }
@@ -250,13 +245,13 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         yield return new WaitForFixedUpdate();
         yield return new WaitForFixedUpdate();
 
-        while(IsGround() == false)//공중에 떠있는동안 기다림
+        while(CheckGround() == false)//공중에 떠있는동안 기다림
         {
             yield return new WaitForFixedUpdate();
         }
 
-        CheckJump = false;
-        CheckBackJump = false;
+        isJump = false;
+        isBackJump = false;
         Anim.ResetTrigger("Jump");
         Anim.ResetTrigger("RunningJump");
     }
@@ -267,7 +262,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     {
         if (IapRoll.action == null) return;
 
-        if (IapRoll.action.WasPressedThisFrame() && CheckGround == true)
+        if (IapRoll.action.WasPressedThisFrame() && isGround == true)
         {
             StartCoroutine(RollRoutine());
         }
@@ -276,9 +271,9 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     IEnumerator RollRoutine()
     {
         //중복실행방지
-        if(CheckRoll == true) yield break;
-        CheckRoll = true;
-        CheckHit = true;
+        if(isRoll == true) yield break;
+        isRoll = true;
+        isHit = true;
 
         Anim.SetTrigger("Roll");
         yield return new WaitForSeconds(DelayTime);
@@ -291,20 +286,20 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     {
         if(IapCrouch.action == null) return;
 
-        if(IapCrouch.action.WasPressedThisFrame() && CheckCrouch == false)
+        if(IapCrouch.action.WasPressedThisFrame() && isCrouch == false)
         {
-            CheckCrouch = true;
+            isCrouch = true;
             StartCoroutine(CrouchRouutine());
         }
-        else if(IapCrouch.action.WasPressedThisFrame() && CheckCrouch == true)
+        else if(IapCrouch.action.WasPressedThisFrame() && isCrouch == true)
         {
-            CheckCrouch = false;
+            isCrouch = false;
             StartCoroutine(CrouchRouutine());
         }
     }
     IEnumerator CrouchRouutine()
     {
-        switch (CheckCrouch)
+        switch (isCrouch)
         {
             case true:
                 Anim.SetTrigger("Crouch");
@@ -325,18 +320,41 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     {
         if(IapCombat == null) return;
 
-        if(IapCombat.action.WasPressedThisFrame() && CheckCombat == false)
+        if(IapCombat.action.WasPressedThisFrame() && isCombat == false)
         {
-            CheckCombat = true;
-            CombatValue = 1f;
-            ObjWeapons.SetActive(true);
+            //무기를 들고 있는지 확인
+            isHaveWeapon = CheckWeapon();
+            if(isHaveWeapon == true)
+            {
+                isCombat = true;
+                CombatValue = 1f;
+                CurrentWeapon.SetActive(true);
+            }
+            else
+            {
+                UiManager.Instance.StartInfoPanel("무기가 없습니다.");
+            }
         }
-        else if(IapCombat.action.WasPressedThisFrame() && CheckCombat == true)
+        else if(IapCombat.action.WasPressedThisFrame() && isCombat == true)
         {
-            CheckCombat = false;
+            isCombat = false;
             CombatValue = 0f;
-            ObjWeapons.SetActive(false);
+            CurrentWeapon.SetActive(false);
         }
+    }
+
+    private bool CheckWeapon()
+    {
+        if(TrsWeapons == null) return false;
+
+        foreach(Transform child in TrsWeapons)
+        {
+            if (child.CompareTag("Weapons"))
+            {
+                return true;
+            }
+        }
+        return false;
     }
     /// <summary>
     /// 걷기 상태인지 체크하고, bool값 변경
@@ -345,13 +363,13 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     {
         if (IapWalk.action == null) return;
 
-        if (IapWalk.action.WasPressedThisFrame() && CheckWalk == false)
+        if (IapWalk.action.WasPressedThisFrame() && isWalk == false)
         {
-            CheckWalk = true;
+            isWalk = true;
         }
-        else if (IapWalk.action.WasPressedThisFrame() && CheckWalk == true)
+        else if (IapWalk.action.WasPressedThisFrame() && isWalk == true)
         {
-            CheckWalk = false;
+            isWalk = false;
         }
     }
     /// <summary>
@@ -359,9 +377,9 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     /// </summary>
     private void InputAttack()
     {
-        if (IapAttack.action == null || CheckCombat == false) return;
+        if (IapAttack.action == null || isCombat == false) return;
         //전투모드이고 공격키 눌렀을때
-        if(IapAttack.action.WasPressedThisFrame() && CheckCombat == true)
+        if(IapAttack.action.WasPressedThisFrame() && isCombat == true)
         {
             AttackProcess();
         }
@@ -370,7 +388,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     private void AttackProcess()
     {
         //구르고있거나 앉은상태이거나 공중에 떠있으면 공격불가
-        if (CheckRoll == true || CheckCrouch == true || IsGround() == false) return;
+        if (isRoll == true || isCrouch == true || CheckGround() == false) return;
 
         bool isTransition = Anim.IsInTransition(0);
         //다른애니메이션으로 전환중이라면
@@ -413,7 +431,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         else if(isDialogue == true && IapInteract.action.WasPressedThisFrame())
         {
             //다음대사로 넘어가라고 talkmanager에게 전달
-            TalkManager.Instance.NextDialogueText();
+            UiManager.Instance.NextDialogueText();
         }
     }
 
@@ -439,10 +457,10 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         Anim.SetFloat("MoveValue", MoveValue);
         Anim.SetFloat("CombatValue", CombatValue);
         Anim.SetInteger("CrouchMove", CrouchMove);
-        Anim.SetBool("Walk", CheckWalk);
-        Anim.SetBool("Combat", CheckCombat);
+        Anim.SetBool("Walk", isWalk);
+        Anim.SetBool("Combat", isCombat);
         Anim.SetBool("Combo", CanCombo);
-        Anim.SetBool("Big Hit", CheckKnockBack);
+        Anim.SetBool("Big Hit", isKnockBack);
     }
     /// <summary>
     /// 현재 어떤 애니메이션이 재생중인지 체크하는 함수
@@ -459,14 +477,14 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         if(CheckRollAnim == true)
         {
             //구르는동안 무적
-            CheckHit = true;
+            isHit = true;
         }
         else
         {
             //넉백중이 아니라면 무적 플래그 끔
-            if(CheckKnockBack == false && CheckRoll == false)
+            if(isKnockBack == false && isRoll == false)
             {
-                CheckHit = false;
+                isHit = false;
             }
         }
     }
@@ -504,7 +522,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     private void FixedUpdate()
     {
-        if (CheckDeath == true || isDialogue == true) return;
+        if (isDeath == true || isDialogue == true) return;
 
         PlayerRotation();
         Vector3 MoveVelocity = MovingVelocity();
@@ -519,8 +537,8 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     /// </summary>
     private void PlayerRotation()
     {
-        if(CheckRoll == false && isAttack == false &&
-            CheckHit == false && MoveDir.sqrMagnitude >0.01f)
+        if(isRoll == false && isAttack == false &&
+            isHit == false && MoveDir.sqrMagnitude >0.01f)
         {
             Quaternion TargetRotation = Quaternion.LookRotation(MoveDir.normalized);
             transform.rotation = Quaternion.RotateTowards(transform.rotation, TargetRotation,
@@ -534,15 +552,15 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     private Vector3 VerticalVelocity()
     {
         //땅인지 아닌지 체크
-        if (IsGround() == true && CheckJump == false)
+        if (CheckGround() == true && isJump == false)
         {
-            CheckGround = true;
+            isGround = true;
             VelocityY = -2f;
         }
         //땅이 아니거나 경사가 가파르면
         else
         {
-            CheckGround = false;
+            isGround = false;
             VelocityY += Gravity * Time.fixedDeltaTime;
         }
 
@@ -569,10 +587,10 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     private Vector3 MovingVelocity()
     {
         //구르는 중이거나 공격애니메이션 진행중이면 이동입력 안받음 
-        if (CheckRoll == true || isAttack == true) return Vector3.zero;
+        if (isRoll == true || isAttack == true) return Vector3.zero;
 
         //넉백일때
-        if(CheckHit == true)
+        if(isHit == true)
         {
             return KnockBackVelocity;
         }
@@ -582,7 +600,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         Vector3 BackJumpVelocity = Vector3.zero;
 
         //전투모드이고 입력값없이 점프할때
-        if (CheckJump == true && CheckCombat == true && CheckBackJump == true)
+        if (isJump == true && isCombat == true && isBackJump == true)
         {
             //뒤로 얼마나 밀려날건지
             BackJumpVelocity = -transform.forward * CurBackJumpSpeed;
@@ -599,10 +617,10 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         else
         {
             //앉기인지 아닌지
-            if (CheckCrouch == false)
+            if (isCrouch == false)
             {
                 //걷기일땐 이동속도 변화
-                switch (CheckWalk)
+                switch (isWalk)
                 {
                     case false:
                         //애니메이션value값
@@ -628,7 +646,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         return (MoveDir * CurSpeed) + BackJumpVelocity;
     }
 
-    private bool IsGround()
+    private bool CheckGround()
     {
         float Radius = ContPlayer.radius;
         Vector3 Origin = transform.position + Vector3.up * Radius;
@@ -663,7 +681,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     private void OnAnimatorMove()
     {
         //구르기 동작때는 본스크립트에서 작동
-        if(CheckRoll == true && Anim != null)
+        if(isRoll == true && Anim != null)
         {
             //루트모션 키고 루트모션 이동량에 따라 컨트롤러에 값 전달
             Anim.applyRootMotion = true;
@@ -682,18 +700,18 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     public void TakeDamage(GameObject Attacker, float Damage)
     {
         //이미 경직중이거나 죽으면 실행 금지
-        if (CheckHit == true || CheckDeath == true) return;
+        if (isHit == true || isDeath == true) return;
 
         CurHp -= Damage;
         ChangeHp?.Invoke(CurHp, MaxHp);
         
         //비전투상태일때 맞으면 피격애니메이션만 진행
-        if (CheckCombat == false)
+        if (isCombat == false)
         {
             Anim.SetTrigger("Small Hit");
         }
         //잠깐의 무적시간 후 조작가능
-        else if(CheckCombat == true)
+        else if(isCombat == true)
         {
             //전투 중에 맞으면 애니메이션과 함께 살짝 밀려남
             StartCoroutine(Invincible(Attacker.transform.position, InvincibleTime));
@@ -703,14 +721,23 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         if (CurHp <= 0)//0이 되면 사망처리
         {
             Anim.SetTrigger("Die");
-            CheckDeath = true;
+            isDeath = true;
+        }
+    }
+
+    public void SetWeapon(GameObject Weapon)
+    {
+        CurrentWeapon = Weapon;
+        if(Weapon != null)
+        {
+            Weapon.SetActive(false);
         }
     }
 
     IEnumerator Invincible(Vector3 Pos, float Timer)
     {
-        CheckHit = true;
-        CheckKnockBack = true;
+        isHit = true;
+        isKnockBack = true;
         //넉백 방향 계산
         Vector3 dir = transform.position - Pos;
         dir.y = 0f;
@@ -725,14 +752,14 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             KnockBackVelocity = dir * KnockBackSpeed;
         }
         KnockBackVelocity = Vector3.zero;
-        CheckKnockBack = false;
-        CheckHit = false;
+        isKnockBack = false;
+        isHit = false;
     }
 
     private void EndRoll()
     {
-        CheckRoll = false;
-        CheckHit = false;
+        isRoll = false;
+        isHit = false;
         Anim.applyRootMotion = false;
     }
 

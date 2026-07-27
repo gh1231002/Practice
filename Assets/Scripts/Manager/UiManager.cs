@@ -3,18 +3,24 @@ using System.Globalization;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
-public class TalkManager : MonoBehaviour
+public class UiManager : MonoBehaviour
 {
     [SerializeField] GameObject InteractPanel;
     [SerializeField] GameObject DialoguePanel;
     [SerializeField] GameObject MainUi;
     [SerializeField] GameObject ChoiceUi;
+    [SerializeField] GameObject InfoPanel;
     [SerializeField] TextMeshProUGUI InteractText;
     [SerializeField] TextMeshProUGUI NpcNameText;
     [SerializeField] TextMeshProUGUI DialogueText;
     [SerializeField] TextMeshProUGUI NextText;
+    [SerializeField] TextMeshProUGUI InfoText;
+    [SerializeField] TextMeshProUGUI[] BtnText;
     [SerializeField] InputActionAsset InputActions;
+    [SerializeField] Button[] BtnChoice;
+    [SerializeField] InputActionProperty IapCursor;
 
     string InteractKey;
     string DeviceGroup;
@@ -22,12 +28,15 @@ public class TalkManager : MonoBehaviour
 
     int DialogueIndex;
 
+    bool isChoice;
+    bool isHolding;
+
     Player_CC Player;
     QuestData CurrentQuest;
 
     public event Action OffTalk;
 
-    public static TalkManager Instance;
+    public static UiManager Instance;
 
     private void Awake()
     {
@@ -50,9 +59,15 @@ public class TalkManager : MonoBehaviour
         InteractPanel.SetActive(false);
         DialoguePanel.SetActive(false);
         ChoiceUi.SetActive(false);
+        InfoPanel.SetActive(false);
 
         InputSystem.onActionChange += SaveDevice;
         Player.OnDialogue += StartDialoguePanel;
+        IapCursor.action?.Enable();
+
+        //커서잠금
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     public void OnInteractPanel()
@@ -90,18 +105,16 @@ public class TalkManager : MonoBehaviour
         DialogueIndex = 0;
         NextDialogueText();
     }
-    //private void SetDialogue(InteractNpc npc)
-    //{
-    //    //NpcNameText.text = Name;
-    //    //DialoguesList = Dialogue;
-    //    NextText.text = $"[{InteractKey}] 다음으로";
-    //    DialogueIndex = 0;
-    //    //NextDialogueText();
-    //}
 
     public void NextDialogueText()
     {
-        if(DialogueIndex >= DialoguesList.Length)
+        if (isChoice)
+        {
+            StartInfoPanel("선택지를 골라야 다음으로 넘어갈 수 있습니다.");
+            return;
+        }
+
+        if (DialogueIndex >= DialoguesList.Length)
         {
             EndDialogue();
             return;
@@ -113,24 +126,33 @@ public class TalkManager : MonoBehaviour
             //선택지로 설정한 대화와 현재 대화가 같은지 확인
             if(CurrentQuest.choiscedialogueindex == DialogueIndex)
             {
-                OnChoiceUi();
-            }
-            //일단 임시로 같지 않다면 ui off
-            if(CurrentQuest.choiscedialogueindex != DialogueIndex)
-            {
-                OffChoiceUi();
+                isChoice = true;
+                ShowChoices();
+                ChoiceUi.SetActive(true);
             }
         }
         DialogueIndex++;
     }
 
-    private void OnChoiceUi()
+    private void ShowChoices()
     {
-        ChoiceUi.SetActive(true);
-    }
-    private void OffChoiceUi()
-    {
-        ChoiceUi.SetActive(false);
+        for(int i = 0; i < CurrentQuest.choices.Count; i++)
+        {
+            //람다 클로저 이슈 방지용 변수 복사
+            int index = i;
+            //선택지 문구 반영
+            BtnText[i].text = CurrentQuest.choices[i].ChoiceText;
+            Button btn = BtnChoice[i];
+            //기존 이벤트 제거 후 새로 클릭 이벤트 바인딩
+            btn.onClick.RemoveAllListeners();
+            btn.onClick.AddListener(() =>
+            {
+                isChoice = false;
+                ChoiceUi.SetActive(false);
+                RewardManager.instance.CraeteWeapon(index, CurrentQuest);
+                NextDialogueText();
+            });
+        }
     }
 
     private void EndDialogue()
@@ -143,6 +165,18 @@ public class TalkManager : MonoBehaviour
         MainUi.SetActive(true);
         InteractPanel.SetActive(true);
         OffTalk?.Invoke();
+    }
+
+    public void StartInfoPanel(string info)
+    {
+        InfoPanel.SetActive(true);
+        InfoText.text = info;
+        Invoke("EndInfoPanel", 0.5f);
+    }
+
+    public void EndInfoPanel()
+    {
+        InfoPanel.SetActive(false);
     }
 
     private void SaveDevice(object Obj, InputActionChange Change)
@@ -165,6 +199,34 @@ public class TalkManager : MonoBehaviour
                     DeviceGroup = "Gamepad";
                 }
             }
+        }
+    }
+
+    public bool CurrentCursorState()
+    {
+        return isHolding;
+    }
+
+    private void Update()
+    {
+        OnOffCursor();
+    }
+
+    private void OnOffCursor()
+    {
+        //키 입력 중인지 확인
+        isHolding = IapCursor.action.IsPressed();
+
+        //키 입력 중이라면
+        if(isHolding)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else
+        {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
         }
     }
 }

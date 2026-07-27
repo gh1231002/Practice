@@ -48,14 +48,14 @@ public class InteractNpc : MonoBehaviour
 
     private void OnInteractPanel()
     {
-        TalkManager.Instance.OnInteractPanel();
+        UiManager.Instance.OnInteractPanel();
         isRestore = false;
         Player.OnDialogue -= SendNpcInfo;//중복방지
         Player.OnDialogue += SendNpcInfo;
     }
     private void OffInteractPanel()
     {
-        TalkManager.Instance.OffInteractPanel();
+        UiManager.Instance.OffInteractPanel();
         isRestore = true;
         Player.OnDialogue -= SendNpcInfo;
     }
