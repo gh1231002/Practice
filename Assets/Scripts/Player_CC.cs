@@ -96,6 +96,19 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     {
         isInteract = State;
     }
+    public GameObject ReturnWeapon()
+    {
+        if (CurrentWeapon == null) return null;
+        return CurrentWeapon;
+    }
+    public float ReturnAtk()
+    {
+        return AtkPower;
+    }
+    public float ReturnCurHp()
+    {
+        return CurHp;
+    }
 
     private void Awake()
     {

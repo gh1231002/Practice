@@ -8,7 +8,7 @@ using UnityEngine.UI;
 public class UiManager : MonoBehaviour
 {
     [SerializeField] GameObject InteractPanel;
-    [SerializeField] GameObject DialoguePanel;
+    [SerializeField] GameObject DialogueUi;
     [SerializeField] GameObject MainUi;
     [SerializeField] GameObject ChoiceUi;
     [SerializeField] GameObject InfoPanel;
@@ -21,6 +21,7 @@ public class UiManager : MonoBehaviour
     [SerializeField] InputActionAsset InputActions;
     [SerializeField] Button[] BtnChoice;
     [SerializeField] InputActionProperty IapCursor;
+    [SerializeField] InputActionProperty IapCharacterInfo;
 
     string InteractKey;
     string DeviceGroup;
@@ -30,10 +31,12 @@ public class UiManager : MonoBehaviour
 
     bool isChoice;
     bool isHolding;
+    bool isStatPanel;
+    bool isCursorLock;
 
     Player_CC Player;
     QuestData CurrentQuest;
-
+    CharacterInfoUI characterInfoUI;
     public event Action OffTalk;
 
     public static UiManager Instance;
@@ -55,15 +58,18 @@ public class UiManager : MonoBehaviour
     {
         GameObject obj = GameObject.FindWithTag("Player");
         Player = obj.GetComponent<Player_CC>();
+        characterInfoUI = FindAnyObjectByType<CharacterInfoUI>(FindObjectsInactive.Include);
 
         InteractPanel.SetActive(false);
-        DialoguePanel.SetActive(false);
+        DialogueUi.SetActive(false);
         ChoiceUi.SetActive(false);
         InfoPanel.SetActive(false);
+        characterInfoUI.gameObject.SetActive(false);
 
         InputSystem.onActionChange += SaveDevice;
         Player.OnDialogue += StartDialoguePanel;
         IapCursor.action?.Enable();
+        IapCharacterInfo.action?.Enable();
 
         //커서잠금
         Cursor.lockState = CursorLockMode.Locked;
@@ -93,7 +99,7 @@ public class UiManager : MonoBehaviour
     {
         InteractPanel.SetActive(false);
         MainUi.SetActive(false);
-        DialoguePanel.SetActive(true);
+        DialogueUi.SetActive(true);
     }
 
     public void StartDialogue(string name, string[] dialogue, QuestData quest)
@@ -159,7 +165,7 @@ public class UiManager : MonoBehaviour
     {
         DialogueIndex = 0;
         DialoguesList = null;
-        DialoguePanel.SetActive(false);
+        DialogueUi.SetActive(false);
         //대화캠 종료 후 플레이어 카메라로 전환
         DialogueCamManager.Instance.EnddialogueCam();
         MainUi.SetActive(true);
@@ -210,10 +216,13 @@ public class UiManager : MonoBehaviour
     private void Update()
     {
         OnOffCursor();
+        OnOffCharacterInfo();
     }
 
     private void OnOffCursor()
     {
+        //캐릭터 정보창이 On이라면 커서 On/Off 입력 작동안함
+        if (isCursorLock == true) return;
         //키 입력 중인지 확인
         isHolding = IapCursor.action.IsPressed();
 
@@ -225,6 +234,29 @@ public class UiManager : MonoBehaviour
         }
         else
         {
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+    }
+
+    private void OnOffCharacterInfo()
+    {
+        if (IapCharacterInfo.action.WasPressedThisFrame() && isStatPanel == false)
+        {
+            characterInfoUI.OnPanel();
+            //플레이어 카메라입력, 시네머신 카메라 입력 제한
+            isHolding = true;
+            isStatPanel = true;
+            isCursorLock = true;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else if(IapCharacterInfo.action.WasPressedThisFrame() && isStatPanel == true)
+        {
+            characterInfoUI.OffPanel();
+            isHolding = false;
+            isStatPanel = false;
+            isCursorLock = false;
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }
