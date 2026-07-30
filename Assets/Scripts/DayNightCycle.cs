@@ -1,13 +1,13 @@
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering;
-using UnityEngine.UIElements;
 
 public class DayNightCycle : MonoBehaviour
 {
     [Header("시간 설정")]
     [Tooltip("하루가 지나는 속도 (값이 클수록 빠름")]
     [SerializeField] float DayTime;
+    [Header("시작 시간대 설정")]
+    [SerializeField] TimePhase StartTimePhase;
     [Header("시간대별 Kelvin 프리셋")]
     [SerializeField] float DayKelvin;
     [SerializeField] float SunsetKelvin;
@@ -18,13 +18,22 @@ public class DayNightCycle : MonoBehaviour
     [SerializeField] Material NightSkyBox;
     [SerializeField] Material SunsetSkyBox;
     [SerializeField] Material SunriseSkyBox;
-    [Header("렌즈 플레어 / Light 밝기 목표치")]
+    [Header("렌즈 플레어 / Light 설정값")]
     [SerializeField] float LightDayIntensity;
     [SerializeField] float LightNightIntensity;
     [SerializeField] float LightSunsetIntensity;
     [SerializeField] float LensDayIntensity;
     [SerializeField] float LensSunsetIntensity;
     [SerializeField] float LensNightIntensity;
+    [SerializeField] float LensDayScale;
+    [SerializeField] float LensSunsetScale;
+    [SerializeField] float LensNightScale;
+
+    //환경광 색상 설정(Source : Color 일 때)
+    Color SunriseColor;
+    Color DayColor;
+    Color SunsetColor;
+    Color NightColor;
 
     LensFlareComponentSRP SunLensFlare;
     Light MainLight;
@@ -41,14 +50,28 @@ public class DayNightCycle : MonoBehaviour
 
         MainLight.useColorTemperature = true;
         //시작할 때 새벽부터 시작
-        RenderSettings.skybox = SunriseSkyBox;
-        MainLight.intensity = LightNightIntensity;
-        MainLight.colorTemperature = 20000f;
-        transform.rotation = Quaternion.Euler(0f, -88f, 0f);
+        CurrentAngle = GetStartAngle(StartTimePhase);
+        CheckTimeOfDay(CurrentAngle);
         //시작 회전값 설정 및 변수에 저장
+        transform.rotation = Quaternion.Euler(0f, -88f, 0f);
         StartZ = 0f;
         StartY = -88f;
-        CurrentAngle = 0f;
+        //설정한 Kelvin값 color값으로 변환해서 저장
+        SunriseColor = Mathf.CorrelatedColorTemperatureToRGB(SunriseKelvin);
+        DayColor = Mathf.CorrelatedColorTemperatureToRGB(DayKelvin);
+        SunsetColor = Mathf.CorrelatedColorTemperatureToRGB(SunsetKelvin);
+        NightColor = Mathf.CorrelatedColorTemperatureToRGB((NightKelvin));
+    }
+    private float GetStartAngle(TimePhase phase)
+    {
+        switch(phase)
+        {
+            case TimePhase.Sunrise: return 0f;
+            case TimePhase.Day: return 25f;
+            case TimePhase.Sunset: return 155f;
+            case TimePhase.Night: return 180f;
+            default: return 25f;
+        }
     }
 
     private void Update()
@@ -75,42 +98,60 @@ public class DayNightCycle : MonoBehaviour
 
     private void CheckTimeOfDay(float angle)
     {
-        // 새벽 ~ 아침: 0~20
+        // 하루 360도 기준
+        // 새벽 ~ 아침
         if(angle >= 0f && angle < 25f)
         {
-            SunLensFlare.enabled = true;
             ChangePhase(TimePhase.Sunrise, SunriseSkyBox);
-            //시간에 따른 빛의 변화
-            float progress = Mathf.InverseLerp(0f, 25f, angle);
-            MainLight.intensity = Mathf.Lerp(LightNightIntensity, LightSunsetIntensity, progress);
-            MainLight.colorTemperature = Mathf.Lerp(SunriseKelvin, DayKelvin, progress);
-            SunLensFlare.intensity = Mathf.Lerp(LensNightIntensity, LensSunsetIntensity, progress);
         }
-        // 낮 ~ 저녁
-        else if (angle >= 25f && angle < 155f)
+        // 아침 ~ 낮
+        else if(angle >= 25f && angle < 155f)
         {
             ChangePhase(TimePhase.Day, DaySkyBox);
-            float progress = Mathf.InverseLerp(25f, 155f, angle);
+            float progress = Mathf.InverseLerp(25f, 55f, angle);
+            RenderSettings.ambientSkyColor = Color.Lerp(SunriseColor, DayColor, progress);
             MainLight.intensity = Mathf.Lerp(LightSunsetIntensity, LightDayIntensity, progress);
-            MainLight.colorTemperature = Mathf.Lerp(DayKelvin, SunsetKelvin, progress);
+            MainLight.colorTemperature = Mathf.Lerp(SunriseKelvin, DayKelvin, progress);
             SunLensFlare.intensity = Mathf.Lerp(LensSunsetIntensity, LensDayIntensity, progress);
+            SunLensFlare.scale = Mathf.Lerp(LensSunsetScale, LensDayScale, progress);
         }
         // 저녁/노울
         else if (angle >= 155f && angle < 180f)
         {
             ChangePhase(TimePhase.Sunset, SunsetSkyBox);
             float progress = Mathf.InverseLerp(155f, 180f, angle);
+            RenderSettings.ambientSkyColor = Color.Lerp(DayColor, SunsetColor, progress);
             MainLight.intensity = Mathf.Lerp(LightDayIntensity, LightSunsetIntensity, progress);
-            MainLight.colorTemperature = Mathf.Lerp(SunsetKelvin, NightKelvin, progress);
+            MainLight.colorTemperature = Mathf.Lerp(DayKelvin, SunsetKelvin, progress);
             SunLensFlare.intensity = Mathf.Lerp(LensDayIntensity, LensSunsetIntensity, progress);
+            SunLensFlare.scale = Mathf.Lerp(LensDayScale, LensSunsetScale, progress);
         }
-        // 밤 ~ 아침
         else
         {
-            SunLensFlare.enabled = false;
             ChangePhase(TimePhase.Night, NightSkyBox);
-            float progress = Mathf.InverseLerp(180f, 360f, angle);
-            MainLight.intensity = Mathf.Lerp(LightNightIntensity, LightSunsetIntensity, progress);
+            //노을에서 밤변경
+            if (angle >= 180f && angle < 205f)
+            {
+                float progress = Mathf.InverseLerp(180f, 205f, angle);
+                RenderSettings.ambientSkyColor = Color.Lerp(SunsetColor, NightColor, progress);
+                MainLight.colorTemperature = Mathf.Lerp(SunsetKelvin, NightKelvin, progress);
+                MainLight.intensity = Mathf.Lerp(LightSunsetIntensity, LightNightIntensity, progress);
+                SunLensFlare.intensity = Mathf.Lerp(LensSunsetIntensity, LensNightIntensity, progress);
+                SunLensFlare.scale = Mathf.Lerp(LensSunsetScale, LensNightScale, progress);
+            }
+            //새벽에서 아침
+            else if (angle > 330f && angle < 360f)
+            {
+                float progress = Mathf.InverseLerp(330f, 360f, angle);
+                //Lighting AmbientColor 설정
+                RenderSettings.ambientSkyColor = Color.Lerp(NightColor, SunriseColor, progress);
+                MainLight.colorTemperature = Mathf.Lerp(NightKelvin, SunriseKelvin, progress);
+                //Light 설정
+                MainLight.intensity = Mathf.Lerp(LightNightIntensity, LightSunsetIntensity, progress);
+                //LensFlare 설정
+                SunLensFlare.intensity = Mathf.Lerp(LensNightIntensity, LensSunsetIntensity, progress);
+                SunLensFlare.scale = Mathf.Lerp(LensNightScale, LensSunsetScale, progress);
+            }
         }
     }
 }
