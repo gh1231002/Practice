@@ -32,8 +32,15 @@ public class RewardManager : MonoBehaviour
         }
         //무기 생성
         GameObject NewWeapon = Instantiate(quset.choices[index].RewardPrefab, TrsWeapon);
-        NewWeapon.transform.localPosition = Vector3.zero;
-        //무기 전달
-        Player.SetWeapon(NewWeapon);
+        if(NewWeapon.layer == LayerMask.NameToLayer("Sword"))
+        {
+            NewWeapon.transform.localPosition = Vector3.zero;
+        }
+        else if(NewWeapon.layer == LayerMask.NameToLayer("WarAxe"))
+        {
+            NewWeapon.transform.localPosition = new Vector3(-0.01f, 0.021f, 1.229f);
+        }
+            //무기 전달
+            Player.SetWeapon(NewWeapon);
     }
 }

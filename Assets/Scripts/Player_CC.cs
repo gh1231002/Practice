@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices.WindowsRuntime;
 using Unity.VisualScripting;
+using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -18,6 +19,10 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     [SerializeField] InputActionProperty IapAttack;
     [SerializeField] InputActionProperty IapLook;
     [SerializeField] InputActionProperty IapInteract;
+    [Header("무기별 애니메이터")]
+    [SerializeField] RuntimeAnimatorController NonCombatController;
+    [SerializeField] RuntimeAnimatorController OneHandSwordController;
+    [SerializeField] RuntimeAnimatorController TwoHandAxeController;
     [Header("무기 관련")]
     [SerializeField] Transform TrsWeapons;
     [SerializeField] Transform AtkPoint;
@@ -58,10 +63,8 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     Animator Anim;
     Transform TrsMainCam;
 
-    AnimatorStateInfo CurAniState;
     Vector3 MoveDir;
     Vector3 KnockBackVelocity = Vector3.zero;
-    Vector2 LookInput;
 
 
     [SerializeField] float VelocityY;
@@ -141,6 +144,29 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         //이벤트 설정
         ChangeHp?.Invoke(CurHp, MaxHp);
         UiManager.Instance.OffTalk += UnlockMove;
+
+        //시작할때 무기를 들고있는지 확인하고 맞는 애니메이터로 교체
+        if(Anim.runtimeAnimatorController == null)
+        {
+            switch (CurrentWeapon)
+            {
+                case null:
+                    Anim.runtimeAnimatorController = NonCombatController;
+                    break;
+                default:
+                    //무기의 레이어가 검이고, 전투모드일때
+                    if (CurrentWeapon.layer == LayerMask.NameToLayer("Sword") && isCombat == true)
+                    {
+                        Anim.runtimeAnimatorController = OneHandSwordController;
+                    }
+                    //무기의 레이어가 도끼이고, 전투모드일때
+                    if (CurrentWeapon.layer == LayerMask.NameToLayer("WarAxe") && isCombat == true)
+                    {
+                        Anim.runtimeAnimatorController = TwoHandAxeController;
+                    }
+                    break;
+            }
+        }
     }
 
     private void OnInputAction()
@@ -177,7 +203,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             InputInteract();
         }
         CheckAni();
-        CheckAniState();
+        CheckRuntimeAnimator();
         CheckRollInvincible();
         PlayerOverLapBoxCheck();
     }
@@ -302,31 +328,17 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         if(IapCrouch.action.WasPressedThisFrame() && isCrouch == false)
         {
             isCrouch = true;
-            StartCoroutine(CrouchRouutine());
+            StartCoroutine(CrouchCoolTime());
         }
         else if(IapCrouch.action.WasPressedThisFrame() && isCrouch == true)
         {
             isCrouch = false;
-            StartCoroutine(CrouchRouutine());
+            StartCoroutine(CrouchCoolTime());
         }
     }
-    IEnumerator CrouchRouutine()
+    IEnumerator CrouchCoolTime()
     {
-        switch (isCrouch)
-        {
-            case true:
-                Anim.SetTrigger("Crouch");
-                yield return new WaitForSeconds(DelayTime);
-                Anim.ResetTrigger("Crouch");
-                break;
-
-            case false:
-                Anim.SetTrigger("Crouch");
-                yield return new WaitForSeconds(DelayTime);
-                Anim.ResetTrigger("Crouch");
-                break;
-        }
-        yield return null;
+        yield return new WaitForSeconds(DelayTime);
     }
 
     private void InputCombat()
@@ -468,19 +480,38 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         if (isDialogue == true) return;
 
         Anim.SetFloat("MoveValue", MoveValue);
-        Anim.SetFloat("CombatValue", CombatValue);
         Anim.SetInteger("CrouchMove", CrouchMove);
         Anim.SetBool("Walk", isWalk);
-        Anim.SetBool("Combat", isCombat);
-        Anim.SetBool("Combo", CanCombo);
         Anim.SetBool("Big Hit", isKnockBack);
+        Anim.SetBool("Crouch", isCrouch);
+        if(isCombat)
+        {
+            Anim.SetBool("Combat", isCombat);
+            Anim.SetBool("Combo", CanCombo);
+            Anim.SetFloat("CombatValue", CombatValue);
+        }
     }
     /// <summary>
-    /// 현재 어떤 애니메이션이 재생중인지 체크하는 함수
+    /// 현재 들고 있는 무기 확인 후 맞는 애니메이터로 변경
     /// </summary>
-    private void CheckAniState()
+    private void CheckRuntimeAnimator()
     {
-        CurAniState = Anim.GetCurrentAnimatorStateInfo(0);
+        //전투 모드상태라면
+       if(isCombat)
+        {
+            if(CurrentWeapon.layer == LayerMask.NameToLayer("Sword"))
+            {
+                Anim.runtimeAnimatorController = OneHandSwordController;
+            }
+            else if(CurrentWeapon.layer == LayerMask.NameToLayer("WarAxe"))
+            {
+                Anim.runtimeAnimatorController = TwoHandAxeController;
+            }
+        }
+        else
+        {
+            Anim.runtimeAnimatorController = NonCombatController;
+        }
     }
 
     private void CheckRollInvincible()

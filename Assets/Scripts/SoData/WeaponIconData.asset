@@ -15,5 +15,5 @@ MonoBehaviour:
   WeaponLayerList:
   - LayerName: Sword
     Icon: {fileID: 21300000, guid: 92b21045451236e44a40851c34fd61ae, type: 3}
-  - LayerName: Hammer
-    Icon: {fileID: 21300000, guid: d5afbaaa35a7f7543bf5eb8764b9de29, type: 3}
+  - LayerName: WarAxe
+    Icon: {fileID: 21300000, guid: fa5bedf12cb00b643892c4edea2a150f, type: 3}

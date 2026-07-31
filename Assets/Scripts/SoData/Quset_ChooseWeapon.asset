@@ -36,6 +36,6 @@ MonoBehaviour:
   ChoiceDialogueIndex: 2
   Choices:
   - ChoiceText: "\uAC80\uC744 \uC120\uD0DD\uD55C\uB2E4."
-    RewardPrefab: {fileID: 9055589456794605990, guid: f7223add5f7ed034ab542d07549655fe, type: 3}
-  - ChoiceText: "\uC804\uD22C\uB9DD\uCE58\uB97C \uC120\uD0DD\uD55C\uB2E4."
-    RewardPrefab: {fileID: 759308911340851766, guid: 1a047cab82cb70e4fa063e5b10daff7d, type: 3}
+    RewardPrefab: {fileID: 2359347438564835141, guid: f69ec5166d9721c4aaba2b2dbd6ef429, type: 3}
+  - ChoiceText: "\uB3C4\uB07C\uB97C \uC120\uD0DD\uD55C\uB2E4."
+    RewardPrefab: {fileID: 9017080916510562497, guid: b9574e84b8118864daa4476f87df0f9f, type: 3}
