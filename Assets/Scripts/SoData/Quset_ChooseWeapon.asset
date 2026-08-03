@@ -26,8 +26,8 @@ MonoBehaviour:
     \uAE30\uB150\uC73C\uB85C \uC120\uBB3C\uC744 \uD558\uB098 \uC8FC\uAC9F\uB124."
   - "\uC6D0\uD558\uB294 \uBB34\uAE30 \uD558\uB098 \uACE8\uB77C\uBCF4\uAC8C\uB098\n\uC774
     \uBB34\uAE30\uAC00 \uC790\uB124\uC758 \uBAA8\uD5D8\uC744 \uD568\uAED8\uD560 \uAC83\uC774\uC57C."
-  - "\uC88B\uC740 \uBB34\uAE30\uB97C \uACE8\uB790\uAD6C\uBA3C!\n\uC774\uC81C \uBD88\uD0A4\uC5D0\uAC8C
-    \uB3CC\uC544\uAC00\uBCF4\uAC8C."
+  - "\uC790\uB124\uC5D0\uAC8C \uC5B4\uC6B8\uB9AC \uBB34\uAE30\uB97C \uACE8\uB790\uAD6C\uBA3C!\n\uC774\uC81C
+    \uBD88\uD0A4\uC5D0\uAC8C \uB3CC\uC544\uAC00\uBCF4\uAC8C."
   RemindDialogues:
   - "\uC544\uC9C1 \uBD88\uD0A4\uD55C\uD14C \uC548\uAC14\uB098?\n\uC5BC\uB978 \uAC00\uBCF4\uC2DC\uAC8C."
   CompleteDialogues:
@@ -35,7 +35,7 @@ MonoBehaviour:
   isChoiceDialogue: 1
   ChoiceDialogueIndex: 2
   Choices:
-  - ChoiceText: "\uAC80\uC744 \uC120\uD0DD\uD55C\uB2E4."
-    RewardPrefab: {fileID: 2359347438564835141, guid: f69ec5166d9721c4aaba2b2dbd6ef429, type: 3}
-  - ChoiceText: "\uB3C4\uB07C\uB97C \uC120\uD0DD\uD55C\uB2E4."
-    RewardPrefab: {fileID: 9017080916510562497, guid: b9574e84b8118864daa4476f87df0f9f, type: 3}
+  - ChoiceText: "\uB871\uC18C\uB4DC"
+    WeaponDate: {fileID: 11400000, guid: 9744e0b9de6eeb4478c9055fc476bdab, type: 2}
+  - ChoiceText: "\uC804\uD22C\uB3C4\uB07C"
+    WeaponDate: {fileID: 11400000, guid: 7b6d08f629169204383e2ff965eb7885, type: 2}

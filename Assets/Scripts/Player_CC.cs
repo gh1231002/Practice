@@ -33,7 +33,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     float PlayerAtkTimer = 0f;
     bool CheckAtk;
     List<ITakeDamage> HitTartgetList = new List<ITakeDamage>();
-    [Header("PlayerSetting")]
+    [Header("플레이어 세팅값")]
     [SerializeField] float MaxHp;
     [SerializeField] float CurHp;
     [SerializeField] float AtkPower;
@@ -43,6 +43,9 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     [SerializeField] float BackJumpForce;
     [SerializeField] float BackJumpSpeed;
     [SerializeField] float KnockBackSpeed;
+    [Header("블렌드 트리 보간 속도")]
+    [Tooltip("값이 작을수록 즉각 반응하고, 크면 부드럽지만 느리게 전환됩니다.")]
+    [SerializeField] float DampTime;
     float CurBackJumpSpeed;
     [Header("회전속도")]
     [SerializeField] float RotationSpeed = 360f;
@@ -479,7 +482,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     {
         if (isDialogue == true) return;
 
-        Anim.SetFloat("MoveValue", MoveValue);
+        Anim.SetFloat("MoveValue", MoveValue, DampTime, Time.deltaTime);
         Anim.SetInteger("CrouchMove", CrouchMove);
         Anim.SetBool("Walk", isWalk);
         Anim.SetBool("Big Hit", isKnockBack);
@@ -681,8 +684,8 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             }
             else
             {
-                //이동속도 0.25배
-                CurSpeed *= 0.25f;
+                //이동속도 0.3배
+                CurSpeed *= 0.3f;
                 //애니메이션value값
                 CrouchMove = 1;
             }

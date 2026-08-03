@@ -9,7 +9,7 @@ public class QuestData : ScriptableObject
     public class ChoiceData
     {
         public string ChoiceText;
-        public GameObject RewardPrefab;
+        public WeaponData WeaponDate;
     }
 
     [Header("퀘스트 기본정보")]

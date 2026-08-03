@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Android;
 
 public class RewardManager : MonoBehaviour
 {
@@ -31,16 +32,10 @@ public class RewardManager : MonoBehaviour
             Destroy(TrsWeapon.GetChild(0).gameObject);
         }
         //무기 생성
-        GameObject NewWeapon = Instantiate(quset.choices[index].RewardPrefab, TrsWeapon);
-        if(NewWeapon.layer == LayerMask.NameToLayer("Sword"))
-        {
-            NewWeapon.transform.localPosition = Vector3.zero;
-        }
-        else if(NewWeapon.layer == LayerMask.NameToLayer("WarAxe"))
-        {
-            NewWeapon.transform.localPosition = new Vector3(-0.01f, 0.021f, 1.229f);
-        }
-            //무기 전달
-            Player.SetWeapon(NewWeapon);
+        GameObject NewWeapon = Instantiate(quset.choices[index].WeaponDate.objWeapon, TrsWeapon);
+        NewWeapon.transform.localPosition = quset.choices[index].WeaponDate.trsWeapon;
+        NewWeapon.transform.localRotation = Quaternion.Euler(quset.choices[index].WeaponDate.rotWeapon);
+        //무기 전달
+        Player.SetWeapon(NewWeapon);
     }
 }

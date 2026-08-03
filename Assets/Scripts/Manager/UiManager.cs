@@ -135,6 +135,8 @@ public class UiManager : MonoBehaviour
                 isChoice = true;
                 ShowChoices();
                 ChoiceUi.SetActive(true);
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
             }
         }
         DialogueIndex++;
@@ -153,6 +155,8 @@ public class UiManager : MonoBehaviour
             btn.onClick.RemoveAllListeners();
             btn.onClick.AddListener(() =>
             {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
                 isChoice = false;
                 ChoiceUi.SetActive(false);
                 RewardManager.instance.CraeteWeapon(index, CurrentQuest);
