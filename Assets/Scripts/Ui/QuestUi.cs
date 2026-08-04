@@ -26,11 +26,7 @@ public class QuestUi : MonoBehaviour
 
             titleText.text = progress.questData.questTitle;
 
-            if(progress.questState == QuestState.CanComplete)
-            {
-                progressText.text = $"완료 가능";
-            }
-            else
+            if (progress.questState != QuestState.CanComplete)
             {
                 progressText.text = $"{progress.currentCount} / {progress.questData.targetCount}";
             }

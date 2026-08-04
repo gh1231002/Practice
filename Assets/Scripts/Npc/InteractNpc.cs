@@ -34,14 +34,17 @@ public class InteractNpc : MonoBehaviour
     public List<QuestData> questList => QuestList;
     public string[] defalutDialogues => DefalutDialogues;
 
+    private void Awake()
+    {
+        InSensor.OnInteract += OnInteractPanel;
+        InSensor.OffInteract += OffInteractPanel;
+        InSensor.StayInteract += Rotation;
+    }
+
     void Start()
     {
         GameObject obj = GameObject.FindWithTag("Player");
         Player = obj.GetComponent<Player_CC>();
-
-        InSensor.OnInteract += OnInteractPanel;
-        InSensor.OffInteract += OffInteractPanel;
-        InSensor.StayInteract += Rotation;
 
         OriginRotation = transform.rotation;
     }

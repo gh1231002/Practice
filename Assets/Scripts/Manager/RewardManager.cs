@@ -36,6 +36,6 @@ public class RewardManager : MonoBehaviour
         NewWeapon.transform.localPosition = quset.choices[index].WeaponDate.trsWeapon;
         NewWeapon.transform.localRotation = Quaternion.Euler(quset.choices[index].WeaponDate.rotWeapon);
         //무기 전달
-        Player.SetWeapon(NewWeapon);
+        Player.SetWeapon(quset.choices[index].WeaponDate,NewWeapon);
     }
 }

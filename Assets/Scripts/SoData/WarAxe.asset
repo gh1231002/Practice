@@ -16,4 +16,5 @@ MonoBehaviour:
   WeaponAtk: 10
   TrsWeapon: {x: 1.013031, y: -0.7649647, z: 0.5280116}
   RotWeapon: {x: -30, y: -4.66, z: 50}
+  AtkHalfBox: {x: 0.45, y: 0.46, z: 0.2}
   ObjWeapon: {fileID: 9017080916510562497, guid: b9574e84b8118864daa4476f87df0f9f, type: 3}

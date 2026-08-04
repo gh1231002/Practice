@@ -23,16 +23,19 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     [SerializeField] RuntimeAnimatorController NonCombatController;
     [SerializeField] RuntimeAnimatorController OneHandSwordController;
     [SerializeField] RuntimeAnimatorController TwoHandAxeController;
-    [Header("무기 관련")]
+    [Header("플레이어 무기 관련 설정")]
     [SerializeField] Transform TrsWeapons;
-    [SerializeField] Transform AtkPoint;
-    [SerializeField] Vector3 AtkHalfBox;
-    GameObject CurrentWeapon;
     [SerializeField] LayerMask TargetLayer;
+    [Tooltip("몇초 동안 공격판정박스를 킬 것인지에 대한 값")]
     [SerializeField] float PlayerAtkDuration;
+
+    GameObject CurrentWeapon;
+    float CurrentWeaponAtk;
+    Vector3 CurrentWeaponAtkHalfBox;
     float PlayerAtkTimer = 0f;
     bool CheckAtk;
     List<ITakeDamage> HitTartgetList = new List<ITakeDamage>();
+
     [Header("플레이어 세팅값")]
     [SerializeField] float MaxHp;
     [SerializeField] float CurHp;
@@ -114,6 +117,18 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     public float ReturnCurHp()
     {
         return CurHp;
+    }
+    public void OnSlashAttack()
+    {
+        if(CurrentWeapon == null) return;
+
+         ParticleSystem[] particles = CurrentWeapon.GetComponentsInChildren<ParticleSystem>();
+
+        foreach(ParticleSystem ps in particles)
+        {
+            ps.Stop();
+            ps.Play();
+        }
     }
 
     private void Awake()
@@ -316,7 +331,11 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         if(isRoll == true) yield break;
         isRoll = true;
         isHit = true;
-
+        //이동입력이 있다면 그 방향으로 회전
+        if(MoveDir.sqrMagnitude > 0.01f)
+        {
+            transform.rotation = Quaternion.LookRotation(MoveDir);
+        }
         Anim.SetTrigger("Roll");
         yield return new WaitForSeconds(DelayTime);
         Anim.ResetTrigger("Roll");
@@ -545,7 +564,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     private void PlayerOverLapBoxCheck()
     {
-        if (CheckAtk == false || AtkPoint == null) return;
+        if (CheckAtk == false || CurrentWeapon == null) return;
 
         PlayerAtkTimer += Time.deltaTime;
         if(PlayerAtkTimer >= PlayerAtkDuration)
@@ -553,14 +572,16 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             CheckAtk = false;
             return;
         }
-        Collider[] HitTargets = Physics.OverlapBox(AtkPoint.position, AtkHalfBox,
-                                AtkPoint.rotation, TargetLayer);
+        Collider[] HitTargets = Physics.OverlapBox(CurrentWeapon.transform.position, CurrentWeaponAtkHalfBox,
+                                CurrentWeapon.transform.rotation, TargetLayer);
         foreach(Collider Target in HitTargets)
         {
             if(Target.TryGetComponent<ITakeDamage>(out var Damage))
             {
+                //리스트에 들어있는데 중복으로 데미지 주는 것 방지용
                 if (HitTartgetList.Contains(Damage)) continue;
-                Damage.TakeDamage(this.gameObject, AtkPower);
+                //플레이어 현재공격력 + 무기 공격력
+                Damage.TakeDamage(this.gameObject, AtkPower + CurrentWeaponAtk);
                 HitTartgetList.Add(Damage);
             }
         }
@@ -727,7 +748,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     /// </summary>
     private void OnAnimatorMove()
     {
-        //구르기 동작때는 본스크립트에서 작동
+        //구르기
         if(isRoll == true && Anim != null)
         {
             //루트모션 키고 루트모션 이동량에 따라 컨트롤러에 값 전달
@@ -735,13 +756,20 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             Vector3 DeltaPosition = Anim.deltaPosition;
             ContPlayer.Move(DeltaPosition);
         }
-
-        //나머지 애니메이션에서 루트모션이 켜질때
-        else if(Anim != null && Anim.applyRootMotion == true)
+        //공격하고있을때
+        else if(Anim != null && isAttack == true)
         {
+            Anim.applyRootMotion = true;
             Vector3 DeltaPosition = Anim.deltaPosition;
             ContPlayer.Move(DeltaPosition);
         }
+
+        //나머지 애니메이션에서 루트모션이 켜질때
+        //else if(Anim != null && Anim.applyRootMotion == true)
+        //{
+        //    Vector3 DeltaPosition = Anim.deltaPosition;
+        //    ContPlayer.Move(DeltaPosition);
+        //}
     }
 
     public void TakeDamage(GameObject Attacker, float Damage)
@@ -772,12 +800,15 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         }
     }
 
-    public void SetWeapon(GameObject Weapon)
+    public void SetWeapon(WeaponData weapondata, GameObject weapon)
     {
-        CurrentWeapon = Weapon;
-        if(Weapon != null)
+        //스크립트용 변수 저장
+        CurrentWeapon = weapon;
+        CurrentWeaponAtk = weapondata.weaponAtk;
+        CurrentWeaponAtkHalfBox = weapondata.atkHalfbox;
+        if(weapon != null)
         {
-            Weapon.SetActive(false);
+            weapon.SetActive(false);
         }
     }
 
@@ -820,16 +851,13 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         CanCombo = false;
     }
 
+    private void EndAttack()
+    {
+        Anim.applyRootMotion = false;
+    }
+
     private void UnlockMove()
     {
         isDialogue = false;
-    }
-
-    private void OnDrawGizmosSelected()
-    {
-        if (AtkPoint == null) return;
-        Gizmos.color = Color.red;
-        Gizmos.matrix = AtkPoint.localToWorldMatrix;
-        Gizmos.DrawWireCube(Vector3.zero, AtkHalfBox * 2f);
     }
 }

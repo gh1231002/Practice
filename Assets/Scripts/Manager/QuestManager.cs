@@ -96,7 +96,23 @@ public class QuestManager : MonoBehaviour
                 //방문 퀘스트 목표 npc와 말을 건 npc가 동일할때
                 if(progress.questData.targetNpcName == npc.npcId)
                 {
-                    progress.questState = QuestState.CanComplete;
+                    //퀘스트 타입에 따라 검사
+                    switch(progress.questData.questType)
+                    {
+                        //단순 대화/보상 수령 퀘스트는 말을 걸면 완료가능 처리
+                        case QuestData.QuestType.General:
+                        case QuestData.QuestType.Reward:
+                            progress.questState = QuestState.CanComplete;
+                            break;
+                        //토벌이나 수집 퀘스트는 현재 진행도가 목표치 이상이어야 완료가능 처리
+                        case QuestData.QuestType.Hunt:
+                        case QuestData.QuestType.Collect:
+                            if(progress.currentCount >= progress.questData.targetCount)
+                            {
+                                progress.questState = QuestState.CanComplete;
+                            }
+                            break;
+                    }
                 }
             }
         }
@@ -197,14 +213,14 @@ public class QuestManager : MonoBehaviour
         questUi.UpdateTrackerUi(ActiveQuests);
     }
     /// <summary>
-    /// 퀘스트 진행 상황 업데이트
+    /// 퀘스트 Ui 진행 상황 업데이트
     /// </summary>
     /// <param name="targetQuest"></param>
     /// <param name="amount"></param>
     public void UpdateQuestProgress(QuestData targetQuest, int amount = 1)
     {
         if(targetQuest == null) return;
-        //진행 중이 퀘스트에서 찾기
+        //진행 중인 퀘스트에서 찾기
         QuestProgress progress = ActiveQuests.Find(p => p.questData == targetQuest);
 
         if(progress != null && progress.questState == QuestState.InProgress)

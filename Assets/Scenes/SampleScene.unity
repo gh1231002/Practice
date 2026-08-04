@@ -7346,6 +7346,10 @@ PrefabInstance:
       value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: 4fe3fdb6c2e26fd4caa6e179e640e61a, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 4fe3fdb6c2e26fd4caa6e179e640e61a, type: 3}
       propertyPath: m_TagString
       value: Player
       objectReference: {fileID: 0}
@@ -8456,7 +8460,7 @@ MonoBehaviour:
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 0
-  m_FillAmount: 0.125
+  m_FillAmount: 1
   m_FillClockwise: 1
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
@@ -13383,8 +13387,6 @@ MonoBehaviour:
   OneHandSwordController: {fileID: 9100000, guid: b15e76791ff764b4791f8772093c1130, type: 2}
   TwoHandAxeController: {fileID: 9100000, guid: 8c41500987c7edc4092351d75a9b6f5a, type: 2}
   TrsWeapons: {fileID: 1175283572}
-  AtkPoint: {fileID: 0}
-  AtkHalfBox: {x: 0, y: 0, z: 0}
   TargetLayer:
     serializedVersion: 2
     m_Bits: 1024
@@ -25307,7 +25309,7 @@ MonoBehaviour:
   m_MinValue: 0
   m_MaxValue: 1
   m_WholeNumbers: 0
-  m_Value: 0.125
+  m_Value: 1
   m_OnValueChanged:
     m_PersistentCalls:
       m_Calls: []

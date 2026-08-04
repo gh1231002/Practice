@@ -43,11 +43,14 @@ public class DayNightCycle : MonoBehaviour
     enum TimePhase { Sunrise, Day, Sunset, Night, None}
     TimePhase CurrentPhase = TimePhase.None;
 
-    private void Start()
+    private void Awake()
     {
         MainLight = GetComponent<Light>();
         SunLensFlare = GetComponent<LensFlareComponentSRP>();
+    }
 
+    private void Start()
+    {
         MainLight.useColorTemperature = true;
         //시작할 때 새벽부터 시작
         CurrentAngle = GetStartAngle(StartTimePhase);

@@ -12,10 +12,6 @@ public class PlayerUi : MonoBehaviour
     {
         GameObject obj = GameObject.FindWithTag("Player");
         Player = obj.GetComponent<Player_CC>();
-    }
-
-    private void Start()
-    {
         Player.ChangeHp += ChangeHpBar;
     }
 

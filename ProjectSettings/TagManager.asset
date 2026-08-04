@@ -9,6 +9,7 @@ TagManager:
   - Wall
   - Monster
   - Npc
+  - Slash
   layers:
   - Default
   - TransparentFX

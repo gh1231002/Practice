@@ -52,22 +52,22 @@ public class UiManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
-    }
-
-    private void Start()
-    {
         GameObject obj = GameObject.FindWithTag("Player");
         Player = obj.GetComponent<Player_CC>();
         characterInfoUI = FindAnyObjectByType<CharacterInfoUI>(FindObjectsInactive.Include);
 
+        InputSystem.onActionChange += SaveDevice;
+        Player.OnDialogue += StartDialoguePanel;
+    }
+
+    private void Start()
+    {
         InteractPanel.SetActive(false);
         DialogueUi.SetActive(false);
         ChoiceUi.SetActive(false);
         InfoPanel.SetActive(false);
         characterInfoUI.gameObject.SetActive(false);
 
-        InputSystem.onActionChange += SaveDevice;
-        Player.OnDialogue += StartDialoguePanel;
         IapCursor.action?.Enable();
         IapCharacterInfo.action?.Enable();
 

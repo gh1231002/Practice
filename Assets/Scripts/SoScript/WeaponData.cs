@@ -8,6 +8,7 @@ public class WeaponData : ScriptableObject
     [SerializeField] float WeaponAtk;
     [SerializeField] Vector3 TrsWeapon;
     [SerializeField] Vector3 RotWeapon;
+    [SerializeField] Vector3 AtkHalfBox;
     [SerializeField] GameObject ObjWeapon;
 
     public string weaponName => WeaponName;
@@ -15,4 +16,5 @@ public class WeaponData : ScriptableObject
     public GameObject objWeapon => ObjWeapon;
     public Vector3 trsWeapon => TrsWeapon;
     public Vector3 rotWeapon => RotWeapon;
+    public Vector3 atkHalfbox => AtkHalfBox;
 }
