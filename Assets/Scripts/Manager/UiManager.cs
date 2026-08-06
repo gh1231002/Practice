@@ -9,19 +9,30 @@ public class UiManager : MonoBehaviour
 {
     [SerializeField] GameObject InteractPanel;
     [SerializeField] GameObject DialogueUi;
-    [SerializeField] GameObject MainUi;
     [SerializeField] GameObject ChoiceUi;
-    [SerializeField] GameObject InfoPanel;
+    [SerializeField] GameObject NoticeUi;
+    [SerializeField] GameObject InfoUi;
+    [SerializeField] GameObject InventoryUi;
+
     [SerializeField] TextMeshProUGUI InteractText;
     [SerializeField] TextMeshProUGUI NpcNameText;
     [SerializeField] TextMeshProUGUI DialogueText;
     [SerializeField] TextMeshProUGUI NextText;
     [SerializeField] TextMeshProUGUI InfoText;
     [SerializeField] TextMeshProUGUI[] BtnText;
+    [SerializeField] TextMeshProUGUI InfoShotCutText;
+    [SerializeField] TextMeshProUGUI InventoryShotCutText;
+
     [SerializeField] InputActionAsset InputActions;
+
     [SerializeField] Button[] BtnChoice;
+    [SerializeField] Button BtnInfo;
+    [SerializeField] Button BtnInventory;
+
     [SerializeField] InputActionProperty IapCursor;
     [SerializeField] InputActionProperty IapCharacterInfo;
+    [SerializeField] InputActionProperty IapInventory;
+    [SerializeField] InputActionProperty IapCancel;
 
     string InteractKey;
     string DeviceGroup;
@@ -33,6 +44,7 @@ public class UiManager : MonoBehaviour
     bool isHolding;
     bool isStatPanel;
     bool isCursorLock;
+    bool isInventory;
 
     Player_CC Player;
     QuestData CurrentQuest;
@@ -65,11 +77,14 @@ public class UiManager : MonoBehaviour
         InteractPanel.SetActive(false);
         DialogueUi.SetActive(false);
         ChoiceUi.SetActive(false);
-        InfoPanel.SetActive(false);
-        characterInfoUI.gameObject.SetActive(false);
+        NoticeUi.SetActive(false);
+        InfoUi.SetActive(false);
+        InventoryUi.SetActive(false);
 
         IapCursor.action?.Enable();
         IapCharacterInfo.action?.Enable();
+        IapInventory.action?.Enable();
+        IapCancel.action?.Enable();
 
         //커서잠금
         Cursor.lockState = CursorLockMode.Locked;
@@ -98,7 +113,6 @@ public class UiManager : MonoBehaviour
     public void StartDialoguePanel()
     {
         InteractPanel.SetActive(false);
-        MainUi.SetActive(false);
         DialogueUi.SetActive(true);
     }
 
@@ -116,7 +130,7 @@ public class UiManager : MonoBehaviour
     {
         if (isChoice)
         {
-            StartInfoPanel("선택지를 골라야 다음으로 넘어갈 수 있습니다.");
+            StartNoticePanel("선택지를 골라야 다음으로 넘어갈 수 있습니다.");
             return;
         }
 
@@ -172,21 +186,20 @@ public class UiManager : MonoBehaviour
         DialogueUi.SetActive(false);
         //대화캠 종료 후 플레이어 카메라로 전환
         DialogueCamManager.Instance.EnddialogueCam();
-        MainUi.SetActive(true);
         InteractPanel.SetActive(true);
         OffTalk?.Invoke();
     }
 
-    public void StartInfoPanel(string info)
+    public void StartNoticePanel(string info)
     {
-        InfoPanel.SetActive(true);
+        NoticeUi.SetActive(true);
         InfoText.text = info;
         Invoke("EndInfoPanel", 0.5f);
     }
 
     public void EndInfoPanel()
     {
-        InfoPanel.SetActive(false);
+        NoticeUi.SetActive(false);
     }
 
     private void SaveDevice(object Obj, InputActionChange Change)
@@ -220,7 +233,14 @@ public class UiManager : MonoBehaviour
     private void Update()
     {
         OnOffCursor();
-        OnOffCharacterInfo();
+        if (IapCharacterInfo.action.WasPressedThisFrame())
+        {
+            ToggleCharacterInfo();
+        }
+        if(IapInventory.action.WasPressedThisFrame())
+        {
+            ToggleInventory();
+        }
     }
 
     private void OnOffCursor()
@@ -243,11 +263,15 @@ public class UiManager : MonoBehaviour
         }
     }
 
-    private void OnOffCharacterInfo()
+    public void ToggleCharacterInfo()
     {
-        if (IapCharacterInfo.action.WasPressedThisFrame() && isStatPanel == false)
+        isStatPanel = InfoUi.activeSelf;
+        //닫혀있다면 열기
+        if (!isStatPanel)
         {
-            characterInfoUI.OnPanel();
+            InfoUi.SetActive(true);
+            InfoUi.transform.SetAsLastSibling();
+            characterInfoUI.SettingStatPanel();
             //플레이어 카메라입력, 시네머신 카메라 입력 제한
             isHolding = true;
             isStatPanel = true;
@@ -255,9 +279,33 @@ public class UiManager : MonoBehaviour
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
-        else if(IapCharacterInfo.action.WasPressedThisFrame() && isStatPanel == true)
+        //열려있다면 닫기
+        else
         {
-            characterInfoUI.OffPanel();
+            InfoUi.SetActive(false);
+            isHolding = false;
+            isStatPanel = false;
+            isCursorLock = false;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+    }
+    public void ToggleInventory()
+    {
+        isInventory = InventoryUi.activeSelf;
+        if(!isInventory)
+        {
+            InventoryUi.SetActive(true);
+            InventoryUi.transform.SetAsLastSibling();
+            isHolding = true;
+            isStatPanel = true;
+            isCursorLock = true;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else
+        {
+            InventoryUi.SetActive(false);
             isHolding = false;
             isStatPanel = false;
             isCursorLock = false;

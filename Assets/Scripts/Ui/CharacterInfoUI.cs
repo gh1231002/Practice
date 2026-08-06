@@ -11,18 +11,12 @@ public class CharacterInfoUI : MonoBehaviour
     [SerializeField] TextMeshProUGUI InfoHpText;
     Player_CC Player;
 
-    public void OnPanel()
+    public void SettingStatPanel()
     {
-        gameObject.SetActive(true);
         GameObject obj = GameObject.FindWithTag("Player");
         Player = obj.GetComponent<Player_CC>();
         UpdateWeaponUi(Player.ReturnWeapon());
         UpdateStatUi(Player.ReturnAtk(), Player.ReturnCurHp());
-    }
-
-    public void OffPanel()
-    {
-        gameObject.SetActive(false);
     }
 
     private void UpdateWeaponUi(GameObject Weapon)

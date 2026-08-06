@@ -379,7 +379,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             }
             else
             {
-                UiManager.Instance.StartInfoPanel("무기가 없습니다.");
+                UiManager.Instance.StartNoticePanel("무기가 없습니다.");
             }
         }
         else if(IapCombat.action.WasPressedThisFrame() && isCombat == true)
