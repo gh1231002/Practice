@@ -291,6 +291,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f871eaf656fe3a94b85cd001e7121f52, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4401022728119812783}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: f871eaf656fe3a94b85cd001e7121f52, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: -7136651991720916198}
   m_SourcePrefab: {fileID: 100100000, guid: f871eaf656fe3a94b85cd001e7121f52, type: 3}
 --- !u!1 &2359347438564835141 stripped
 GameObject:
@@ -311,6 +314,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TestAtkBox
   AtkPoint: {fileID: 2434548902864484385}
   AtkHalfBox: {x: -0.18, y: 0.8, z: 0.1}
+--- !u!114 &-7136651991720916198
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2359347438564835141}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08b754f16b937d246b9954fde7acf59f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponController
+  Data: {fileID: 11400000, guid: 9744e0b9de6eeb4478c9055fc476bdab, type: 2}
 --- !u!4 &3167654869503976959 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: f871eaf656fe3a94b85cd001e7121f52, type: 3}

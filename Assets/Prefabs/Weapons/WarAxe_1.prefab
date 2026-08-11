@@ -43,6 +43,7 @@ GameObject:
   - component: {fileID: 4739775173692984798}
   - component: {fileID: 7359980347611642132}
   - component: {fileID: 5959538940442421926}
+  - component: {fileID: 6164817136952930928}
   m_Layer: 7
   m_Name: WarAxe_1
   m_TagString: Weapons
@@ -138,6 +139,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::TestAtkBox
   AtkPoint: {fileID: 8852134531495486978}
   AtkHalfBox: {x: 0.45, y: 0.46, z: 0.2}
+--- !u!114 &6164817136952930928
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9017080916510562497}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08b754f16b937d246b9954fde7acf59f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WeaponController
+  Data: {fileID: 11400000, guid: 7b6d08f629169204383e2ff965eb7885, type: 2}
 --- !u!1001 &3979302638633729276
 PrefabInstance:
   m_ObjectHideFlags: 0

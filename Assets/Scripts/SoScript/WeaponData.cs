@@ -1,17 +1,15 @@
 using UnityEngine;
 
 [CreateAssetMenu(fileName = "WeaponData", menuName = "Scriptable Objects/WeaponData")]
-public class WeaponData : ScriptableObject
+public class WeaponData : ItemData
 {
     [Header("무기 정보")]
-    [SerializeField] string WeaponName;
     [SerializeField] float WeaponAtk;
     [SerializeField] Vector3 TrsWeapon;
     [SerializeField] Vector3 RotWeapon;
     [SerializeField] Vector3 AtkHalfBox;
     [SerializeField] GameObject ObjWeapon;
 
-    public string weaponName => WeaponName;
     public float weaponAtk => WeaponAtk;
     public GameObject objWeapon => ObjWeapon;
     public Vector3 trsWeapon => TrsWeapon;

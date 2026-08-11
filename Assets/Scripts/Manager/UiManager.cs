@@ -10,9 +10,9 @@ public class UiManager : MonoBehaviour
     [SerializeField] GameObject InteractPanel;
     [SerializeField] GameObject DialogueUi;
     [SerializeField] GameObject ChoiceUi;
-    [SerializeField] GameObject NoticeUi;
-    [SerializeField] GameObject InfoUi;
-    [SerializeField] GameObject InventoryUi;
+    [SerializeField] GameObject NoticePanel;
+    [SerializeField] GameObject InfoPanel;
+    [SerializeField] GameObject InventoryPanel;
 
     [SerializeField] TextMeshProUGUI InteractText;
     [SerializeField] TextMeshProUGUI NpcNameText;
@@ -77,9 +77,9 @@ public class UiManager : MonoBehaviour
         InteractPanel.SetActive(false);
         DialogueUi.SetActive(false);
         ChoiceUi.SetActive(false);
-        NoticeUi.SetActive(false);
-        InfoUi.SetActive(false);
-        InventoryUi.SetActive(false);
+        NoticePanel.SetActive(false);
+        InfoPanel.SetActive(false);
+        InventoryPanel.SetActive(false);
 
         IapCursor.action?.Enable();
         IapCharacterInfo.action?.Enable();
@@ -192,14 +192,14 @@ public class UiManager : MonoBehaviour
 
     public void StartNoticePanel(string info)
     {
-        NoticeUi.SetActive(true);
+        NoticePanel.SetActive(true);
         InfoText.text = info;
         Invoke("EndInfoPanel", 0.5f);
     }
 
     public void EndInfoPanel()
     {
-        NoticeUi.SetActive(false);
+        NoticePanel.SetActive(false);
     }
 
     private void SaveDevice(object Obj, InputActionChange Change)
@@ -265,12 +265,12 @@ public class UiManager : MonoBehaviour
 
     public void ToggleCharacterInfo()
     {
-        isStatPanel = InfoUi.activeSelf;
+        isStatPanel = InfoPanel.activeSelf;
         //닫혀있다면 열기
         if (!isStatPanel)
         {
-            InfoUi.SetActive(true);
-            InfoUi.transform.SetAsLastSibling();
+            InfoPanel.SetActive(true);
+            InfoPanel.transform.SetAsLastSibling();
             characterInfoUI.SettingStatPanel();
             //플레이어 카메라입력, 시네머신 카메라 입력 제한
             isHolding = true;
@@ -282,7 +282,7 @@ public class UiManager : MonoBehaviour
         //열려있다면 닫기
         else
         {
-            InfoUi.SetActive(false);
+            InfoPanel.SetActive(false);
             isHolding = false;
             isStatPanel = false;
             isCursorLock = false;
@@ -292,11 +292,11 @@ public class UiManager : MonoBehaviour
     }
     public void ToggleInventory()
     {
-        isInventory = InventoryUi.activeSelf;
+        isInventory = InventoryPanel.activeSelf;
         if(!isInventory)
         {
-            InventoryUi.SetActive(true);
-            InventoryUi.transform.SetAsLastSibling();
+            InventoryPanel.SetActive(true);
+            InventoryPanel.transform.SetAsLastSibling();
             isHolding = true;
             isStatPanel = true;
             isCursorLock = true;
@@ -305,7 +305,7 @@ public class UiManager : MonoBehaviour
         }
         else
         {
-            InventoryUi.SetActive(false);
+            InventoryPanel.SetActive(false);
             isHolding = false;
             isStatPanel = false;
             isCursorLock = false;

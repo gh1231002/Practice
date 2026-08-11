@@ -30,11 +30,14 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     [SerializeField] float PlayerAtkDuration;
 
     GameObject CurrentWeapon;
+    WeaponData currentWeaponData;
     float CurrentWeaponAtk;
     Vector3 CurrentWeaponAtkHalfBox;
     float PlayerAtkTimer = 0f;
     bool CheckAtk;
     List<ITakeDamage> HitTartgetList = new List<ITakeDamage>();
+
+    public WeaponData CurrentWeaponData => currentWeaponData;
 
     [Header("플레이어 세팅값")]
     [SerializeField] float MaxHp;
@@ -117,6 +120,10 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     public float ReturnCurHp()
     {
         return CurHp;
+    }
+    public float ReturnCurrentWeaponAtk()
+    {
+        return CurrentWeaponAtk;
     }
     public void OnSlashAttack()
     {
@@ -804,6 +811,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     {
         //스크립트용 변수 저장
         CurrentWeapon = weapon;
+        currentWeaponData = weapondata;
         CurrentWeaponAtk = weapondata.weaponAtk;
         CurrentWeaponAtkHalfBox = weapondata.atkHalfbox;
         if(weapon != null)

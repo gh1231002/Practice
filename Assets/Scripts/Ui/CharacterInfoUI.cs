@@ -16,33 +16,44 @@ public class CharacterInfoUI : MonoBehaviour
         GameObject obj = GameObject.FindWithTag("Player");
         Player = obj.GetComponent<Player_CC>();
         UpdateWeaponUi(Player.ReturnWeapon());
-        UpdateStatUi(Player.ReturnAtk(), Player.ReturnCurHp());
+        UpdateStatUi(Player.ReturnAtk(), Player.ReturnCurHp(),Player.ReturnCurrentWeaponAtk());
     }
 
     private void UpdateWeaponUi(GameObject Weapon)
     {
-        if(Weapon == null)
+        WeaponData currentWeaponData = null;
+        if (Weapon == null)
         {
             WeaponIconImage.sprite = EmptyWeaponSprite;
             WeaponIconImage.color = new Color(1f, 1f, 1f, 0.02f);
             return;
         }
-
-        int layerIndex = Weapon.layer;
-        string layerName = LayerMask.LayerToName(layerIndex);
-        
-        Sprite weaponIcon = WeaponIcon.GetIconByLayerName(layerName);
-
-        if(weaponIcon != null)
+        else
         {
-            WeaponIconImage.sprite = weaponIcon;
-            WeaponIconImage.color = new Color(1f, 1f, 1f, 1f);
+            WeaponController weaponCtrl = Weapon.GetComponent<WeaponController>();
+            if (weaponCtrl != null)
+            {
+                currentWeaponData = weaponCtrl.weaponData;
+            }
         }
+        WeaponIconImage.sprite = currentWeaponData.itemIcon;
+        WeaponIconImage.color = new Color(1f, 1f, 1f, 1f);
+
+        //int layerIndex = Weapon.layer;
+        //string layerName = LayerMask.LayerToName(layerIndex);
+        
+        //Sprite weaponIcon = WeaponIcon.GetIconByLayerName(layerName);
+        
+        //if(weaponIcon != null)
+        //{
+        //    WeaponIconImage.sprite = weaponIcon;
+        //    WeaponIconImage.color = new Color(1f, 1f, 1f, 1f);
+        //}
     }
 
-    private void UpdateStatUi(float atk, float hp)
+    private void UpdateStatUi(float playeratk, float hp, float weaponatk)
     {
-        InfoAtkText.text = $"공격력: {atk}";
+        InfoAtkText.text = $"공격력: ({playeratk} + {weaponatk})";
         InfoHpText.text = $"체력: {hp}";
     }
 }
