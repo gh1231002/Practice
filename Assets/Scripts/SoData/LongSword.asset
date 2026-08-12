@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WeaponData
   ItemName: "\uB871\uC18C\uB4DC"
   ItemIcon: {fileID: 21300000, guid: 4644bf3afcbbb4c44bef106fb3507e7c, type: 3}
-  ItemInfo: "\uCD08\uBCF4 \uBAA8\uD5D8\uAC00\uB97C \uC704\uD574 \uB9CC\uB4E4\uC5B4\uC9C4
-    \uB871\uC18C\uB4DC."
+  ItemInfo: "\uC2E0\uCC38\uC744 \uC704\uD574 \uB9CC\uB4E4\uC5B4\uC9C4 \uBCF4\uAE09\uD615
+    \uAC80."
   IsStackable: 0
   WeaponAtk: 10
   TrsWeapon: {x: 0.09, y: -0.09, z: 0.065}

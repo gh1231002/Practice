@@ -7,7 +7,7 @@ public class InventoryUi : MonoBehaviour
     [SerializeField] GameObject SlotPrefab;
     [SerializeField] Transform SlotGroup;
 
-    List<SlotUi> slotList = new List<SlotUi>();
+    List<InventorySlotUi> slotList = new List<InventorySlotUi>();
 
     PlayerInventory Inventory;
     Player_CC Player;
@@ -17,13 +17,17 @@ public class InventoryUi : MonoBehaviour
         GameObject obj = GameObject.FindWithTag("Player");
         Inventory = obj.GetComponent<PlayerInventory>();
         Player = obj.GetComponent<Player_CC>();
-        SetSlot();
-
+        
         //playerinventory의 데이터 변경 이벤트 구독
         if(Inventory != null)
         {
             Inventory.OnInventoryChanged += RefreshInventoryUi;
         }
+    }
+
+    private void Start()
+    {
+        SetSlot();
     }
 
     private void OnEnable()
@@ -47,7 +51,7 @@ public class InventoryUi : MonoBehaviour
         {
             GameObject obj = Instantiate(SlotPrefab, SlotGroup);
 
-            SlotUi slotUi = obj.GetComponent<SlotUi>();
+            InventorySlotUi slotUi = obj.GetComponent<InventorySlotUi>();
             slotUi.InitSlot(i);
 
             slotList.Add(slotUi);

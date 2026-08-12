@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class SlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [SerializeField] Image ItemIcon;
     [SerializeField] TextMeshProUGUI QuantiyuText;

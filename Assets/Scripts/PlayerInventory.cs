@@ -59,7 +59,7 @@ public class PlayerInventory : MonoBehaviour
     //특정 인덱스의 슬롯 데이터를 반환하는 함수
     public InventorySlot Getslot(int index)
     {
-        if(index < 0 || index >= MaxCapacity) return null;
+        if(index < 0 || index >= Slots.Length || Slots == null) return null;
         return Slots[index];
     }
 
@@ -95,5 +95,21 @@ public class PlayerInventory : MonoBehaviour
 
         //빈 칸도 없다면 가득 찬 상태
         UiManager.Instance.StartNoticePanel("인벤토리가 가득 찼습니다.");
+    }
+
+    // 인벤토리에 특정 itemdata가 존재하는지 체크
+    public bool HasItem(ItemData item)
+    {
+        for(int i = 0; i < Slots.Length; i++)
+        {
+            if (Slots[i] != null && !Slots[i].IsEmpty)
+            {
+                if (Slots[i].itemData == item)
+                {
+                    return true; // 소지중
+                }
+            }
+        }
+        return false; // 미소지
     }
 }

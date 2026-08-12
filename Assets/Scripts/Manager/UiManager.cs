@@ -1,5 +1,5 @@
 using System;
-using System.Globalization;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -13,6 +13,7 @@ public class UiManager : MonoBehaviour
     [SerializeField] GameObject NoticePanel;
     [SerializeField] GameObject InfoPanel;
     [SerializeField] GameObject InventoryPanel;
+    [SerializeField] GameObject ShopPanel;
 
     [SerializeField] TextMeshProUGUI InteractText;
     [SerializeField] TextMeshProUGUI NpcNameText;
@@ -20,22 +21,28 @@ public class UiManager : MonoBehaviour
     [SerializeField] TextMeshProUGUI NextText;
     [SerializeField] TextMeshProUGUI InfoText;
     [SerializeField] TextMeshProUGUI[] BtnText;
-    [SerializeField] TextMeshProUGUI InfoShotCutText;
-    [SerializeField] TextMeshProUGUI InventoryShotCutText;
+    [SerializeField] TextMeshProUGUI InfoShortCutText;
+    [SerializeField] TextMeshProUGUI InventoryShortCutText;
+    [SerializeField] TextMeshProUGUI ShopShortCutText;
 
     [SerializeField] InputActionAsset InputActions;
 
     [SerializeField] Button[] BtnChoice;
     [SerializeField] Button BtnInfo;
     [SerializeField] Button BtnInventory;
+    [SerializeField] Button BtnShop;
 
     [SerializeField] InputActionProperty IapCursor;
     [SerializeField] InputActionProperty IapCharacterInfo;
     [SerializeField] InputActionProperty IapInventory;
+    [SerializeField] InputActionProperty IapShop;
     [SerializeField] InputActionProperty IapCancel;
 
     string InteractKey;
-    string DeviceGroup;
+    string InventoryKey;
+    string ShopKey;
+    string CharacterInfoKey;
+    string DeviceGroup = "Keyboard&Mouse";
     string[] DialoguesList;
 
     int DialogueIndex;
@@ -45,10 +52,14 @@ public class UiManager : MonoBehaviour
     bool isStatPanel;
     bool isCursorLock;
     bool isInventory;
+    bool isShop;
 
     Player_CC Player;
     QuestData CurrentQuest;
     CharacterInfoUI characterInfoUI;
+
+    [SerializeField]List<GameObject> ListStack = new List<GameObject>();
+
     public event Action OffTalk;
 
     public static UiManager Instance;
@@ -72,6 +83,12 @@ public class UiManager : MonoBehaviour
         Player.OnDialogue += StartDialoguePanel;
     }
 
+    private void OnDestroy()
+    {
+        InputSystem.onActionChange -= SaveDevice;
+        if(Player != null) Player.OnDialogue -= StartDialoguePanel;
+    }
+
     private void Start()
     {
         InteractPanel.SetActive(false);
@@ -80,21 +97,32 @@ public class UiManager : MonoBehaviour
         NoticePanel.SetActive(false);
         InfoPanel.SetActive(false);
         InventoryPanel.SetActive(false);
+        ShopPanel.SetActive(false);
 
         IapCursor.action?.Enable();
         IapCharacterInfo.action?.Enable();
         IapInventory.action?.Enable();
         IapCancel.action?.Enable();
+        IapShop.action?.Enable();
 
         //커서잠금
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+        //게임 시작시 기본 디바이스 기준으로 전체 ui 숏컷 텍스트 1회 초기화
+        UpdateAllShortcutText();
+    }
+
+    public void UpdateAllShortcutText()
+    {
+        ShowCharacterInfoKey();
+        ShowInteractKey();
+        ShowInventoryKey();
+        ShowShopKey();
     }
 
     public void OnInteractPanel()
     {
         InteractPanel.SetActive(true);
-        ShowInteractKey();
     }
 
     private void ShowInteractKey()
@@ -103,6 +131,27 @@ public class UiManager : MonoBehaviour
             .FindAction("Interact").GetBindingDisplayString(group: DeviceGroup);
 
         InteractText.text = $"[{InteractKey} 대화하기]";
+    }
+
+    private void ShowCharacterInfoKey()
+    {
+        CharacterInfoKey = InputActions.FindActionMap("Player")
+            .FindAction("CharacterInfo").GetBindingDisplayString (group: DeviceGroup);
+        InfoShortCutText.text = $"[ {CharacterInfoKey} ]";
+    }
+
+    private void ShowInventoryKey()
+    {
+        InventoryKey = InputActions.FindActionMap("Player")
+            .FindAction("Inventory").GetBindingDisplayString(group: DeviceGroup);
+        InventoryShortCutText.text = $"[ {InventoryKey} ]";
+    }
+
+    private void ShowShopKey()
+    {
+        ShopKey = InputActions.FindActionMap("Player")
+            .FindAction("Shop").GetBindingDisplayString(group: DeviceGroup);
+        ShopShortCutText.text = $"[ {ShopKey} ]";
     }
 
     public void OffInteractPanel()
@@ -212,6 +261,7 @@ public class UiManager : MonoBehaviour
             if (Action != null && Action.activeControl != null)
             {
                 var DeviceName = Action.activeControl.device.name;
+                string newDeviceGroup = DeviceGroup;
 
                 if (DeviceName.Contains("Keyboard") || DeviceName.Contains("Mouse"))
                 {
@@ -220,6 +270,12 @@ public class UiManager : MonoBehaviour
                 else if (DeviceName.Contains("Gamepad"))
                 {
                     DeviceGroup = "Gamepad";
+                }
+                //장치 그룹이 실제로 변경외었을 때만 ui 전체 갱신
+                if(DeviceGroup != newDeviceGroup)
+                {
+                    DeviceGroup = newDeviceGroup;
+                    UpdateAllShortcutText();
                 }
             }
         }
@@ -233,13 +289,21 @@ public class UiManager : MonoBehaviour
     private void Update()
     {
         OnOffCursor();
-        if (IapCharacterInfo.action.WasPressedThisFrame())
+        if(IapCharacterInfo.action.WasPressedThisFrame())
         {
             ToggleCharacterInfo();
         }
         if(IapInventory.action.WasPressedThisFrame())
         {
             ToggleInventory();
+        }
+        if(IapShop.action.WasPressedThisFrame())
+        {
+            ToggleShop();
+        }
+        if(IapCancel.action.WasPressedThisFrame())
+        {
+            ExitWindow();
         }
     }
 
@@ -270,6 +334,7 @@ public class UiManager : MonoBehaviour
         if (!isStatPanel)
         {
             InfoPanel.SetActive(true);
+            ListStack.Add(InfoPanel);
             InfoPanel.transform.SetAsLastSibling();
             characterInfoUI.SettingStatPanel();
             //플레이어 카메라입력, 시네머신 카메라 입력 제한
@@ -283,6 +348,7 @@ public class UiManager : MonoBehaviour
         else
         {
             InfoPanel.SetActive(false);
+            ListStack.Remove(InfoPanel);
             isHolding = false;
             isStatPanel = false;
             isCursorLock = false;
@@ -296,9 +362,10 @@ public class UiManager : MonoBehaviour
         if(!isInventory)
         {
             InventoryPanel.SetActive(true);
+            ListStack.Add(InventoryPanel);
             InventoryPanel.transform.SetAsLastSibling();
             isHolding = true;
-            isStatPanel = true;
+            isInventory = true;
             isCursorLock = true;
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
@@ -306,8 +373,54 @@ public class UiManager : MonoBehaviour
         else
         {
             InventoryPanel.SetActive(false);
+            ListStack.Remove(InventoryPanel);
             isHolding = false;
-            isStatPanel = false;
+            isInventory = false;
+            isCursorLock = false;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+    }
+    public void ToggleShop()
+    {
+        isShop = ShopPanel.activeSelf;
+
+        if(!isShop)
+        {
+            ShopPanel.SetActive(true);
+            ListStack.Add(ShopPanel);
+            ShopPanel.transform.SetAsLastSibling();
+            isHolding = true;
+            isShop = true;
+            isCursorLock = true;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+        else
+        {
+            ShopPanel.SetActive(false);
+            ListStack.Remove(ShopPanel);
+            isHolding = false;
+            isShop = false;
+            isCursorLock = false;
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+    }
+    private void ExitWindow()
+    {
+        // List 목록에 등록된 창이 있는지 확인
+        if(ListStack.Count > 0)
+        {
+            // 목록이 있다면 맨 마지막 창 하나만 닫고 List 목록에서 제거
+            int lastIndex = ListStack.Count - 1;
+            ListStack[lastIndex].gameObject.SetActive(false);
+            ListStack.RemoveAt(lastIndex);
+        }
+        // 남아있는 창의 개수가 0개라면 마우스 커서를 잠그고 플레이어 조작모드로 전환
+        if(ListStack.Count == 0)
+        {
+            isHolding = false;
             isCursorLock = false;
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
