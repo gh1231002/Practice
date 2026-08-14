@@ -14,4 +14,9 @@ public class ItemData : ScriptableObject
     public virtual string itemInfo => ItemInfo;
     public Sprite itemIcon => ItemIcon;
     public bool isStackable => IsStackable;
+
+    public virtual void UseItem(Player_CC player)
+    {
+
+    }
 }

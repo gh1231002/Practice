@@ -26,14 +26,11 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     [Header("플레이어 무기 관련 설정")]
     [SerializeField] Transform TrsWeapons;
     [SerializeField] LayerMask TargetLayer;
-    [Tooltip("몇초 동안 공격판정박스를 킬 것인지에 대한 값")]
-    [SerializeField] float PlayerAtkDuration;
 
     GameObject CurrentWeapon;
     WeaponData currentWeaponData;
     float CurrentWeaponAtk;
     Vector3 CurrentWeaponAtkHalfBox;
-    float PlayerAtkTimer = 0f;
     bool CheckAtk;
     List<ITakeDamage> HitTartgetList = new List<ITakeDamage>();
 
@@ -99,6 +96,8 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     bool isAttack;
     bool isInteract;
     bool isDialogue;
+    bool isWeaponUnlock;
+
     //이벤트 함수들
     public event Action<float,float> ChangeHp;
     public event Action OnDialogue;
@@ -124,6 +123,10 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     public float ReturnCurrentWeaponAtk()
     {
         return CurrentWeaponAtk;
+    }
+    public bool ReturnWeaponUnlock()
+    {
+        return isWeaponUnlock;
     }
     public void OnSlashAttack()
     {
@@ -562,23 +565,20 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         }
     }
 
-    private void StartAtk()
+    private void StartAtkBox()
     {
         CheckAtk = true;
-        PlayerAtkTimer = 0f;
         HitTartgetList.Clear();
+    }
+    private void EndAtkBox()
+    {
+        CheckAtk = false;
     }
 
     private void PlayerOverLapBoxCheck()
     {
         if (CheckAtk == false || CurrentWeapon == null) return;
 
-        PlayerAtkTimer += Time.deltaTime;
-        if(PlayerAtkTimer >= PlayerAtkDuration)
-        {
-            CheckAtk = false;
-            return;
-        }
         Collider[] HitTargets = Physics.OverlapBox(CurrentWeapon.transform.position, CurrentWeaponAtkHalfBox,
                                 CurrentWeapon.transform.rotation, TargetLayer);
         foreach(Collider Target in HitTargets)
@@ -809,15 +809,22 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     public void SetWeapon(WeaponData weapondata, GameObject weapon)
     {
+        //퀘스트로 얻은 무기라면
+        if(weapon != null && CurrentWeapon == null)
+        {
+            weapon.SetActive(false);
+            isWeaponUnlock = true;
+        }
+        else
+        {
+            weapon.SetActive(false);
+        }
+
         //스크립트용 변수 저장
         CurrentWeapon = weapon;
         currentWeaponData = weapondata;
         CurrentWeaponAtk = weapondata.weaponAtk;
         CurrentWeaponAtkHalfBox = weapondata.atkHalfbox;
-        if(weapon != null)
-        {
-            weapon.SetActive(false);
-        }
     }
 
     IEnumerator Invincible(Vector3 Pos, float Timer)

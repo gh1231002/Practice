@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler
 {
     [SerializeField] Image ItemIcon;
     [SerializeField] TextMeshProUGUI QuantiyuText;
@@ -14,6 +14,29 @@ public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExit
     public ItemData CurrentItem { get; private set; }
 
     bool isEmpty => CurrentItem == null;
+
+    Player_CC player;
+
+    private void Awake()
+    {
+        GameObject obj = GameObject.FindWithTag("Player");
+        if (obj != null)
+        {
+            player = obj.GetComponent<Player_CC>();
+        }
+    }
+
+    void IPointerClickHandler.OnPointerClick(PointerEventData eventData)
+    {
+        // 빈 슬롯이거나. 아이템이 없으면 리턴
+        if (isEmpty || CurrentItem == null || player == null) return;
+
+        // 마우스 좌클릭일때
+        if (eventData.button == PointerEventData.InputButton.Left)
+        {
+
+        }
+    }
 
     public void InitSlot(int index)
     {

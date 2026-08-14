@@ -4,8 +4,8 @@ using UnityEngine.Rendering;
 public class DayNightCycle : MonoBehaviour
 {
     [Header("시간 설정")]
-    [Tooltip("하루가 지나는 속도 (값이 클수록 빠름")]
-    [SerializeField] float DayTime;
+    [Tooltip("하루가 지나는 실제 시간 (분 단위)")]
+    [SerializeField] float DayDurationInMinutes;
     [Header("시작 시간대 설정")]
     [SerializeField] TimePhase StartTimePhase;
     [Header("시간대별 Kelvin 프리셋")]
@@ -52,7 +52,7 @@ public class DayNightCycle : MonoBehaviour
     private void Start()
     {
         MainLight.useColorTemperature = true;
-        //시작할 때 새벽부터 시작
+        //시작할 때 인스펙터 설정한 시간대부터 시작
         CurrentAngle = GetStartAngle(StartTimePhase);
         CheckTimeOfDay(CurrentAngle);
         //시작 회전값 설정 및 변수에 저장
@@ -79,8 +79,10 @@ public class DayNightCycle : MonoBehaviour
 
     private void Update()
     {
+        //하루(360도)를 (분 * 60초)로 나누어 초당 회전 각도 계산
+        float daytime = 360f / (DayDurationInMinutes * 60f);
         //시간에 따라 회전값 증가
-        CurrentAngle += DayTime * Time.deltaTime;
+        CurrentAngle += daytime * Time.deltaTime;
         if (CurrentAngle > 360f)
         {
             CurrentAngle = 0f;

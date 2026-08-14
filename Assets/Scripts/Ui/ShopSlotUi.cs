@@ -1,5 +1,6 @@
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class ShopSlotUi : MonoBehaviour
@@ -46,6 +47,14 @@ public class ShopSlotUi : MonoBehaviour
         // 무기 아이템인 경우 소지/장착 여부 확인
         if(itemData is WeaponData weaponData)
         {
+            // 퀘스트 완료 상태인지 확인
+            if(player.ReturnWeaponUnlock() == false)
+            {
+                BtnBuy.interactable = false;
+                BtnBuyText.text = "구매불가";
+                return;
+            }
+
             // 현재 장착 중인지
             bool isEquipped = (player.CurrentWeaponData == weaponData);
             // 인벤토리에 보관 중인지

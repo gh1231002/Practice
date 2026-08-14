@@ -58,7 +58,7 @@ public class UiManager : MonoBehaviour
     QuestData CurrentQuest;
     CharacterInfoUI characterInfoUI;
 
-    [SerializeField]List<GameObject> ListStack = new List<GameObject>();
+    [SerializeField]List<GameObject> PanelList = new List<GameObject>();
 
     public event Action OffTalk;
 
@@ -198,10 +198,12 @@ public class UiManager : MonoBehaviour
                 isChoice = true;
                 ShowChoices();
                 ChoiceUi.SetActive(true);
+                isCursorLock = true;
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
             }
         }
+        isCursorLock = false;
         DialogueIndex++;
     }
 
@@ -309,7 +311,7 @@ public class UiManager : MonoBehaviour
 
     private void OnOffCursor()
     {
-        //캐릭터 정보창이 On이라면 커서 On/Off 입력 작동안함
+        //창이 열려있다면 커서 On/Off 입력 작동안함
         if (isCursorLock == true) return;
         //키 입력 중인지 확인
         isHolding = IapCursor.action.IsPressed();
@@ -334,26 +336,18 @@ public class UiManager : MonoBehaviour
         if (!isStatPanel)
         {
             InfoPanel.SetActive(true);
-            ListStack.Add(InfoPanel);
+            PanelList.Add(InfoPanel);
             InfoPanel.transform.SetAsLastSibling();
             characterInfoUI.SettingStatPanel();
-            //플레이어 카메라입력, 시네머신 카메라 입력 제한
-            isHolding = true;
-            isStatPanel = true;
-            isCursorLock = true;
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+
+            RefreshCursorState();
         }
         //열려있다면 닫기
         else
         {
             InfoPanel.SetActive(false);
-            ListStack.Remove(InfoPanel);
-            isHolding = false;
-            isStatPanel = false;
-            isCursorLock = false;
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            PanelList.Remove(InfoPanel);
+            RefreshCursorState();
         }
     }
     public void ToggleInventory()
@@ -362,23 +356,15 @@ public class UiManager : MonoBehaviour
         if(!isInventory)
         {
             InventoryPanel.SetActive(true);
-            ListStack.Add(InventoryPanel);
+            PanelList.Add(InventoryPanel);
             InventoryPanel.transform.SetAsLastSibling();
-            isHolding = true;
-            isInventory = true;
-            isCursorLock = true;
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            RefreshCursorState();
         }
         else
         {
             InventoryPanel.SetActive(false);
-            ListStack.Remove(InventoryPanel);
-            isHolding = false;
-            isInventory = false;
-            isCursorLock = false;
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            PanelList.Remove(InventoryPanel);
+            RefreshCursorState();
         }
     }
     public void ToggleShop()
@@ -388,42 +374,41 @@ public class UiManager : MonoBehaviour
         if(!isShop)
         {
             ShopPanel.SetActive(true);
-            ListStack.Add(ShopPanel);
+            PanelList.Add(ShopPanel);
             ShopPanel.transform.SetAsLastSibling();
-            isHolding = true;
-            isShop = true;
-            isCursorLock = true;
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            RefreshCursorState();
         }
         else
         {
             ShopPanel.SetActive(false);
-            ListStack.Remove(ShopPanel);
-            isHolding = false;
-            isShop = false;
-            isCursorLock = false;
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            PanelList.Remove(ShopPanel);
+            RefreshCursorState();
         }
     }
     private void ExitWindow()
     {
         // List 목록에 등록된 창이 있는지 확인
-        if(ListStack.Count > 0)
+        if(PanelList.Count > 0)
         {
             // 목록이 있다면 맨 마지막 창 하나만 닫고 List 목록에서 제거
-            int lastIndex = ListStack.Count - 1;
-            ListStack[lastIndex].gameObject.SetActive(false);
-            ListStack.RemoveAt(lastIndex);
+            int lastIndex = PanelList.Count - 1;
+            PanelList[lastIndex].gameObject.SetActive(false);
+            PanelList.RemoveAt(lastIndex);
         }
         // 남아있는 창의 개수가 0개라면 마우스 커서를 잠그고 플레이어 조작모드로 전환
-        if(ListStack.Count == 0)
+        if(PanelList.Count == 0)
         {
-            isHolding = false;
-            isCursorLock = false;
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            RefreshCursorState();
         }
+    }
+    private void RefreshCursorState()
+    {
+        // 열려있는 창이 있다면 커서 보이게, 0개라면 커서 숨기기
+        bool hasOpenPanel = PanelList.Count > 0;
+        isCursorLock = hasOpenPanel;
+        isHolding = hasOpenPanel;
+
+        Cursor.lockState = hasOpenPanel ? CursorLockMode.None : CursorLockMode.Locked;
+        Cursor.visible = hasOpenPanel;
     }
 }

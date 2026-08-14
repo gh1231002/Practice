@@ -23,10 +23,6 @@ public class InventoryUi : MonoBehaviour
         {
             Inventory.OnInventoryChanged += RefreshInventoryUi;
         }
-    }
-
-    private void Start()
-    {
         SetSlot();
     }
 

@@ -15,4 +15,9 @@ public class WeaponData : ItemData
     public Vector3 trsWeapon => TrsWeapon;
     public Vector3 rotWeapon => RotWeapon;
     public Vector3 atkHalfbox => AtkHalfBox;
+
+    public override void UseItem(Player_CC player)
+    {
+        UiManager.Instance.StartNoticePanel("무기를 장착했습니다.");
+    }
 }
