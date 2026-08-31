@@ -6,6 +6,7 @@ using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static UnityEngine.CullingGroup;
 
 public class Player_CC : MonoBehaviour, ITakeDamage
 {
@@ -68,6 +69,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     CharacterController ContPlayer;
     Animator Anim;
     Transform TrsMainCam;
+    EquipmentSystem equipSys;
 
     Vector3 MoveDir;
     Vector3 KnockBackVelocity = Vector3.zero;
@@ -96,7 +98,6 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     bool isAttack;
     bool isInteract;
     bool isDialogue;
-    bool isWeaponUnlock;
 
     //이벤트 함수들
     public event Action<float,float> ChangeHp;
@@ -126,7 +127,11 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     }
     public bool ReturnWeaponUnlock()
     {
-        return isWeaponUnlock;
+        if(equipSys != null)
+        {
+            return equipSys.IsWeaponUnlocked;
+        }
+        return false;
     }
     public void OnSlashAttack()
     {
@@ -172,9 +177,12 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         //이벤트 설정
         ChangeHp?.Invoke(CurHp, MaxHp);
         UiManager.Instance.OffTalk += UnlockMove;
+        UiManager.Instance.OnUiStateChanged += UIStateChanged;
+        equipSys = GetComponent<EquipmentSystem>();
+        equipSys.OnWeaponEquippedChanged += WeaponEquipChanged;
 
         //시작할때 무기를 들고있는지 확인하고 맞는 애니메이터로 교체
-        if(Anim.runtimeAnimatorController == null)
+        if (Anim.runtimeAnimatorController == null)
         {
             switch (CurrentWeapon)
             {
@@ -196,17 +204,57 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             }
         }
     }
+    private void OnDestroy()
+    {
+        if(equipSys != null)
+        {
+            equipSys.OnWeaponEquippedChanged -= WeaponEquipChanged;
+        }
+        if(UiManager.Instance != null)
+        {
+            UiManager.Instance.OnUiStateChanged -= UIStateChanged;
+        }
+    }
+    /// <summary>
+    /// UI 열림/닫힘 상태에 따라 플레이어 입력을 활성화/비활성화
+    /// </summary>
+    /// <param name="isUiopen"></param>
+    private void UIStateChanged(bool isUiopen)
+    {
+        if(isUiopen)
+        {
+            OffInputAction();
+            ResetAni();
+        }
+        else
+        {
+            OnInputAction();
+        }
+    }
+
+    private void OffInputAction()
+    {
+        IapMove.action?.Disable();
+        IapJump.action?.Disable();
+        IapRoll.action?.Disable();
+        IapCrouch.action?.Disable();
+        IapCombat.action?.Disable();
+        IapWalk.action?.Disable();
+        IapAttack.action?.Disable();
+
+        MoveDir = Vector3.zero;
+    }
 
     private void OnInputAction()
     {
         IapMove.action?.Enable();
-        IapLook.action?.Enable();
         IapRoll.action?.Enable();
         IapCrouch.action?.Enable();
         IapCombat.action?.Enable();
         IapWalk.action?.Enable();
         IapAttack.action?.Enable();
         IapInteract.action?.Enable();
+        IapLook.action?.Enable();
     }
 
     void Update()
@@ -402,16 +450,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     private bool CheckWeapon()
     {
-        if(TrsWeapons == null) return false;
-
-        foreach(Transform child in TrsWeapons)
-        {
-            if (child.CompareTag("Weapons"))
-            {
-                return true;
-            }
-        }
-        return false;
+        return CurrentWeapon != null;
     }
     /// <summary>
     /// 걷기 상태인지 체크하고, bool값 변경
@@ -813,7 +852,6 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         if(weapon != null && CurrentWeapon == null)
         {
             weapon.SetActive(false);
-            isWeaponUnlock = true;
         }
         else
         {
@@ -847,6 +885,45 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         KnockBackVelocity = Vector3.zero;
         isKnockBack = false;
         isHit = false;
+    }
+    /// <summary>
+    /// 무기 장착 상태 변경 시 실행되는 이벤트 함수
+    /// </summary>
+    /// <param name="odlweapon"></param>
+    /// <param name="newweapon"></param>
+    private void WeaponEquipChanged(WeaponData odlweapon, WeaponData newweapon)
+    {
+        // 기존 생성된 무기 삭제
+        if(CurrentWeapon != null)
+        {
+            Destroy(CurrentWeapon);
+            CurrentWeapon = null;
+        }
+
+        //새로운 무기 장착 시 3D 무기 생성 및 정보 갱신
+        if(newweapon != null)
+        {
+            currentWeaponData = newweapon;
+            CurrentWeaponAtk = newweapon.weaponAtk;
+            CurrentWeaponAtkHalfBox = newweapon.atkHalfbox;
+
+            if(newweapon.objWeapon != null && TrsWeapons != null)
+            {
+                CurrentWeapon = Instantiate(newweapon.objWeapon, TrsWeapons);
+                CurrentWeapon.transform.localPosition = newweapon.trsWeapon;
+                CurrentWeapon.transform.localRotation = Quaternion.Euler(newweapon.rotWeapon);
+                CurrentWeapon.transform.localScale = Vector3.one;
+                CurrentWeapon.SetActive(isCombat);
+            }
+        }
+        else
+        {
+            //장착 해제 시 초기화
+            currentWeaponData = null;
+            CurrentWeaponAtk = 0f;
+            CurrentWeaponAtkHalfBox = Vector3.zero;
+            isCombat = false;
+        }
     }
 
     private void EndRoll()

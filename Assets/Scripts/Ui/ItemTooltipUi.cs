@@ -5,7 +5,8 @@ using UnityEngine.UI;
 
 public class ItemTooltipUi : MonoBehaviour
 {
-    public static ItemTooltipUi instance;
+    private static ItemTooltipUi _instance;
+    public static ItemTooltipUi instance => _instance ??= FindAnyObjectByType<ItemTooltipUi>(FindObjectsInactive.Include);
 
     [Header("아이템 텍스트")]
     [SerializeField] TextMeshProUGUI ItemName;
@@ -18,11 +19,9 @@ public class ItemTooltipUi : MonoBehaviour
 
     private void Awake()
     {
-        if (instance == null) instance = this;
-        else Destroy(gameObject);
+        _instance = this;
 
         rectTrs = GetComponent<RectTransform>();
-        HideTooltip();
     }
 
     private void Update()
@@ -40,9 +39,14 @@ public class ItemTooltipUi : MonoBehaviour
 
     public void ShowTooltip(string name, string info)
     {
+        //빈 내용일 경우 표시하지 않음
+        if (string.IsNullOrEmpty(name) && string.IsNullOrEmpty(info)) return;
+
         ItemName.text = name;
         ItemInfo.text = info;
 
+        // 다른 Ui 뒤에 숨는 현상 방지
+        transform.SetAsLastSibling();
         gameObject.SetActive(true);
 
         //텍스트 내용 변경 시 패널 크기를 즉시 다시 계산 (어그러짐 방지)

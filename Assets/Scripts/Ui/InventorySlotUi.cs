@@ -31,10 +31,19 @@ public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExit
         // 빈 슬롯이거나. 아이템이 없으면 리턴
         if (isEmpty || CurrentItem == null || player == null) return;
 
-        // 마우스 좌클릭일때
-        if (eventData.button == PointerEventData.InputButton.Left)
+        // 마우스 좌클릭 더블클릭인 경우
+        if (eventData.clickCount == 2 && eventData.button == PointerEventData.InputButton.Left)
         {
-
+            // 패턴 매칭(is)를 활용해 현재 아이템이 무기 데이터인지 검사
+            if(CurrentItem is WeaponData weaponData)
+            {
+                //플레이어 스크립트의 통합 무기 시스템 함수 호출
+                EquipmentSystem equipSys = player.GetComponent<EquipmentSystem>();
+                if (equipSys != null)
+                {
+                    equipSys.ToggleEquip(weaponData);
+                }
+            }
         }
     }
 
@@ -92,7 +101,7 @@ public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if(CurrentItem != null && ItemTooltipUi.instance != null)
+        if (CurrentItem != null && ItemTooltipUi.instance != null)
         {
             ItemTooltipUi.instance.ShowTooltip(CurrentItem.itemName, CurrentItem.itemInfo);
         }
@@ -100,6 +109,15 @@ public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        if(ItemTooltipUi.instance != null)
+        {
+            ItemTooltipUi.instance.HideTooltip();
+        }
+    }
+
+    private void OnDisable()
+    {
+        // 인벤토리 창이 닫히거나 슬롯이 비활성화될 때 툴팁도 함꼐 숨김
         if(ItemTooltipUi.instance != null)
         {
             ItemTooltipUi.instance.HideTooltip();

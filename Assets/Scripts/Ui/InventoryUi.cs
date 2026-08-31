@@ -11,32 +11,50 @@ public class InventoryUi : MonoBehaviour
 
     PlayerInventory Inventory;
     Player_CC Player;
+    EquipmentSystem equipSys;
 
     private void Awake()
     {
         GameObject obj = GameObject.FindWithTag("Player");
         Inventory = obj.GetComponent<PlayerInventory>();
         Player = obj.GetComponent<Player_CC>();
+        equipSys = obj.GetComponent<EquipmentSystem>();
         
         //playerinventory의 데이터 변경 이벤트 구독
         if(Inventory != null)
         {
             Inventory.OnInventoryChanged += RefreshInventoryUi;
         }
+        if(equipSys != null)
+        {
+            equipSys.OnWeaponEquippedChanged += EquipChanged;
+        }
         SetSlot();
     }
 
     private void OnEnable()
     {
+        if(Inventory != null)
+        {
+            Inventory.OnInventoryChanged += RefreshInventoryUi;
+        }
+        if(equipSys != null)
+        {
+            equipSys.OnWeaponEquippedChanged += EquipChanged;
+        }
         //인벤토리 창이 켜질 때마다 최신 상태로 새로고침
         RefreshInventoryUi();
     }
-    private void OnDestroy()
+    private void OnDisable()
     {
         //메모리 누수 방지를 위해 오브젝트 파괴 시 이벤트 구독 해제
         if(Inventory != null)
         {
             Inventory.OnInventoryChanged -= RefreshInventoryUi;
+        }
+        if(equipSys != null)
+        {
+            equipSys.OnWeaponEquippedChanged -= EquipChanged;
         }
     }
 
@@ -53,6 +71,11 @@ public class InventoryUi : MonoBehaviour
             slotList.Add(slotUi);
         }
     }
+    private void EquipChanged(WeaponData oldweapn, WeaponData newweapon)
+    {
+        RefreshInventoryUi();
+    }
+
     //화면 새로고침 함수
     public void RefreshInventoryUi()
     {

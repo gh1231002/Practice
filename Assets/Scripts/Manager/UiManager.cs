@@ -61,6 +61,8 @@ public class UiManager : MonoBehaviour
     [SerializeField]List<GameObject> PanelList = new List<GameObject>();
 
     public event Action OffTalk;
+    // true: UI 열림 (플레이어 조작 차단), false: UI 닫힘 (플레이어 조작 허용)
+    public event Action<bool> OnUiStateChanged;
 
     public static UiManager Instance;
 
@@ -91,6 +93,7 @@ public class UiManager : MonoBehaviour
 
     private void Start()
     {
+        // UI 초기화
         InteractPanel.SetActive(false);
         DialogueUi.SetActive(false);
         ChoiceUi.SetActive(false);
@@ -99,6 +102,7 @@ public class UiManager : MonoBehaviour
         InventoryPanel.SetActive(false);
         ShopPanel.SetActive(false);
 
+        // InputAction 활성화
         IapCursor.action?.Enable();
         IapCharacterInfo.action?.Enable();
         IapInventory.action?.Enable();
@@ -111,7 +115,7 @@ public class UiManager : MonoBehaviour
         //게임 시작시 기본 디바이스 기준으로 전체 ui 숏컷 텍스트 1회 초기화
         UpdateAllShortcutText();
     }
-
+    // 숏컷 및 디바이스 관리
     public void UpdateAllShortcutText()
     {
         ShowCharacterInfoKey();
@@ -224,7 +228,7 @@ public class UiManager : MonoBehaviour
                 Cursor.visible = false;
                 isChoice = false;
                 ChoiceUi.SetActive(false);
-                RewardManager.instance.CraeteWeapon(index, CurrentQuest);
+                RewardManager.instance.CreateWeapon(index, CurrentQuest);
                 NextDialogueText();
             });
         }
@@ -283,11 +287,6 @@ public class UiManager : MonoBehaviour
         }
     }
 
-    public bool CurrentCursorState()
-    {
-        return isHolding;
-    }
-
     private void Update()
     {
         OnOffCursor();
@@ -339,16 +338,14 @@ public class UiManager : MonoBehaviour
             PanelList.Add(InfoPanel);
             InfoPanel.transform.SetAsLastSibling();
             characterInfoUI.SettingStatPanel();
-
-            RefreshCursorState();
         }
         //열려있다면 닫기
         else
         {
             InfoPanel.SetActive(false);
             PanelList.Remove(InfoPanel);
-            RefreshCursorState();
         }
+        RefreshCursorState();
     }
     public void ToggleInventory()
     {
@@ -358,14 +355,13 @@ public class UiManager : MonoBehaviour
             InventoryPanel.SetActive(true);
             PanelList.Add(InventoryPanel);
             InventoryPanel.transform.SetAsLastSibling();
-            RefreshCursorState();
         }
         else
         {
             InventoryPanel.SetActive(false);
             PanelList.Remove(InventoryPanel);
-            RefreshCursorState();
         }
+        RefreshCursorState();
     }
     public void ToggleShop()
     {
@@ -376,14 +372,13 @@ public class UiManager : MonoBehaviour
             ShopPanel.SetActive(true);
             PanelList.Add(ShopPanel);
             ShopPanel.transform.SetAsLastSibling();
-            RefreshCursorState();
         }
         else
         {
             ShopPanel.SetActive(false);
             PanelList.Remove(ShopPanel);
-            RefreshCursorState();
         }
+        RefreshCursorState();
     }
     private void ExitWindow()
     {
@@ -401,8 +396,12 @@ public class UiManager : MonoBehaviour
             RefreshCursorState();
         }
     }
+    /// <summary>
+    /// 열린 UI 패널 및 대화창 상태에 맞춰 마우스 커서 및 플레이어 입력 제어
+    /// </summary>
     private void RefreshCursorState()
     {
+        bool isDialogueActive = DialogueUi.activeSelf;
         // 열려있는 창이 있다면 커서 보이게, 0개라면 커서 숨기기
         bool hasOpenPanel = PanelList.Count > 0;
         isCursorLock = hasOpenPanel;
@@ -410,5 +409,13 @@ public class UiManager : MonoBehaviour
 
         Cursor.lockState = hasOpenPanel ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible = hasOpenPanel;
+
+        // 플레이어 조작 차단/허용 이벤트 발생
+        OnUiStateChanged?.Invoke(hasOpenPanel);
+    }
+
+    public bool CurrentCursorState()
+    {
+        return isHolding || isCursorLock;
     }
 }
