@@ -158,6 +158,18 @@ public class Player_CC : MonoBehaviour, ITakeDamage
                 Debug.LogError("캐릭터 컨트롤러를 찾을수 없습니다.", this);
             }
         }
+
+        // 씬 내에 태극 가진 오브젝트 검색
+        GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
+        // 이미 이전 씬에서 넘어온 플레이어가 존재한다면 (자신 포함 2개이상)
+        if(players.Length > 1)
+        {
+            // 새로 로드된 씬의 플레이어를 파괴하고 이전 플레이어 유지
+            Destroy(gameObject);
+            return;
+        }
+        // 최초 1회 생성된 플레이어만 파괴방지 처리
+        DontDestroyOnLoad(gameObject);
     }
 
     void Start()
