@@ -16,13 +16,17 @@ public class Portal : MonoBehaviour
     {
         if(other.CompareTag("Player"))
         {
+            // 포탈에 닿으면 플레이어 입력 차단
+            other.TryGetComponent<Player_CC>(out var player);
+            player.SetInputState(false);
+
             switch (targetScene)
             {
                 case TargetScene.FirstVillage:
-                    LoadingSceneManager.LoadScene("First village");
+                    StartCoroutine(UiManager.Instance.FadeOutAndLoad("First village", targetPos));
                     break;
                 case TargetScene.Grave:
-                    LoadingSceneManager.LoadScene("Dungeon");
+                    StartCoroutine(UiManager.Instance.FadeOutAndLoad("Grave", targetPos));
                     break;
             }
         }

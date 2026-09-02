@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -37,6 +38,8 @@ public class UiManager : MonoBehaviour
     [SerializeField] InputActionProperty IapInventory;
     [SerializeField] InputActionProperty IapShop;
     [SerializeField] InputActionProperty IapCancel;
+
+    [SerializeField] CanvasGroup FadeCanvasGroup;
 
     string InteractKey;
     string InventoryKey;
@@ -101,6 +104,8 @@ public class UiManager : MonoBehaviour
         InfoPanel.SetActive(false);
         InventoryPanel.SetActive(false);
         ShopPanel.SetActive(false);
+        FadeCanvasGroup.gameObject.SetActive(false);
+        FadeCanvasGroup.alpha = 0f;
 
         // InputAction 활성화
         IapCursor.action?.Enable();
@@ -417,5 +422,41 @@ public class UiManager : MonoBehaviour
     public bool CurrentCursorState()
     {
         return isHolding || isCursorLock;
+    }
+    /// <summary>
+    /// 화면을 먼저 어둡게 만든 뒤 LoadingSceneManager를 호출합니다.
+    /// </summary>
+    /// <param name="nextSceneName"></param>
+    /// <param name="pos"></param>
+    /// <param name="fadeDuration"></param>
+    /// <returns></returns>
+    public IEnumerator FadeOutAndLoad(string nextSceneName, Vector3 pos, float fadeDuration = 0.3f)
+    {
+        if(FadeCanvasGroup != null)
+        {
+            FadeCanvasGroup.gameObject.SetActive(true);
+            float timer = 0f;
+
+            // 화면이 부드럽게 어두워짐 (씬 이동시 멈춤 현상을 가려줌)
+            while(timer < fadeDuration)
+            {
+                timer += Time.deltaTime;
+                FadeCanvasGroup.alpha = Mathf.Lerp(0f, 1f, timer / fadeDuration);
+                yield return null;
+            }
+            FadeCanvasGroup.alpha = 1f;
+        }
+
+        // 화면이 완전히 암전되면 로딩 씬 호출
+        LoadingSceneManager.LoadScene(nextSceneName, pos);
+    }
+
+    public void ResetFade()
+    {
+        if (FadeCanvasGroup != null)
+        {
+            FadeCanvasGroup.alpha = 0f;
+            FadeCanvasGroup.gameObject.SetActive(false);
+        }
     }
 }

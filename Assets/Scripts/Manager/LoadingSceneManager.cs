@@ -18,6 +18,8 @@ public class LoadingSceneManager : MonoBehaviour
     [Header("설정")]
     [SerializeField] float minLoadingTime = 1.0f;
 
+    static Vector3 targetPos;
+
     private void Start()
     {
         // 정상적으로 목표 씬 이름이 입력되었는지 확인 후 코루틴 실행
@@ -31,9 +33,11 @@ public class LoadingSceneManager : MonoBehaviour
     /// 외부 스크립트에서 호출하여 로딩 씬을 시작하는 함수
     /// </summary>
     /// <param name="sceneName"></param>
-    public static void LoadScene(string sceneName)
+    /// <param name="pos"></param>
+    public static void LoadScene(string sceneName, Vector3 pos)
     {
         NextSceneName = sceneName;
+        targetPos = pos;
         SceneManager.LoadScene("Loading");
     }
 
@@ -65,6 +69,12 @@ public class LoadingSceneManager : MonoBehaviour
     /// <returns></returns>
     private IEnumerator LoadSceneAsync()
     {
+        // UI를 덮고 있던 패널을 거서 로딩화면이 보이게 만듭니다.
+        if(UiManager.Instance != null)
+        {
+            UiManager.Instance.ResetFade();
+        }
+
         // 다음 씬을 Additive(중첩) 모드로 비동기 로드 시작
         // 로딩 씬이 파괴되지 않고 유치된 상태로 다음 씬을 불러옵니다.
         AsyncOperation op = SceneManager.LoadSceneAsync(NextSceneName, LoadSceneMode.Additive);
@@ -104,6 +114,14 @@ public class LoadingSceneManager : MonoBehaviour
         {
             yield return null;
         }
+        
+        // 플레이어의 위치이동을 위해 값을 전달하고 위치 이동
+        GameObject playerobj = GameObject.FindWithTag("Player");
+        Player_CC player = playerobj.GetComponent<Player_CC>();
+        if(player != null)
+        {
+            player.Teleport(targetPos);
+        }
 
         // 불러온 씬을 유니티의 '주 씬(Active Scene)'으로 설정합니다.
         // (조명, 스카이박스, 네비메시 기준이 다음 씬으로 지정됩니다.)
@@ -132,6 +150,8 @@ public class LoadingSceneManager : MonoBehaviour
                 yield return null;
             }
         }
+        //플레이어 입력 활성화
+        player.SetInputState(true);
 
         // 다음 씬의 렌더링이 완전히 끝났으므로 기존 로딩씬 삭제
         SceneManager.UnloadSceneAsync("Loading");

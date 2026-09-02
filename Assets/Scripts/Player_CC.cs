@@ -83,7 +83,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     int CrouchMove;
 
-    bool isGround;
+    [SerializeField] bool isGround;
     bool isCrouch;
     bool isWalk;
     bool isRoll;
@@ -98,11 +98,13 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     bool isAttack;
     bool isInteract;
     bool isDialogue;
+    bool isCanMove = true;
 
     //이벤트 함수들
     public event Action<float,float> ChangeHp;
     public event Action OnDialogue;
     public event Action OffDialogue;
+    public event Action OnHeal;
 
     public void SetInteract(bool State)
     {
@@ -120,6 +122,10 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     public float ReturnCurHp()
     {
         return CurHp;
+    }
+    public float ReturnMaxHp()
+    {
+        return MaxHp;
     }
     public float ReturnCurrentWeaponAtk()
     {
@@ -144,6 +150,48 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             ps.Stop();
             ps.Play();
         }
+    }
+
+    public void Teleport(Vector3 pos)
+    {
+        // CharacterController 사용 시 위치 씹힘 방지
+        if (TryGetComponent<CharacterController>(out var cc))
+        {
+            cc.enabled = false;
+            transform.position = pos;
+            cc.enabled = true;
+        }
+    }
+    /// <summary>
+    /// 플레이어 조작 가능 여부를 켜고 끄는 함수
+    /// </summary>
+    /// <param name="canMove"></param>
+    public void SetInputState(bool canMove)
+    {
+        isCanMove = canMove;
+
+        // 애니메이션 파라미터 초기화
+        ResetAni();
+        // CharacterController 사용 시 물리가 튀는 것 방지
+        if(TryGetComponent<CharacterController>(out var cc))
+        {
+            cc.enabled = canMove;
+        }
+    }
+    /// <summary>
+    /// 체력 회복 함수
+    /// </summary>
+    /// <param name="amount"></param>
+    public void Heal(float amount)
+    {
+        if (isDeath) return;
+        // 체력 회복이 최대 체력을 넘지 않도록 제한
+        CurHp = MathF.Min(CurHp + amount, MaxHp);
+
+        // ui 체력바 갱신 이벤트 호출
+        ChangeHp?.Invoke(CurHp, MaxHp);
+        // 힐 받았는 사실을 이벤트로 알림
+        OnHeal?.Invoke();
     }
 
     private void Awake()
@@ -271,7 +319,8 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     void Update()
     {
-        if (isDeath == true) return;
+        // 사망 상태이거나 텔레포트중이라면 입력 받지 않음
+        if (isDeath == true || isCanMove == false) return;
 
         isAttack = Anim.GetCurrentAnimatorStateInfo(0).IsTag("Attack");
 
@@ -300,6 +349,17 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     /// </summary>
     private void InputMove()
     {
+        // 카메라 참조가 없거나 파괴되었으면 새 씬의 메인 카메라 재할당
+        if(TrsMainCam == null)
+        {
+            if (Camera.main != null)
+            {
+                TrsMainCam = Camera.main.transform;
+            }
+            else
+                return; // 카메라 없으면 이번 프레임 연산 건너뜀
+        }
+
         Vector2 move = Vector2.zero;
 
         if (IapMove.action != null)
@@ -648,13 +708,12 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     private void FixedUpdate()
     {
-        if (isDeath == true || isDialogue == true) return;
+        if (isDeath == true || isDialogue == true || isCanMove == false) return;
 
         PlayerRotation();
         Vector3 MoveVelocity = MovingVelocity();
         Vector3 Vertivelocity = VerticalVelocity();
         Vector3 FinalVelocity = MoveVelocity + Vertivelocity;
-
 
         ContPlayer.Move(FinalVelocity * Time.fixedDeltaTime);
     }

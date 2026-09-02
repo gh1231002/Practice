@@ -26,4 +26,13 @@ public class PotionData : ItemData
             return originalInfo;
         }
     }
+
+    public override void UseItem(Player_CC player)
+    {
+        if (player == null) return;
+
+        // 최대 체력 대비 회복량 계산 후 Heal 호출
+        float healAmount = player.ReturnMaxHp() * healPercent;
+        player.Heal(healAmount);
+    }
 }

@@ -14,6 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PotionData
   ItemName: "\uCCB4\uB825 \uD68C\uBCF5 \uD3EC\uC158"
   ItemIcon: {fileID: 21300000, guid: e52ea25af699fd445b7046374f81a5b9, type: 3}
-  ItemInfo: "\uCD5C\uB300 \uCCB4\uB825\uC758 {0}\uB9CC\uD07C \uD68C\uBCF5\uD569\uB2C8\uB2E4."
+  ItemInfo: "\uCD5C\uB300 \uCCB4\uB825\uC758 {0}%\uB9CC\uD07C \uD68C\uBCF5\uD569\uB2C8\uB2E4."
   IsStackable: 1
   healPercent: 0.2
