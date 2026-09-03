@@ -9,7 +9,7 @@ public abstract class MonsterBase : MonoBehaviour, ITakeDamage
 {
     public enum MonsterType
     {
-        Humanoid, Orc,
+        Humanoid, Orc, Skeleton,
     }
 
     public enum MonsterState

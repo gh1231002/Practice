@@ -169,7 +169,7 @@ public class PlayerInventory : MonoBehaviour
     }
 
     /// <summary>
-    /// 특정 ItemData를 소지한 첫 번째 슬롯을 찾아 수량을 차감하느 함수
+    /// 특정 ItemData를 소지한 첫 번째 슬롯을 찾아 수량을 차감하는 함수
     /// (퀵슬롯 사용 시 호출)
     /// </summary>
     /// <param name="item"></param>
@@ -181,7 +181,7 @@ public class PlayerInventory : MonoBehaviour
 
         for(int i = 0; i < Slots.Length; i++)
         {
-            if (Slots[i] != null && Slots[i].IsEmpty && Slots[i].itemData == item)
+            if (Slots[i] != null && !Slots[i].IsEmpty && Slots[i].itemData == item)
             {
                 ConsumeItem(i, amount);
                 return true;

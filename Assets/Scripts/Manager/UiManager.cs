@@ -67,7 +67,9 @@ public class UiManager : MonoBehaviour
     // true: UI 열림 (플레이어 조작 차단), false: UI 닫힘 (플레이어 조작 허용)
     public event Action<bool> OnUiStateChanged;
 
-    public static UiManager Instance;
+    public static UiManager Instance { get; private set; }
+
+    public bool HasOpenPanel => PanelList != null && PanelList.Count > 0;
 
     private void Awake()
     {
@@ -423,6 +425,7 @@ public class UiManager : MonoBehaviour
     {
         return isHolding || isCursorLock;
     }
+
     /// <summary>
     /// 화면을 먼저 어둡게 만든 뒤 LoadingSceneManager를 호출합니다.
     /// </summary>

@@ -6,10 +6,9 @@ using UnityEngine.EventSystems;
 [RequireComponent(typeof(InventorySlotUi))]
 public class QuickSlotUI : MonoBehaviour, IDropHandler
 {
-    [SerializeField] TextMeshPro KeyText;
+    [SerializeField] TextMeshProUGUI KeyText;
 
     public int QuickSlotIndex { get; private set; }
-    public KeyCode HotKey { get; private set; }
     public ItemData RegisteredItem { get; private set; }
 
     InventorySlotUi TargetSlotUi;
@@ -22,11 +21,9 @@ public class QuickSlotUI : MonoBehaviour, IDropHandler
     /// 퀵슬롯 초기화
     /// </summary>
     /// <param name="index"></param>
-    /// <param name="key"></param>
-    public void InitQuickSlot(int index, KeyCode key)
+    public void InitQuickSlot(int index)
     {
         QuickSlotIndex = index;
-        HotKey = key;
 
         if(KeyText != null)
         {
@@ -76,6 +73,13 @@ public class QuickSlotUI : MonoBehaviour, IDropHandler
         // 인벤토리에서 실제 이 아이템을 몇개 가졌는지 확인
         int currentCount = PlayerInventory.Instance != null ?
             PlayerInventory.Instance.GetItemCount(RegisteredItem) : 0;
+
+        // 수량이 0개 이하라면 퀵슬롯 등록 정보를 완전히 비움
+        if(currentCount <= 0)
+        {
+            ClearQuickSlot();
+            return;
+        }
 
         TargetSlotUi.UpdateSlot(currentCount, RegisteredItem, false);
     }

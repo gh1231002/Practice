@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class DialogueCamManager : MonoBehaviour
 {
-    public static DialogueCamManager Instance;
+    public static DialogueCamManager Instance { get; private set; }
 
     [Header("시네머신 대화 카메라")]
     [SerializeField] CinemachineCamera DialogueCam;

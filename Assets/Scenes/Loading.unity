@@ -864,7 +864,7 @@ MonoBehaviour:
   LoadingText: {fileID: 531058315}
   LoadingBar: {fileID: 1761496348}
   loadingCavasGroup: {fileID: 1490430944}
-  minLoadingTime: 3
+  minLoadingTime: 2
 --- !u!225 &1490430944
 CanvasGroup:
   m_ObjectHideFlags: 0

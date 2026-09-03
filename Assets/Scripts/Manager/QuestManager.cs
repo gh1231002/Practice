@@ -33,7 +33,7 @@ public class QuestProgress
 
 public class QuestManager : MonoBehaviour
 {
-    public static QuestManager instance;
+    public static QuestManager instance { get; private set; }
     [Header("퀘스트 전체 데이터 저장소")]
     [SerializeField] List<QuestProgress> ActiveQuests = new List<QuestProgress>();
     [SerializeField] List<QuestData> CompletedQuests = new List<QuestData>();

@@ -5,7 +5,7 @@ public class RewardManager : MonoBehaviour
 {
     [SerializeField] Transform TrsWeapon;
     Player_CC Player;
-    public static RewardManager instance;
+    public static RewardManager instance { get; private set; }
 
     private void Awake()
     {

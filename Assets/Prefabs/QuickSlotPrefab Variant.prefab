@@ -125,3 +125,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f1a46fa723f88024f9d27e43dac76b5e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::QuickSlotUI
+  KeyText: {fileID: 5864106009267562530}
+--- !u!114 &5864106009267562530 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8403994897683720766, guid: a867323a901275041ad04dcdd78d9510, type: 3}
+  m_PrefabInstance: {fileID: 2720598096206774812}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
