@@ -38,6 +38,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     public WeaponData CurrentWeaponData => currentWeaponData;
 
     [Header("플레이어 세팅값")]
+    [SerializeField] Vector3 StartPos;
     [SerializeField] float MaxHp;
     [SerializeField] float CurHp;
     [SerializeField] float AtkPower;
@@ -224,6 +225,9 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     {
         ContPlayer = GetComponent<CharacterController>();
         Anim = GetComponent<Animator>();
+
+        // 시작 위치 설정
+        transform.position = StartPos;
 
         //인풋액션이 연결되있다면 활성화
         OnInputAction();

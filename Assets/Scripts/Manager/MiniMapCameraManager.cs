@@ -6,6 +6,11 @@ public class MiniMapCameraManager : MonoBehaviour
     [SerializeField] float Height;
     Player_CC Player;
 
+    private void Awake()
+    {
+        DontDestroyOnLoad(gameObject);
+    }
+
     private void Start()
     {
         GameObject obj = GameObject.FindWithTag("Player");
