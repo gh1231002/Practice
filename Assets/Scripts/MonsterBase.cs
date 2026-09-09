@@ -71,12 +71,12 @@ public abstract class MonsterBase : MonoBehaviour, ITakeDamage
         if(MonSensor != null)
         {
             //신호를 보낼때 실행할 함수들을 등록(구독)
-            MonSensor.OnPlayerDetected += OnDetectPlayer;
-            MonSensor.OnPlayerLost += OnLostPlayer;
+            MonSensor.OnSensorEnter += OnDetectPlayer;
+            MonSensor.OnSensorLost += OnLostPlayer;
         }
         if(PatrolSensor != null)
         {
-            PatrolSensor.OnPlayerLost += OnLostPatrol;
+            PatrolSensor.OnSensorLost += OnLostPatrol;
         }
     }
 

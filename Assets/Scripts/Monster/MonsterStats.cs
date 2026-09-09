@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 
 /// <summary>
-/// 몬스터의 능력치, 체력 및 피격 / 사망 전담합니다.
+/// 몬스터의 능력치, 체력 및 피격 / 사망 판정을 전담합니다.
 /// </summary>
 public class MonsterStats : MonoBehaviour, ITakeDamage
 {
@@ -13,6 +13,7 @@ public class MonsterStats : MonoBehaviour, ITakeDamage
     [SerializeField] float moveSpeed;
     [SerializeField] float chaseSpeed;
 
+    // 외부 읽기 전용
     public float MaxHp => maxHp;
     public float CurHp => curHp;
     public float AtkPower => atkPower;
@@ -22,21 +23,23 @@ public class MonsterStats : MonoBehaviour, ITakeDamage
     public bool IsDead { get; private set; }
 
     // 피격 및 사망 이벤트
-    public event Action OnTakeDamage;
+    public event Action<GameObject, float> OnTakeDamage;
     public event Action OnDeath;
 
     private void Awake()
     {
+        // 체력 초기화
         curHp = maxHp;
     }
 
     public void TakeDamage(GameObject attacker, float damage)
     {
+        // 사망 상태라면 건너뜀
         if (IsDead) return;
 
         curHp -= damage;
         // 피격 알림 이벤트 실행
-        OnTakeDamage?.Invoke();
+        OnTakeDamage?.Invoke(attacker, damage);
 
         if(curHp <= 0f)
         {

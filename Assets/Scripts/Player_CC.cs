@@ -227,7 +227,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         Anim = GetComponent<Animator>();
 
         // 시작 위치 설정
-        transform.position = StartPos;
+        //transform.position = StartPos;
 
         //인풋액션이 연결되있다면 활성화
         OnInputAction();
@@ -906,6 +906,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         {
             Anim.SetTrigger("Small Hit");
         }
+
         //잠깐의 무적시간 후 조작가능
         else if(isCombat == true)
         {
@@ -916,6 +917,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
         if (CurHp <= 0)//0이 되면 사망처리
         {
+            CurHp = 0f;
             Anim.SetTrigger("Die");
             isDeath = true;
         }
