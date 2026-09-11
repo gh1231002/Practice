@@ -1,5 +1,4 @@
 using System;
-using UnityEditor.Rendering;
 using UnityEngine;
 
 /// <summary>
@@ -39,8 +38,21 @@ public class MonsterDetect : MonoBehaviour
             monSensor.OnSensorEnter += SensorDetected;
             monSensor.OnSensorLost += SensorLost;
         }
+    }
 
-        // 순찰 영역 이탈 센서 이벤트 구독
+    /// <summary>
+    /// 스포너에서 순찰 구역 센서를 전달받아 이벤트를 안전하게 연결합니다.
+    /// </summary>
+    /// <param name="sensor"></param>
+    public void SetPatrolSensor(MonsterSensor sensor)
+    {
+        // 중복 구독 방지
+        if(patrolSensor != null)
+        {
+            patrolSensor.OnSensorLost -= PatrolLost;
+        }
+        patrolSensor = sensor;
+        // 동적으로 할당된 씬 센서의 이벤트 구독
         if(patrolSensor != null)
         {
             patrolSensor.OnSensorLost += PatrolLost;

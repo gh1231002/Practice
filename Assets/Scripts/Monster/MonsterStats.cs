@@ -26,6 +26,15 @@ public class MonsterStats : MonoBehaviour, ITakeDamage
     public event Action<GameObject, float> OnTakeDamage;
     public event Action OnDeath;
 
+    /// <summary>
+    /// [오브젝트 풀 연동] 소환 시 체력 및 사망 상태 초기화
+    /// </summary>
+    public void ResetStats()
+    {
+        IsDead = false;
+        curHp = maxHp;
+    }
+
     private void Awake()
     {
         // 체력 초기화

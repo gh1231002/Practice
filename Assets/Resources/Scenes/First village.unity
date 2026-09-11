@@ -17545,7 +17545,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 1024
   StartPos: {x: -56, y: 15, z: 247}
-  MaxHp: 100
+  MaxHp: 300
   CurHp: 0
   AtkPower: 10
   InvincibleTime: 0.5

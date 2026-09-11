@@ -16,6 +16,11 @@ public class MonsterAIController : MonoBehaviour
     [SerializeField, Tooltip("순찰 가능 구역")] Collider patrolRange;
     [SerializeField, Tooltip("목적지 도착 후 대기 시간")] float waitTimer;
 
+    [Header("회피 우선순위 설정")]
+    [SerializeField, Tooltip("정지 상태 시 우선순위 (작을수록 고정체로 인식)")] int stationaryPriority;
+    [SerializeField, Tooltip("이동 상태 시 최소 우선순위")] int minMovingPriority;
+    [SerializeField, Tooltip("이동 상태 시 최대 우선순위")] int maxMovingPriority;
+
     protected MonsterState state = MonsterState.Idle;
     public MonsterState State => state;
 
@@ -35,6 +40,62 @@ public class MonsterAIController : MonoBehaviour
     static readonly int HashMove = Animator.StringToHash("Move");
     static readonly int HashHit = Animator.StringToHash("Hit");
     static readonly int HashDeath = Animator.StringToHash("Death");
+
+    /// <summary>
+    /// [오브젝트 풀 연동] 외부 스포너 설정 및 초기 순찰 구역 지정
+    /// </summary>
+    /// <param name="rangeArea"></param>
+    public void SetPatrolRange(Collider rangeArea)
+    {
+        patrolRange = rangeArea;
+    }
+
+    /// <summary>
+    /// [오브젝트 풀 연동] 재소환 시 NavMesh, 콜라이더, 애니메이터 및 AI 상태 복구
+    /// </summary>
+    public void InitAI()
+    {
+        state = MonsterState.Idle;
+        // 컴포넌트 및 스탯 재활성화
+        stats.ResetStats();
+        if (TryGetComponent<Collider>(out var col)) col.enabled = true;
+
+        // 초기화 시 정지 우선순위 적용
+        SetAvoidancePriority(true);
+
+        // 타깃 및 애니메이터 파라미터 리셋
+        targetPlayer = null;
+        monAnim.Rebind();
+        monAnim.Update(0f);
+        monAnim.applyRootMotion = false;
+
+        // 순찰 상태 재시작
+        if(patrolRange != null)
+        {
+            ChangeRoutine(PatrolRoutine(), MonsterState.Patrol);
+        }
+    }
+
+    /// <summary>
+    /// [동적 회피 핵심] 이동/정지 상태에 따라 NavMeshAgent의 회피 우선순위를 변경합니다.
+    /// </summary>
+    /// <param name="isStationary">서 있는 상태(True) 또는 이동 중인 상태(False)</param>
+    private void SetAvoidancePriority(bool isStationary)
+    {
+        if(navAgent == null || !navAgent.enabled) return;
+
+        if(isStationary)
+        {
+            // 서있을 때는 높은 우선순위를 부여해 지나가는 몬스터가 '벽'처럼 인식하고 돌아감
+            navAgent.avoidancePriority = stationaryPriority;
+            navAgent.velocity = Vector3.zero;
+        }
+        else
+        {
+            // 이동 중일 때는 낮은 우선순위를 무작위 할당해 이동체끼리 서로 우회하도록 유도
+            navAgent.avoidancePriority = Random.Range(minMovingPriority, maxMovingPriority);
+        }
+    }
 
     protected virtual void Awake()
     {
@@ -161,6 +222,7 @@ public class MonsterAIController : MonoBehaviour
             // 해당 좌표가 이동 가능한 NavMesh 상에 존재하는지 확인
             if(NavMesh.SamplePosition(movePos, out NavMeshHit hit, 2.0f, NavMesh.AllAreas))
             {
+                SetAvoidancePriority(false);
                 navAgent.isStopped = false;
                 navAgent.SetDestination(hit.position);
                 monAnim.SetBool(HashMove, true);
@@ -171,8 +233,38 @@ public class MonsterAIController : MonoBehaviour
                 continue;
             }
 
-            // 목적지 도착 대기 (길 찾기 완료 후 남은 거리 검사)
-            yield return new WaitUntil(() => !navAgent.pathPending && navAgent.remainingDistance <= navAgent.stoppingDistance);
+            // 목적지로 이동중 막힘 발생 시 새 좌표 검색
+            float stuckTimer = 0f;
+            while(true)
+            {
+                if (targetPlayer != null) break;
+
+                if(!navAgent.pathPending)
+                {
+                    if(navAgent.pathStatus == NavMeshPathStatus.PathPartial ||
+                        navAgent.pathStatus == NavMeshPathStatus.PathInvalid ||
+                        navAgent.remainingDistance <= navAgent.stoppingDistance)
+                    {
+                        break;
+                    }
+                }
+
+                // 이동 명령 중이지만 실제 속도가 거의 0인 경우
+                if(navAgent.velocity.sqrMagnitude < 0.05f)
+                {
+                    stuckTimer += Time.deltaTime;
+                    // 일정 시간 이상 막혀있으면 포기하고 새로운 순찰 목적지 검색
+                    if (stuckTimer > 1.2f) break;
+                }
+                else
+                {
+                    // 정상 이동 중이면 타이머 리셋
+                    stuckTimer = 0f;
+                }
+                yield return null;
+            }
+
+            SetAvoidancePriority(true);
             navAgent.isStopped = true;
             monAnim.SetBool(HashMove, false);
 
@@ -199,6 +291,8 @@ public class MonsterAIController : MonoBehaviour
         navAgent.isStopped = false;
         navAgent.speed = stats.ChaseSpeed;
         monAnim.SetBool(HashMove, true);
+
+        SetAvoidancePriority(false);
 
         while(true)
         {
@@ -228,6 +322,7 @@ public class MonsterAIController : MonoBehaviour
         state = MonsterState.Attack;
         // 공격 전진감을 위해 선택적 적용
         monAnim.applyRootMotion = true;
+        SetAvoidancePriority(true);
         navAgent.isStopped = true;
 
         // 공격 시작 시 플레이어를 정면으로 바라보도록 회전
@@ -263,10 +358,9 @@ public class MonsterAIController : MonoBehaviour
     protected IEnumerator HitRoutine()
     {
         state = MonsterState.Hit;
+        SetAvoidancePriority(true);
         navAgent.isStopped = true;
         monAnim.applyRootMotion = false;
-        // 진행 중이던 공격 판정 취소
-        combat.EndAttack();
 
         monAnim.ResetTrigger(HashAttack);
         monAnim.SetTrigger(HashHit);

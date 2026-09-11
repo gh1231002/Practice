@@ -1,12 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Unity.VisualScripting;
-using UnityEditor;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using static UnityEngine.CullingGroup;
 
 public class Player_CC : MonoBehaviour, ITakeDamage
 {
@@ -227,7 +223,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         Anim = GetComponent<Animator>();
 
         // 시작 위치 설정
-        //transform.position = StartPos;
+        Teleport(StartPos);
 
         //인풋액션이 연결되있다면 활성화
         OnInputAction();
@@ -712,7 +708,20 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     private void FixedUpdate()
     {
-        if (isDeath == true || isDialogue == true || isCanMove == false) return;
+        // 대화 중이거나 조작 불가 상태일 때는 연산 중단
+        if (isDialogue == true || isCanMove == false) return;
+
+        // 사망 상태일 때는 이동/회전을 막되, 바닥에 착지할 때까지 중력만 적용
+        if(isDeath)
+        {
+            // 땅에 닿지 않았다면 중력을 적용해 바닥으로 떨어뜨림
+            if(!isGround)
+            {
+                Vector3 verti = VerticalVelocity();
+                ContPlayer.Move(verti * Time.fixedDeltaTime);
+            }
+            return;
+        }
 
         PlayerRotation();
         Vector3 MoveVelocity = MovingVelocity();

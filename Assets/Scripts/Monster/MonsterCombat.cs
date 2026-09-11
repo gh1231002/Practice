@@ -9,18 +9,12 @@ public class MonsterCombat : MonoBehaviour
 {
     [Header("공격 히트박스 설정")]
     [SerializeField, Tooltip("공격 히트박스 위치")] Transform atkPoint;
-    [SerializeField, Tooltip("OverLapBox 반경 수치")] Vector3 atkHalfBox;
-    [SerializeField, Tooltip("공격 가능 사거리")] float atkDistance;
+    [SerializeField, Tooltip("공격 가능 사거리 및 임팩트 범위 반지름")] float atkDistance;
     [SerializeField, Tooltip("타격 대상 레이어")] LayerMask targetLayer;
 
     public float AtkDistance => atkDistance;
 
-    float atkTimer;
-    bool checkAtk;
     float currentAtkPower;
-
-    // 1회 공격 모션 중 중복 타격 방지를 위한 피격리스트
-    readonly List<ITakeDamage> hitTargetList = new List<ITakeDamage>();
 
     /// <summary>
     /// AIController에서 초기화 시 호출
@@ -32,52 +26,26 @@ public class MonsterCombat : MonoBehaviour
     }
 
     /// <summary>
-    /// 공격 애니메이션 이벤트에서 판정 시작 시 호출
+    /// 공격 애니메이션의 타격 프레임에서 1회 호출합니다.
     /// </summary>
-    public void StartAttack()
+    public void OnHitImpact()
     {
-        checkAtk = true;
-        hitTargetList.Clear();
-    }
+        // atkPoint 미지정 시 몬스터 정면 1.5m, 높이 1.0m를 기준점으로 자동 설정
+        Vector3 center = atkPoint != null
+            ? atkPoint.position
+            : transform.position + transform.forward * 1.5f + Vector3.up * 1.0f;
 
-    /// <summary>
-    /// 공격 판정 종료시 호출
-    /// </summary>
-    public void EndAttack()
-    {
-        checkAtk = false;
-        hitTargetList.Clear();
-    }
-
-    private void Update()
-    {
-        // 공격 판정이 활성화된 동안에만 검사함
-        OverLapBoxCheck();
-    }
-
-    private void OverLapBoxCheck()
-    {
-        // 공격 위치가 없거나 공격 판정이 false라면 종료
-        if (atkPoint == null || !checkAtk) return;
-
-        Collider[] hitTargets = Physics.OverlapBox(
-            atkPoint.position,
-            atkHalfBox,
-            atkPoint.rotation,
-            targetLayer
-            );
+        // 임팩트 순간 구형 범위를 통한 타깃 검사
+        Collider[] hitTargets = Physics.OverlapSphere(center, AtkDistance, targetLayer);
 
         foreach(Collider target in hitTargets)
         {
-            // 타깃에 ITakeDamage 인터페이스 존재 여부 확인
-            if(target.TryGetComponent<ITakeDamage>(out var damage))
-            {
-                // 이미 타격받은 대상이면 스킵
-                if (hitTargetList.Contains(damage)) continue;
+            // 자식 충돌체와 최상위 오브젝트 모두에서 ITakeDamage 확인
+            ITakeDamage damage = target.GetComponent<ITakeDamage>() ?? target.GetComponentInParent<ITakeDamage>();
 
-                // 데미지 전달 및 중복 방지 리스트 추가
-                damage.TakeDamage(this.gameObject, currentAtkPower);
-                hitTargetList.Add(damage);
+            if(damage != null)
+            {
+                damage.TakeDamage(gameObject, currentAtkPower);
                 break;
             }
         }
@@ -87,8 +55,11 @@ public class MonsterCombat : MonoBehaviour
     private void OnDrawGizmosSelected()
     {
         if (atkPoint == null) return;
+        Vector3 center = atkPoint != null
+            ? atkPoint.position
+            : transform.position + transform.forward * 1.5f + Vector3.up * 1.0f;
+
         Gizmos.color = Color.red;
-        Gizmos.matrix = atkPoint.localToWorldMatrix;
-        Gizmos.DrawWireCube(Vector3.zero, atkHalfBox * 2f);
+        Gizmos.DrawWireSphere(center, AtkDistance);
     }
 }
