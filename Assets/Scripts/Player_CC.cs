@@ -1,8 +1,10 @@
-using System;
+ï»¿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
+
+public enum HitCheckType { none, Box, Sphere }
 
 public class Player_CC : MonoBehaviour, ITakeDamage
 {
@@ -16,51 +18,56 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     [SerializeField] InputActionProperty IapAttack;
     [SerializeField] InputActionProperty IapLook;
     [SerializeField] InputActionProperty IapInteract;
-    [Header("¹«±âº° ¾Ö´Ï¸ŞÀÌÅÍ")]
+    [Header("ë¬´ê¸°ë³„ ì• ë‹ˆë©”ì´í„°")]
     [SerializeField] RuntimeAnimatorController NonCombatController;
     [SerializeField] RuntimeAnimatorController OneHandSwordController;
     [SerializeField] RuntimeAnimatorController TwoHandAxeController;
-    [Header("ÇÃ·¹ÀÌ¾î ¹«±â °ü·Ã ¼³Á¤")]
+    [Header("í”Œë ˆì´ì–´ ë¬´ê¸° ê´€ë ¨ ì„¤ì •")]
     [SerializeField] Transform TrsWeapons;
     [SerializeField] LayerMask TargetLayer;
+    float CurrentAtkRadius; // ë„ë¼ 4íƒ€ ë²”ìœ„
 
     GameObject CurrentWeapon;
     WeaponData currentWeaponData;
+    Transform TrsAtkPoint;
+    HitCheckType CurrentHitType = HitCheckType.none;
     float CurrentWeaponAtk;
+    float CurrentMotionValue;
     Vector3 CurrentWeaponAtkHalfBox;
-    bool CheckAtk;
     List<ITakeDamage> HitTartgetList = new List<ITakeDamage>();
+    Collider[] hitBuffer = new Collider[20];
 
     public WeaponData CurrentWeaponData => currentWeaponData;
 
-    [Header("ÇÃ·¹ÀÌ¾î ¼¼ÆÃ°ª")]
+    [Header("í”Œë ˆì´ì–´ ì„¸íŒ…ê°’")]
     [SerializeField] Vector3 StartPos;
     [SerializeField] float MaxHp;
     [SerializeField] float CurHp;
     [SerializeField] float AtkPower;
+    [SerializeField] float PlayerDef;
     [SerializeField] float InvincibleTime;
     [SerializeField] float MoveSpeed;
     [SerializeField] float JumpForce;
     [SerializeField] float BackJumpForce;
     [SerializeField] float BackJumpSpeed;
     [SerializeField] float KnockBackSpeed;
-    [Header("ºí·»µå Æ®¸® º¸°£ ¼Óµµ")]
-    [Tooltip("°ªÀÌ ÀÛÀ»¼ö·Ï Áï°¢ ¹İÀÀÇÏ°í, Å©¸é ºÎµå·´Áö¸¸ ´À¸®°Ô ÀüÈ¯µË´Ï´Ù.")]
+    [Header("ë¸”ë Œë“œ íŠ¸ë¦¬ ë³´ê°„ ì†ë„")]
+    [Tooltip("ê°’ì´ ì‘ì„ìˆ˜ë¡ ì¦‰ê° ë°˜ì‘í•˜ê³ , í¬ë©´ ë¶€ë“œëŸ½ì§€ë§Œ ëŠë¦¬ê²Œ ì „í™˜ë©ë‹ˆë‹¤.")]
     [SerializeField] float DampTime;
     float CurBackJumpSpeed;
-    [Header("È¸Àü¼Óµµ")]
+    [Header("íšŒì „ì†ë„")]
     [SerializeField] float RotationSpeed = 360f;
-    [Header("Áß·Â°ü·Ã")]
+    [Header("ì¤‘ë ¥ê´€ë ¨")]
     [SerializeField] float Gravity = -9.81f;
-    [SerializeField, Tooltip("ÃÖ´ë ÇÏ°­ ¼Óµµ")] float MaxVelocityY;
+    [SerializeField, Tooltip("ìµœëŒ€ í•˜ê°• ì†ë„")] float MaxVelocityY;
     [SerializeField] float RayDistance = 0.3f;
     [SerializeField] LayerMask GroundLayer;
-    [Header("°æ»ç¸é ¹Ì²ô·¯Áü ¼³Á¤(Ä³¸¯ÅÍ ÄÁÆ®·Ñ·¯¿Í µ¿ÀÏ)")]
+    [Header("ê²½ì‚¬ë©´ ë¯¸ë„ëŸ¬ì§ ì„¤ì •(ìºë¦­í„° ì»¨íŠ¸ë¡¤ëŸ¬ì™€ ë™ì¼)")]
     [SerializeField] float SlopeLimitAngle;
     [SerializeField] float SlideSpeed;
-    //isground()¿¡¼­ °è»êÇÒ º¤ÅÍ
+    //isground()ì—ì„œ ê³„ì‚°í•  ë²¡í„°
     Vector3 GroundNormal = Vector3.zero;
-    //¹Ì²ô·¯Áö´ÂÁßÀÎÁö Ã¼Å©
+    //ë¯¸ë„ëŸ¬ì§€ëŠ”ì¤‘ì¸ì§€ ì²´í¬
     bool CheckSliding;
 
     CharacterController ContPlayer;
@@ -75,7 +82,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     [SerializeField] float VelocityY;
     float MoveValue;
     float CombatValue;
-    [Header("¾Ö´Ï¸ŞÀÌ¼Ç °£ µô·¹ÀÌÅ¸ÀÓ")]
+    [Header("ì• ë‹ˆë©”ì´ì…˜ ê°„ ë”œë ˆì´íƒ€ì„")]
     [SerializeField] float DelayTime;
 
     int CrouchMove;
@@ -92,12 +99,12 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     bool isBackJump;
     bool isDeath;
     bool isKnockBack;
-    bool isAttack;
+    [SerializeField] bool isAttack;
     bool isInteract;
     bool isDialogue;
     bool isCanMove = true;
 
-    //ÀÌº¥Æ® ÇÔ¼öµé
+    //ì´ë²¤íŠ¸ í•¨ìˆ˜ë“¤
     public event Action<float,float> ChangeHp;
     public event Action OnDialogue;
     public event Action OffDialogue;
@@ -151,7 +158,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     public void Teleport(Vector3 pos)
     {
-        // CharacterController »ç¿ë ½Ã À§Ä¡ ¾ÃÈû ¹æÁö
+        // CharacterController ì‚¬ìš© ì‹œ ìœ„ì¹˜ ì”¹í˜ ë°©ì§€
         if (TryGetComponent<CharacterController>(out var cc))
         {
             cc.enabled = false;
@@ -160,34 +167,34 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         }
     }
     /// <summary>
-    /// ÇÃ·¹ÀÌ¾î Á¶ÀÛ °¡´É ¿©ºÎ¸¦ ÄÑ°í ²ô´Â ÇÔ¼ö
+    /// í”Œë ˆì´ì–´ ì¡°ì‘ ê°€ëŠ¥ ì—¬ë¶€ë¥¼ ì¼œê³  ë„ëŠ” í•¨ìˆ˜
     /// </summary>
     /// <param name="canMove"></param>
     public void SetInputState(bool canMove)
     {
         isCanMove = canMove;
 
-        // ¾Ö´Ï¸ŞÀÌ¼Ç ÆÄ¶ó¹ÌÅÍ ÃÊ±âÈ­
+        // ì• ë‹ˆë©”ì´ì…˜ íŒŒë¼ë¯¸í„° ì´ˆê¸°í™”
         ResetAni();
-        // CharacterController »ç¿ë ½Ã ¹°¸®°¡ Æ¢´Â °Í ¹æÁö
+        // CharacterController ì‚¬ìš© ì‹œ ë¬¼ë¦¬ê°€ íŠ€ëŠ” ê²ƒ ë°©ì§€
         if(TryGetComponent<CharacterController>(out var cc))
         {
             cc.enabled = canMove;
         }
     }
     /// <summary>
-    /// Ã¼·Â È¸º¹ ÇÔ¼ö
+    /// ì²´ë ¥ íšŒë³µ í•¨ìˆ˜
     /// </summary>
     /// <param name="amount"></param>
     public void Heal(float amount)
     {
         if (isDeath) return;
-        // Ã¼·Â È¸º¹ÀÌ ÃÖ´ë Ã¼·ÂÀ» ³ÑÁö ¾Êµµ·Ï Á¦ÇÑ
+        // ì²´ë ¥ íšŒë³µì´ ìµœëŒ€ ì²´ë ¥ì„ ë„˜ì§€ ì•Šë„ë¡ ì œí•œ
         CurHp = MathF.Min(CurHp + amount, MaxHp);
 
-        // ui Ã¼·Â¹Ù °»½Å ÀÌº¥Æ® È£Ãâ
+        // ui ì²´ë ¥ë°” ê°±ì‹  ì´ë²¤íŠ¸ í˜¸ì¶œ
         ChangeHp?.Invoke(CurHp, MaxHp);
-        // Èú ¹Ş¾Ò´Â »ç½ÇÀ» ÀÌº¥Æ®·Î ¾Ë¸²
+        // í ë°›ì•˜ëŠ” ì‚¬ì‹¤ì„ ì´ë²¤íŠ¸ë¡œ ì•Œë¦¼
         OnHeal?.Invoke();
     }
 
@@ -200,20 +207,20 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
             if (ContPlayer == null)
             {
-                Debug.LogError("Ä³¸¯ÅÍ ÄÁÆ®·Ñ·¯¸¦ Ã£À»¼ö ¾ø½À´Ï´Ù.", this);
+                Debug.LogError("ìºë¦­í„° ì»¨íŠ¸ë¡¤ëŸ¬ë¥¼ ì°¾ì„ìˆ˜ ì—†ìŠµë‹ˆë‹¤.", this);
             }
         }
 
-        // ¾À ³»¿¡ ÅÂ±Ø °¡Áø ¿ÀºêÁ§Æ® °Ë»ö
+        // ì”¬ ë‚´ì— íƒœê·¹ ê°€ì§„ ì˜¤ë¸Œì íŠ¸ ê²€ìƒ‰
         GameObject[] players = GameObject.FindGameObjectsWithTag("Player");
-        // ÀÌ¹Ì ÀÌÀü ¾À¿¡¼­ ³Ñ¾î¿Â ÇÃ·¹ÀÌ¾î°¡ Á¸ÀçÇÑ´Ù¸é (ÀÚ½Å Æ÷ÇÔ 2°³ÀÌ»ó)
+        // ì´ë¯¸ ì´ì „ ì”¬ì—ì„œ ë„˜ì–´ì˜¨ í”Œë ˆì´ì–´ê°€ ì¡´ì¬í•œë‹¤ë©´ (ìì‹  í¬í•¨ 2ê°œì´ìƒ)
         if(players.Length > 1)
         {
-            // »õ·Î ·ÎµåµÈ ¾ÀÀÇ ÇÃ·¹ÀÌ¾î¸¦ ÆÄ±«ÇÏ°í ÀÌÀü ÇÃ·¹ÀÌ¾î À¯Áö
+            // ìƒˆë¡œ ë¡œë“œëœ ì”¬ì˜ í”Œë ˆì´ì–´ë¥¼ íŒŒê´´í•˜ê³  ì´ì „ í”Œë ˆì´ì–´ ìœ ì§€
             Destroy(gameObject);
             return;
         }
-        // ÃÖÃÊ 1È¸ »ı¼ºµÈ ÇÃ·¹ÀÌ¾î¸¸ ÆÄ±«¹æÁö Ã³¸®
+        // ìµœì´ˆ 1íšŒ ìƒì„±ëœ í”Œë ˆì´ì–´ë§Œ íŒŒê´´ë°©ì§€ ì²˜ë¦¬
         DontDestroyOnLoad(gameObject);
     }
 
@@ -222,10 +229,10 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         ContPlayer = GetComponent<CharacterController>();
         Anim = GetComponent<Animator>();
 
-        // ½ÃÀÛ À§Ä¡ ¼³Á¤
+        // ì‹œì‘ ìœ„ì¹˜ ì„¤ì •
         Teleport(StartPos);
 
-        //ÀÎÇ²¾×¼ÇÀÌ ¿¬°áµÇÀÖ´Ù¸é È°¼ºÈ­
+        //ì¸í’‹ì•¡ì…˜ì´ ì—°ê²°ë˜ìˆë‹¤ë©´ í™œì„±í™”
         OnInputAction();
         Anim.applyRootMotion = false;
 
@@ -234,14 +241,14 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             TrsMainCam = Camera.main.transform;
         }
 
-        //ÀÌº¥Æ® ¼³Á¤
+        //ì´ë²¤íŠ¸ ì„¤ì •
         ChangeHp?.Invoke(CurHp, MaxHp);
         UiManager.Instance.OffTalk += UnlockMove;
         UiManager.Instance.OnUiStateChanged += UIStateChanged;
         equipSys = GetComponent<EquipmentSystem>();
         equipSys.OnWeaponEquippedChanged += WeaponEquipChanged;
 
-        //½ÃÀÛÇÒ¶§ ¹«±â¸¦ µé°íÀÖ´ÂÁö È®ÀÎÇÏ°í ¸Â´Â ¾Ö´Ï¸ŞÀÌÅÍ·Î ±³Ã¼
+        //ì‹œì‘í• ë•Œ ë¬´ê¸°ë¥¼ ë“¤ê³ ìˆëŠ”ì§€ í™•ì¸í•˜ê³  ë§ëŠ” ì• ë‹ˆë©”ì´í„°ë¡œ êµì²´
         if (Anim.runtimeAnimatorController == null)
         {
             switch (CurrentWeapon)
@@ -250,12 +257,12 @@ public class Player_CC : MonoBehaviour, ITakeDamage
                     Anim.runtimeAnimatorController = NonCombatController;
                     break;
                 default:
-                    //¹«±âÀÇ ·¹ÀÌ¾î°¡ °ËÀÌ°í, ÀüÅõ¸ğµåÀÏ¶§
+                    //ë¬´ê¸°ì˜ ë ˆì´ì–´ê°€ ê²€ì´ê³ , ì „íˆ¬ëª¨ë“œì¼ë•Œ
                     if (CurrentWeapon.layer == LayerMask.NameToLayer("Sword") && isCombat == true)
                     {
                         Anim.runtimeAnimatorController = OneHandSwordController;
                     }
-                    //¹«±âÀÇ ·¹ÀÌ¾î°¡ µµ³¢ÀÌ°í, ÀüÅõ¸ğµåÀÏ¶§
+                    //ë¬´ê¸°ì˜ ë ˆì´ì–´ê°€ ë„ë¼ì´ê³ , ì „íˆ¬ëª¨ë“œì¼ë•Œ
                     if (CurrentWeapon.layer == LayerMask.NameToLayer("WarAxe") && isCombat == true)
                     {
                         Anim.runtimeAnimatorController = TwoHandAxeController;
@@ -276,7 +283,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         }
     }
     /// <summary>
-    /// UI ¿­¸²/´İÈû »óÅÂ¿¡ µû¶ó ÇÃ·¹ÀÌ¾î ÀÔ·ÂÀ» È°¼ºÈ­/ºñÈ°¼ºÈ­
+    /// UI ì—´ë¦¼/ë‹«í˜ ìƒíƒœì— ë”°ë¼ í”Œë ˆì´ì–´ ì…ë ¥ì„ í™œì„±í™”/ë¹„í™œì„±í™”
     /// </summary>
     /// <param name="isUiopen"></param>
     private void UIStateChanged(bool isUiopen)
@@ -308,6 +315,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     private void OnInputAction()
     {
         IapMove.action?.Enable();
+        IapJump.action?.Enable();
         IapRoll.action?.Enable();
         IapCrouch.action?.Enable();
         IapCombat.action?.Enable();
@@ -319,7 +327,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     void Update()
     {
-        // »ç¸Á »óÅÂÀÌ°Å³ª ÅÚ·¹Æ÷Æ®ÁßÀÌ¶ó¸é ÀÔ·Â ¹ŞÁö ¾ÊÀ½
+        // ì‚¬ë§ ìƒíƒœì´ê±°ë‚˜ í…”ë ˆí¬íŠ¸ì¤‘ì´ë¼ë©´ ì…ë ¥ ë°›ì§€ ì•ŠìŒ
         if (isDeath == true || isCanMove == false) return;
 
         isAttack = Anim.GetCurrentAnimatorStateInfo(0).IsTag("Attack");
@@ -342,14 +350,14 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         CheckAni();
         CheckRuntimeAnimator();
         CheckRollInvincible();
-        PlayerOverLapBoxCheck();
+        PlayerAttackCheck();
     }
     /// <summary>
-    /// ÀÌµ¿°©ÀÔ·Â¹Ş¾Æ¼­ MoveDir°ª¿¡ ÀúÀå
+    /// ì´ë™ê°‘ì…ë ¥ë°›ì•„ì„œ MoveDirê°’ì— ì €ì¥
     /// </summary>
     private void InputMove()
     {
-        // Ä«¸Ş¶ó ÂüÁ¶°¡ ¾ø°Å³ª ÆÄ±«µÇ¾úÀ¸¸é »õ ¾ÀÀÇ ¸ŞÀÎ Ä«¸Ş¶ó ÀçÇÒ´ç
+        // ì¹´ë©”ë¼ ì°¸ì¡°ê°€ ì—†ê±°ë‚˜ íŒŒê´´ë˜ì—ˆìœ¼ë©´ ìƒˆ ì”¬ì˜ ë©”ì¸ ì¹´ë©”ë¼ ì¬í• ë‹¹
         if(TrsMainCam == null)
         {
             if (Camera.main != null)
@@ -357,7 +365,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
                 TrsMainCam = Camera.main.transform;
             }
             else
-                return; // Ä«¸Ş¶ó ¾øÀ¸¸é ÀÌ¹ø ÇÁ·¹ÀÓ ¿¬»ê °Ç³Ê¶Ü
+                return; // ì¹´ë©”ë¼ ì—†ìœ¼ë©´ ì´ë²ˆ í”„ë ˆì„ ì—°ì‚° ê±´ë„ˆëœ€
         }
 
         Vector2 move = Vector2.zero;
@@ -367,10 +375,10 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             move = IapMove.action.ReadValue<Vector2>();
         }
 
-        //½Ã³×¸Ó½Å ¸ŞÀÎ Ä«¸Ş¶ó ±âÁØ º¤ÅÍ°ª ÃßÃâ
+        //ì‹œë„¤ë¨¸ì‹  ë©”ì¸ ì¹´ë©”ë¼ ê¸°ì¤€ ë²¡í„°ê°’ ì¶”ì¶œ
         Vector3 CamForward = TrsMainCam.forward;
         Vector3 CamRight = TrsMainCam.right;
-        //Ä¿¼­°¡ º¸ÀÌ°íÀÖ´Â »óÅÂ¶ó¸é Ä«¸Ş¶ó È¸Àü¸¸ ±İÁö
+        //ì»¤ì„œê°€ ë³´ì´ê³ ìˆëŠ” ìƒíƒœë¼ë©´ ì¹´ë©”ë¼ íšŒì „ë§Œ ê¸ˆì§€
         if (UiManager.Instance.CurrentCursorState())
         {
             MoveDir = new Vector3(move.x, 0f, move.y).normalized;
@@ -387,19 +395,19 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     }
 
     /// <summary>
-    /// Á¡ÇÁÀÔ·Â¹Ş¾Ò´ÂÁö Ã¼Å©ÇÏ°í, Á¡ÇÁ½ÇÇà
+    /// ì í”„ì…ë ¥ë°›ì•˜ëŠ”ì§€ ì²´í¬í•˜ê³ , ì í”„ì‹¤í–‰
     /// </summary>
     private void InputJump()
     {
         if (IapJump.action == null || isAttack == true) return;
-        //Á¡ÇÁÅ°°¡ ´­¸®°í Ä³¸¯ÅÍ°¡ ¶¥¿¡ ´ê¾ÆÀÖ´Ù¸é Á¡ÇÁ½ÇÇà
+        //ì í”„í‚¤ê°€ ëˆŒë¦¬ê³  ìºë¦­í„°ê°€ ë•…ì— ë‹¿ì•„ìˆë‹¤ë©´ ì í”„ì‹¤í–‰
         if (IapJump.action.WasPressedThisFrame() && isGround == true)
         {
             StartCoroutine(JumpRoutine());
         }
     }
     /// <summary>
-    /// Á¡ÇÁ ÄÚ·çÆ¾
+    /// ì í”„ ì½”ë£¨í‹´
     /// </summary>
     /// <returns></returns>
     IEnumerator JumpRoutine()
@@ -409,10 +417,10 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         isJump = true;
         CurBackJumpSpeed = BackJumpSpeed;
 
-        if(MoveValue == 0f)//Á¦ÀÚ¸®ÀÏ¶§
+        if(MoveValue == 0f)//ì œìë¦¬ì¼ë•Œ
         {
             Anim.SetTrigger("Jump");
-            if(isCombat == true)//Ä³¸¯ÅÍ°¡ º¸´Â ¹æÇâ µŞ¹æÇâÀ¸·Î Á¡ÇÁ
+            if(isCombat == true)//ìºë¦­í„°ê°€ ë³´ëŠ” ë°©í–¥ ë’·ë°©í–¥ìœ¼ë¡œ ì í”„
             {
                 isBackJump = true;
                 VelocityY = BackJumpForce;
@@ -428,11 +436,11 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             VelocityY = JumpForce;
         }
 
-        //Á¡ÇÁ°¡ µÇ±âÀ§ÇØ 1ÇÁ·¹ÀÓ ±â´Ù·ÁÁÜ
+        //ì í”„ê°€ ë˜ê¸°ìœ„í•´ 1í”„ë ˆì„ ê¸°ë‹¤ë ¤ì¤Œ
         yield return new WaitForFixedUpdate();
         yield return new WaitForFixedUpdate();
 
-        while(CheckGround() == false)//°øÁß¿¡ ¶°ÀÖ´Âµ¿¾È ±â´Ù¸²
+        while(CheckGround() == false)//ê³µì¤‘ì— ë– ìˆëŠ”ë™ì•ˆ ê¸°ë‹¤ë¦¼
         {
             yield return new WaitForFixedUpdate();
         }
@@ -443,7 +451,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         Anim.ResetTrigger("RunningJump");
     }
     /// <summary>
-    /// ±¸¸£±â ÀÔ·Â½Ã Á¶°ÇÃ¼Å©ÇÏ°í, ¾Ö´Ï¸ŞÀÌ¼Ç ½ÇÇà
+    /// êµ¬ë¥´ê¸° ì…ë ¥ì‹œ ì¡°ê±´ì²´í¬í•˜ê³ , ì• ë‹ˆë©”ì´ì…˜ ì‹¤í–‰
     /// </summary>
     private void InputRoll()
     {
@@ -457,11 +465,11 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     IEnumerator RollRoutine()
     {
-        //Áßº¹½ÇÇà¹æÁö
+        //ì¤‘ë³µì‹¤í–‰ë°©ì§€
         if(isRoll == true) yield break;
         isRoll = true;
         isHit = true;
-        //ÀÌµ¿ÀÔ·ÂÀÌ ÀÖ´Ù¸é ±× ¹æÇâÀ¸·Î È¸Àü
+        //ì´ë™ì…ë ¥ì´ ìˆë‹¤ë©´ ê·¸ ë°©í–¥ìœ¼ë¡œ íšŒì „
         if(MoveDir.sqrMagnitude > 0.01f)
         {
             transform.rotation = Quaternion.LookRotation(MoveDir);
@@ -471,7 +479,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         Anim.ResetTrigger("Roll");
     }
     /// <summary>
-    /// ¾É±â Å° ´©¸£¸é ¾É°í, ±×»óÅÂ·Î ¿òÁ÷ÀÌ¸é ¾ÉÀºÀÚ¼¼·Î ÀÌµ¿
+    /// ì•‰ê¸° í‚¤ ëˆ„ë¥´ë©´ ì•‰ê³ , ê·¸ìƒíƒœë¡œ ì›€ì§ì´ë©´ ì•‰ì€ìì„¸ë¡œ ì´ë™
     /// </summary>
     private void InputCrouch()
     {
@@ -499,7 +507,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
         if(IapCombat.action.WasPressedThisFrame() && isCombat == false)
         {
-            //¹«±â¸¦ µé°í ÀÖ´ÂÁö È®ÀÎ
+            //ë¬´ê¸°ë¥¼ ë“¤ê³  ìˆëŠ”ì§€ í™•ì¸
             isHaveWeapon = CheckWeapon();
             if(isHaveWeapon == true)
             {
@@ -509,7 +517,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             }
             else
             {
-                UiManager.Instance.StartNoticePanel("¹«±â°¡ ¾ø½À´Ï´Ù.");
+                UiManager.Instance.StartNoticePanel("ë¬´ê¸°ê°€ ì—†ìŠµë‹ˆë‹¤.");
             }
         }
         else if(IapCombat.action.WasPressedThisFrame() && isCombat == true)
@@ -525,7 +533,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         return CurrentWeapon != null;
     }
     /// <summary>
-    /// °È±â »óÅÂÀÎÁö Ã¼Å©ÇÏ°í, bool°ª º¯°æ
+    /// ê±·ê¸° ìƒíƒœì¸ì§€ ì²´í¬í•˜ê³ , boolê°’ ë³€ê²½
     /// </summary>
     private void InputWalk()
     {
@@ -541,12 +549,12 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         }
     }
     /// <summary>
-    /// °ø°İÀÔ·Â¹Ş´Â ÇÔ¼ö
+    /// ê³µê²©ì…ë ¥ë°›ëŠ” í•¨ìˆ˜
     /// </summary>
     private void InputAttack()
     {
         if (IapAttack.action == null || isCombat == false) return;
-        //ÀüÅõ¸ğµåÀÌ°í °ø°İÅ° ´­·¶À»¶§
+        //ì „íˆ¬ëª¨ë“œì´ê³  ê³µê²©í‚¤ ëˆŒë €ì„ë•Œ
         if(IapAttack.action.WasPressedThisFrame() && isCombat == true)
         {
             AttackProcess();
@@ -555,29 +563,29 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     private void AttackProcess()
     {
-        //±¸¸£°íÀÖ°Å³ª ¾ÉÀº»óÅÂÀÌ°Å³ª °øÁß¿¡ ¶°ÀÖÀ¸¸é °ø°İºÒ°¡
+        //êµ¬ë¥´ê³ ìˆê±°ë‚˜ ì•‰ì€ìƒíƒœì´ê±°ë‚˜ ê³µì¤‘ì— ë– ìˆìœ¼ë©´ ê³µê²©ë¶ˆê°€
         if (isRoll == true || isCrouch == true || CheckGround() == false) return;
 
         bool isTransition = Anim.IsInTransition(0);
-        //´Ù¸¥¾Ö´Ï¸ŞÀÌ¼ÇÀ¸·Î ÀüÈ¯ÁßÀÌ¶ó¸é
+        //ë‹¤ë¥¸ì• ë‹ˆë©”ì´ì…˜ìœ¼ë¡œ ì „í™˜ì¤‘ì´ë¼ë©´
         if (isTransition == true) return;
-        //°ø°İ ½ÃÀÛÀü ÀÔ·ÂÁßÀÎ ¹æÇâÀÌ ÀÖ´Ù¸é ±×¹æÇâÀ¸·Î È¸Àü
+        //ê³µê²© ì‹œì‘ì „ ì…ë ¥ì¤‘ì¸ ë°©í–¥ì´ ìˆë‹¤ë©´ ê·¸ë°©í–¥ìœ¼ë¡œ íšŒì „
         if(MoveDir.sqrMagnitude > 0.01f)
         {
             transform.rotation = Quaternion.LookRotation(MoveDir.normalized);
         }
 
-        //Ã¹°ø°İÀÏ¶§
+        //ì²«ê³µê²©ì¼ë•Œ
         if(isAttack == false)
         {
             Anim.SetTrigger("Attack");
             CanCombo = false;
         }
-        //ÄŞº¸ ÀÔ·ÂÀÏ¶§ (ÀÌ¹Ì °ø°İÁßÀÌ°í, ¾Ö´Ï¸ŞÀÌ¼Ç ÀÌº¥Æ®¿¡ ÀÇÇØ true°¡ µÇ¸é ½ÇÇà
+        //ì½¤ë³´ ì…ë ¥ì¼ë•Œ (ì´ë¯¸ ê³µê²©ì¤‘ì´ê³ , ì• ë‹ˆë©”ì´ì…˜ ì´ë²¤íŠ¸ì— ì˜í•´ trueê°€ ë˜ë©´ ì‹¤í–‰
         else if(CanCombo == true)
         {
             Anim.SetTrigger("Attack");
-            CanCombo = false;//¿¬Å¸ ¹æÁö¸¦À§ÇØ ¹Ù·Î false
+            CanCombo = false;//ì—°íƒ€ ë°©ì§€ë¥¼ìœ„í•´ ë°”ë¡œ false
         }
     }
 
@@ -588,17 +596,17 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             isDialogue = false;
             OffDialogue?.Invoke();
         }
-        //ÇÃ·¹ÀÌ¾î°¡ npcÆ®¸®°Å¿¡ ´ê¾ÆÀÖ°í »óÈ£ÀÛ¿ëÅ°¸¦ ´©¸¥´Ù¸é
+        //í”Œë ˆì´ì–´ê°€ npcíŠ¸ë¦¬ê±°ì— ë‹¿ì•„ìˆê³  ìƒí˜¸ì‘ìš©í‚¤ë¥¼ ëˆ„ë¥¸ë‹¤ë©´
         if(isInteract == true && isDialogue == false && IapInteract.action.WasPressedThisFrame())
         {
             isDialogue = true;
             ResetAni();
             OnDialogue?.Invoke();
         }
-        //ÇöÀç ´ëÈ­»óÅÂÁßÀÌ°í ÀÌµ¿ºÒ°¡»óÅÂÀÌ¸ç »óÈ£ÀÛ¿ëÅ° ÀÔ·ÂÀÌ µé¾î¿ÔÀ»¶§
+        //í˜„ì¬ ëŒ€í™”ìƒíƒœì¤‘ì´ê³  ì´ë™ë¶ˆê°€ìƒíƒœì´ë©° ìƒí˜¸ì‘ìš©í‚¤ ì…ë ¥ì´ ë“¤ì–´ì™”ì„ë•Œ
         else if(isDialogue == true && IapInteract.action.WasPressedThisFrame())
         {
-            //´ÙÀ½´ë»ç·Î ³Ñ¾î°¡¶ó°í talkmanager¿¡°Ô Àü´Ş
+            //ë‹¤ìŒëŒ€ì‚¬ë¡œ ë„˜ì–´ê°€ë¼ê³  talkmanagerì—ê²Œ ì „ë‹¬
             UiManager.Instance.NextDialogueText();
         }
     }
@@ -616,7 +624,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     }
 
     /// <summary>
-    /// ¾Ö´Ï¸ŞÀÌÅÍ¿¡°Ô º¯¼ö°ª Àü´ŞÇÏ´Â ÇÔ¼ö
+    /// ì• ë‹ˆë©”ì´í„°ì—ê²Œ ë³€ìˆ˜ê°’ ì „ë‹¬í•˜ëŠ” í•¨ìˆ˜
     /// </summary>
     private void CheckAni()
     {
@@ -635,11 +643,11 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         }
     }
     /// <summary>
-    /// ÇöÀç µé°í ÀÖ´Â ¹«±â È®ÀÎ ÈÄ ¸Â´Â ¾Ö´Ï¸ŞÀÌÅÍ·Î º¯°æ
+    /// í˜„ì¬ ë“¤ê³  ìˆëŠ” ë¬´ê¸° í™•ì¸ í›„ ë§ëŠ” ì• ë‹ˆë©”ì´í„°ë¡œ ë³€ê²½
     /// </summary>
     private void CheckRuntimeAnimator()
     {
-        //ÀüÅõ ¸ğµå»óÅÂ¶ó¸é
+        //ì „íˆ¬ ëª¨ë“œìƒíƒœë¼ë©´
        if(isCombat)
         {
             if(CurrentWeapon.layer == LayerMask.NameToLayer("Sword"))
@@ -659,16 +667,16 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     private void CheckRollInvincible()
     {
-        //ÇöÀç rollÅÂ±×¸¦ °¡Áø ¾Ö´Ï¸ŞÀÌ¼ÇÀÌ Àç»ıÁßÀÎÁö È®ÀÎ
+        //í˜„ì¬ rollíƒœê·¸ë¥¼ ê°€ì§„ ì• ë‹ˆë©”ì´ì…˜ì´ ì¬ìƒì¤‘ì¸ì§€ í™•ì¸
         bool CheckRollAnim = Anim.GetCurrentAnimatorStateInfo(0).IsTag("Roll");
         if(CheckRollAnim == true)
         {
-            //±¸¸£´Âµ¿¾È ¹«Àû
+            //êµ¬ë¥´ëŠ”ë™ì•ˆ ë¬´ì 
             isHit = true;
         }
         else
         {
-            //³Ë¹éÁßÀÌ ¾Æ´Ï¶ó¸é ¹«Àû ÇÃ·¡±× ²û
+            //ë„‰ë°±ì¤‘ì´ ì•„ë‹ˆë¼ë©´ ë¬´ì  í”Œë˜ê·¸ ë”
             if(isKnockBack == false && isRoll == false)
             {
                 isHit = false;
@@ -676,31 +684,72 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         }
     }
 
-    private void StartAtkBox()
+    private void StartAtkBox(float motionValue)
     {
-        CheckAtk = true;
+        CurrentHitType = HitCheckType.Box;
+        CurrentMotionValue = motionValue;
+        HitTartgetList.Clear();
+    }
+    private void StartAtkSphere(float motionValue)
+    {
+        CurrentHitType = HitCheckType.Sphere;
+        CurrentMotionValue = motionValue;
         HitTartgetList.Clear();
     }
     private void EndAtkBox()
     {
-        CheckAtk = false;
+        CurrentHitType = HitCheckType.none;
     }
 
-    private void PlayerOverLapBoxCheck()
+    private void PlayerAttackCheck()
     {
-        if (CheckAtk == false || CurrentWeapon == null) return;
+        if (CurrentWeapon == null || CurrentHitType == HitCheckType.none) return;
 
-        Collider[] HitTargets = Physics.OverlapBox(CurrentWeapon.transform.position, CurrentWeaponAtkHalfBox,
-                                CurrentWeapon.transform.rotation, TargetLayer);
-        foreach(Collider Target in HitTargets)
+        int hitCount = 0;
+
+        // CurrentHitTypeì— ë”°ë¼ íŒì • ë¶„ê¸° ë‚˜ëˆ”
+        switch(CurrentHitType)
         {
-            if(Target.TryGetComponent<ITakeDamage>(out var Damage))
+            case HitCheckType.Box:
+                hitCount = Physics.OverlapBoxNonAlloc(
+                    TrsAtkPoint.position,
+                    CurrentWeaponAtkHalfBox,
+                    hitBuffer,
+                    CurrentWeapon.transform.rotation,
+                    TargetLayer);
+                break;
+            case HitCheckType.Sphere:
+                hitCount = Physics.OverlapSphereNonAlloc(
+                    TrsAtkPoint.position,
+                    CurrentAtkRadius,
+                    hitBuffer,
+                    TargetLayer);
+                break;
+        }
+
+        // ë²„í¼ í¬ê¸° ìë™ í™•ì¥ ì•ˆì „ì¥ì¹˜
+        if(hitCount >= hitBuffer.Length)
+        {
+            Array.Resize(ref hitBuffer, hitBuffer.Length * 2);
+        }
+
+        // ì£¼ë³€ì— ëª¨ë“  ëª¬ìŠ¤í„°ì—ê²Œ ì¼ê´„ ë°ë¯¸ì§€ ì ìš©
+        for(int i = 0; i < hitCount; i++)
+        {
+            if (hitBuffer[i].TryGetComponent<ITakeDamage>(out var obj))
             {
-                //¸®½ºÆ®¿¡ µé¾îÀÖ´Âµ¥ Áßº¹À¸·Î µ¥¹ÌÁö ÁÖ´Â °Í ¹æÁö¿ë
-                if (HitTartgetList.Contains(Damage)) continue;
-                //ÇÃ·¹ÀÌ¾î ÇöÀç°ø°İ·Â + ¹«±â °ø°İ·Â
-                Damage.TakeDamage(this.gameObject, AtkPower + CurrentWeaponAtk);
-                HitTartgetList.Add(Damage);
+                //ë¦¬ìŠ¤íŠ¸ì— ë“¤ì–´ìˆëŠ”ë° ì¤‘ë³µìœ¼ë¡œ ë°ë¯¸ì§€ ì£¼ëŠ” ê²ƒ ë°©ì§€ìš©
+                if (HitTartgetList.Contains(obj)) continue;
+
+                // ë°ë¯¸ì§€ ê³„ì‚° ê³µì‹
+                // ê¸°ë³¸ ë°ë¯¸ì§€ = ë¬´ê¸° ê³µê²©ë ¥ + í”Œë ˆì´ì–´ ê³µê²©ë ¥
+                // ìµœì¢… ë°ë¯¸ì§€ : ê¸°ë³¸ ë°ë¯¸ì§€ * íƒ€ê²© ëª¨ì…˜ ê³„ìˆ˜ * (1 â€“ ëª¬ìŠ¤í„° ë°ë¯¸ì§€ ê°ì†Œìœ¨) 
+                // ì†ì„± í­ë°œ ì‹œ: ìµœì¢… ë°ë¯¸ì§€ + ì†ì„± í­ë°œ ë°ë¯¸ì§€
+                // ì†ì„± í­ë°œ ë°ë¯¸ì§€ = ë¬´ê¸° ì†ì„±ê°’ * 4.0 (ì¡°ê±´ ë§Œì¡± ì‹œ 1íšŒ ë°œë™)
+                float baseDamage = AtkPower + CurrentWeaponAtk;
+                float finalDamage = baseDamage * CurrentMotionValue;
+                obj.TakeDamage(this.gameObject, finalDamage);
+                HitTartgetList.Add(obj);
             }
         }
     }
@@ -708,13 +757,13 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     private void FixedUpdate()
     {
-        // ´ëÈ­ ÁßÀÌ°Å³ª Á¶ÀÛ ºÒ°¡ »óÅÂÀÏ ¶§´Â ¿¬»ê Áß´Ü
+        // ëŒ€í™” ì¤‘ì´ê±°ë‚˜ ì¡°ì‘ ë¶ˆê°€ ìƒíƒœì¼ ë•ŒëŠ” ì—°ì‚° ì¤‘ë‹¨
         if (isDialogue == true || isCanMove == false) return;
 
-        // »ç¸Á »óÅÂÀÏ ¶§´Â ÀÌµ¿/È¸ÀüÀ» ¸·µÇ, ¹Ù´Ú¿¡ ÂøÁöÇÒ ¶§±îÁö Áß·Â¸¸ Àû¿ë
+        // ì‚¬ë§ ìƒíƒœì¼ ë•ŒëŠ” ì´ë™/íšŒì „ì„ ë§‰ë˜, ë°”ë‹¥ì— ì°©ì§€í•  ë•Œê¹Œì§€ ì¤‘ë ¥ë§Œ ì ìš©
         if(isDeath)
         {
-            // ¶¥¿¡ ´êÁö ¾Ê¾Ò´Ù¸é Áß·ÂÀ» Àû¿ëÇØ ¹Ù´ÚÀ¸·Î ¶³¾î¶ß¸²
+            // ë•…ì— ë‹¿ì§€ ì•Šì•˜ë‹¤ë©´ ì¤‘ë ¥ì„ ì ìš©í•´ ë°”ë‹¥ìœ¼ë¡œ ë–¨ì–´ëœ¨ë¦¼
             if(!isGround)
             {
                 Vector3 verti = VerticalVelocity();
@@ -731,7 +780,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         ContPlayer.Move(FinalVelocity * Time.fixedDeltaTime);
     }
     /// <summary>
-    /// ÇÃ·¹ÀÌ¾î È¸Àü
+    /// í”Œë ˆì´ì–´ íšŒì „
     /// </summary>
     private void PlayerRotation()
     {
@@ -745,33 +794,33 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     }
 
     /// <summary>
-    /// Áß·Â°ü¸®
+    /// ì¤‘ë ¥ê´€ë¦¬
     /// </summary>
     private Vector3 VerticalVelocity()
     {
-        //¶¥ÀÎÁö ¾Æ´ÑÁö Ã¼Å©
+        //ë•…ì¸ì§€ ì•„ë‹Œì§€ ì²´í¬
         if (CheckGround() == true && isJump == false)
         {
             isGround = true;
             VelocityY = -2f;
         }
-        //¶¥ÀÌ ¾Æ´Ï°Å³ª °æ»ç°¡ °¡ÆÄ¸£¸é
+        //ë•…ì´ ì•„ë‹ˆê±°ë‚˜ ê²½ì‚¬ê°€ ê°€íŒŒë¥´ë©´
         else
         {
             isGround = false;
             VelocityY += Gravity * Time.fixedDeltaTime;
         }
 
-        //ÃÖ´ë ÇÏ°­ ¼Óµµ Á¦ÇÑ
+        //ìµœëŒ€ í•˜ê°• ì†ë„ ì œí•œ
         VelocityY = Mathf.Max(VelocityY, MaxVelocityY);
 
         if (CheckSliding == true)
         {
-            //°æ»ç¸é °æ»ç¹æÇâ°è»ê(ÇÏ¹æº¤ÅÍ ÃßÃâ)
+            //ê²½ì‚¬ë©´ ê²½ì‚¬ë°©í–¥ê³„ì‚°(í•˜ë°©ë²¡í„° ì¶”ì¶œ)
             Vector3 SlideDir = new Vector3(GroundNormal.x, -GroundNormal.y, GroundNormal.z);
-            //Áß·Â³«ÇÏ°ª¿¡ ¹Ì²ô·¯Áö´Â¼Óµµ °áÇÕ, ÃÖÁ¾ ¹İÈ¯
+            //ì¤‘ë ¥ë‚™í•˜ê°’ì— ë¯¸ë„ëŸ¬ì§€ëŠ”ì†ë„ ê²°í•©, ìµœì¢… ë°˜í™˜
             Vector3 FinalSlideVelocity = SlideDir * SlideSpeed;
-            //±âÁ¸ Áß·ÂÀº À¯Áö
+            //ê¸°ì¡´ ì¤‘ë ¥ì€ ìœ ì§€
             FinalSlideVelocity.y = VelocityY;
             return FinalSlideVelocity;
         }
@@ -780,32 +829,32 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     }
 
     /// <summary>
-    /// ¿òÁ÷ÀÓ ´ã´çÇÏ´Â ÇÔ¼ö
+    /// ì›€ì§ì„ ë‹´ë‹¹í•˜ëŠ” í•¨ìˆ˜
     /// </summary>
     private Vector3 MovingVelocity()
     {
-        //±¸¸£´Â ÁßÀÌ°Å³ª °ø°İ¾Ö´Ï¸ŞÀÌ¼Ç ÁøÇàÁßÀÌ¸é ÀÌµ¿ÀÔ·Â ¾È¹ŞÀ½ 
+        //êµ¬ë¥´ëŠ” ì¤‘ì´ê±°ë‚˜ ê³µê²©ì• ë‹ˆë©”ì´ì…˜ ì§„í–‰ì¤‘ì´ë©´ ì´ë™ì…ë ¥ ì•ˆë°›ìŒ 
         if (isRoll == true || isAttack == true) return Vector3.zero;
 
-        //³Ë¹éÀÏ¶§
+        //ë„‰ë°±ì¼ë•Œ
         if(isHit == true)
         {
             return KnockBackVelocity;
         }
 
-        float CurSpeed = MoveSpeed;//Ä³¸¯ÅÍ ÀÌµ¿¼Óµµ
+        float CurSpeed = MoveSpeed;//ìºë¦­í„° ì´ë™ì†ë„
 
         Vector3 BackJumpVelocity = Vector3.zero;
 
-        //ÀüÅõ¸ğµåÀÌ°í ÀÔ·Â°ª¾øÀÌ Á¡ÇÁÇÒ¶§
+        //ì „íˆ¬ëª¨ë“œì´ê³  ì…ë ¥ê°’ì—†ì´ ì í”„í• ë•Œ
         if (isJump == true && isCombat == true && isBackJump == true)
         {
-            //µÚ·Î ¾ó¸¶³ª ¹Ğ·Á³¯°ÇÁö
+            //ë’¤ë¡œ ì–¼ë§ˆë‚˜ ë°€ë ¤ë‚ ê±´ì§€
             BackJumpVelocity = -transform.forward * CurBackJumpSpeed;
             return BackJumpVelocity;
         }
 
-        //ÀÔ·Â°ªÀÌ ¾øÀ»¶§
+        //ì…ë ¥ê°’ì´ ì—†ì„ë•Œ
         if (MoveDir.magnitude < 0.01f)
         {
             MoveValue = 0f;
@@ -814,30 +863,30 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         }
         else
         {
-            //¾É±âÀÎÁö ¾Æ´ÑÁö
+            //ì•‰ê¸°ì¸ì§€ ì•„ë‹Œì§€
             if (isCrouch == false)
             {
-                //°È±âÀÏ¶© ÀÌµ¿¼Óµµ º¯È­
+                //ê±·ê¸°ì¼ë• ì´ë™ì†ë„ ë³€í™”
                 switch (isWalk)
                 {
                     case false:
-                        //¾Ö´Ï¸ŞÀÌ¼Çvalue°ª
+                        //ì• ë‹ˆë©”ì´ì…˜valueê°’
                         MoveValue = 1f;
                         break;
 
                     case true:
-                        //ÀÌµ¿¼Óµµ 0.5¹è
+                        //ì´ë™ì†ë„ 0.5ë°°
                         CurSpeed *= 0.5f;
-                        //¾Ö´Ï¸ŞÀÌ¼Çvalue°ª
+                        //ì• ë‹ˆë©”ì´ì…˜valueê°’
                         MoveValue = 0.5f;
                         break;
                 }
             }
             else
             {
-                //ÀÌµ¿¼Óµµ 0.3¹è
+                //ì´ë™ì†ë„ 0.3ë°°
                 CurSpeed *= 0.3f;
-                //¾Ö´Ï¸ŞÀÌ¼Çvalue°ª
+                //ì• ë‹ˆë©”ì´ì…˜valueê°’
                 CrouchMove = 1;
             }
         }
@@ -852,11 +901,11 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         if(Physics.SphereCast(Origin, Radius, Vector3.down,
                               out RaycastHit Hit, RayDistance, GroundLayer))
         {
-            //ºÎ‹HÈù °æ»ç¹æÇâÀ» ÀúÀå
+            //ë¶€ë”«íŒ ê²½ì‚¬ë°©í–¥ì„ ì €ì¥
             GroundNormal = Hit.normal;
-            //Áö¸é°ú ¼öÁ÷º¤ÅÍ»çÀÌ °¢µµ±¸ÇÔ
+            //ì§€ë©´ê³¼ ìˆ˜ì§ë²¡í„°ì‚¬ì´ ê°ë„êµ¬í•¨
             float SlopeAngle = Vector3.Angle(Vector3.up, GroundNormal);
-            //ÇÑ°è°ªº¸´Ù °æ°¡»ç Å©¸é ¹Ì²ô·¯Áü
+            //í•œê³„ê°’ë³´ë‹¤ ê²½ê°€ì‚¬ í¬ë©´ ë¯¸ë„ëŸ¬ì§
             if(SlopeAngle > SlopeLimitAngle)
             {
                 CheckSliding = true;
@@ -865,7 +914,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             CheckSliding = false;
             return true;
         }
-        //°øÁß¿¡ ¶°ÀÖ´Ù¸é ÃÊ±âÈ­
+        //ê³µì¤‘ì— ë– ìˆë‹¤ë©´ ì´ˆê¸°í™”
         CheckSliding = false;
         GroundNormal = Vector3.up;
         return false;
@@ -874,19 +923,19 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     }
 
     /// <summary>
-    /// ·çÆ®¸ğ¼ÇÀ» Á¦¾îÇÏ±âÀ§ÇÑ ÇÔ¼ö
+    /// ë£¨íŠ¸ëª¨ì…˜ì„ ì œì–´í•˜ê¸°ìœ„í•œ í•¨ìˆ˜
     /// </summary>
     private void OnAnimatorMove()
     {
-        //±¸¸£±â
+        //êµ¬ë¥´ê¸°
         if(isRoll == true && Anim != null)
         {
-            //·çÆ®¸ğ¼Ç Å°°í ·çÆ®¸ğ¼Ç ÀÌµ¿·®¿¡ µû¶ó ÄÁÆ®·Ñ·¯¿¡ °ª Àü´Ş
+            //ë£¨íŠ¸ëª¨ì…˜ í‚¤ê³  ë£¨íŠ¸ëª¨ì…˜ ì´ë™ëŸ‰ì— ë”°ë¼ ì»¨íŠ¸ë¡¤ëŸ¬ì— ê°’ ì „ë‹¬
             Anim.applyRootMotion = true;
             Vector3 DeltaPosition = Anim.deltaPosition;
             ContPlayer.Move(DeltaPosition);
         }
-        //°ø°İÇÏ°íÀÖÀ»¶§
+        //ê³µê²©í•˜ê³ ìˆì„ë•Œ
         else if(Anim != null && isAttack == true)
         {
             Anim.applyRootMotion = true;
@@ -894,7 +943,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             ContPlayer.Move(DeltaPosition);
         }
 
-        //³ª¸ÓÁö ¾Ö´Ï¸ŞÀÌ¼Ç¿¡¼­ ·çÆ®¸ğ¼ÇÀÌ ÄÑÁú¶§
+        //ë‚˜ë¨¸ì§€ ì• ë‹ˆë©”ì´ì…˜ì—ì„œ ë£¨íŠ¸ëª¨ì…˜ì´ ì¼œì§ˆë•Œ
         //else if(Anim != null && Anim.applyRootMotion == true)
         //{
         //    Vector3 DeltaPosition = Anim.deltaPosition;
@@ -904,27 +953,35 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     public void TakeDamage(GameObject Attacker, float Damage)
     {
-        //ÀÌ¹Ì °æÁ÷ÁßÀÌ°Å³ª Á×À¸¸é ½ÇÇà ±İÁö
+        //ì´ë¯¸ ê²½ì§ì¤‘ì´ê±°ë‚˜ ì£½ìœ¼ë©´ ì‹¤í–‰ ê¸ˆì§€
         if (isHit == true || isDeath == true) return;
 
-        CurHp -= Damage;
+        // í”Œë ˆì´ì–´ ë°ë¯¸ì§€ ê°ì†Œìœ¨
+        // í”Œë ˆì´ì–´ ë°©ì–´ë ¥ / (í”Œë ˆì´ì–´ ë°©ì–´ë ¥ + 300)
+        // ìµœì¢… ë°ë¯¸ì§€ = ëª¬ìŠ¤í„° ê³µê²©ë ¥ * ëª¬ìŠ¤í„° ëª¨ì…˜ ê³„ìˆ˜ * (1 - í”Œë ˆì´ì–´ ë°ë¯¸ì§€ ê°ì†Œìœ¨)
+        // ìµœì†Œ ë°ë¯¸ì§€ ë³´ì¥ = ìµœì¢… ë°ë¯¸ì§€ê°€ 1ë¯¸ë§Œì´ë©´ 1ì˜ ë°ë¯¸ì§€ ë³´ì¥
+        float damageReduction = PlayerDef / (PlayerDef + 300f);
+        float finalDamage = Damage * (1f - damageReduction);
+        finalDamage = MathF.Max(1f, finalDamage);
+
+        CurHp -= finalDamage;
         ChangeHp?.Invoke(CurHp, MaxHp);
         
-        //ºñÀüÅõ»óÅÂÀÏ¶§ ¸ÂÀ¸¸é ÇÇ°İ¾Ö´Ï¸ŞÀÌ¼Ç¸¸ ÁøÇà
+        //ë¹„ì „íˆ¬ìƒíƒœì¼ë•Œ ë§ìœ¼ë©´ í”¼ê²©ì• ë‹ˆë©”ì´ì…˜ë§Œ ì§„í–‰
         if (isCombat == false)
         {
             Anim.SetTrigger("Small Hit");
         }
 
-        //Àá±ñÀÇ ¹«Àû½Ã°£ ÈÄ Á¶ÀÛ°¡´É
+        //ì ê¹ì˜ ë¬´ì ì‹œê°„ í›„ ì¡°ì‘ê°€ëŠ¥
         else if(isCombat == true)
         {
-            //ÀüÅõ Áß¿¡ ¸ÂÀ¸¸é ¾Ö´Ï¸ŞÀÌ¼Ç°ú ÇÔ²² »ìÂ¦ ¹Ğ·Á³²
+            //ì „íˆ¬ ì¤‘ì— ë§ìœ¼ë©´ ì• ë‹ˆë©”ì´ì…˜ê³¼ í•¨ê»˜ ì‚´ì§ ë°€ë ¤ë‚¨
             StartCoroutine(Invincible(Attacker.transform.position, InvincibleTime));
         }
 
 
-        if (CurHp <= 0)//0ÀÌ µÇ¸é »ç¸ÁÃ³¸®
+        if (CurHp <= 0)//0ì´ ë˜ë©´ ì‚¬ë§ì²˜ë¦¬
         {
             CurHp = 0f;
             Anim.SetTrigger("Die");
@@ -934,7 +991,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     public void SetWeapon(WeaponData weapondata, GameObject weapon)
     {
-        //Äù½ºÆ®·Î ¾òÀº ¹«±â¶ó¸é
+        //í€˜ìŠ¤íŠ¸ë¡œ ì–»ì€ ë¬´ê¸°ë¼ë©´
         if(weapon != null && CurrentWeapon == null)
         {
             weapon.SetActive(false);
@@ -944,7 +1001,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             weapon.SetActive(false);
         }
 
-        //½ºÅ©¸³Æ®¿ë º¯¼ö ÀúÀå
+        //ìŠ¤í¬ë¦½íŠ¸ìš© ë³€ìˆ˜ ì €ì¥
         CurrentWeapon = weapon;
         currentWeaponData = weapondata;
         CurrentWeaponAtk = weapondata.weaponAtk;
@@ -955,15 +1012,15 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     {
         isHit = true;
         isKnockBack = true;
-        //³Ë¹é ¹æÇâ °è»ê
+        //ë„‰ë°± ë°©í–¥ ê³„ì‚°
         Vector3 dir = transform.position - Pos;
         dir.y = 0f;
         dir.Normalize();
         float KnockBackTimer = 0f;
-        //Àü´Ş¹ŞÀº ¹«Àû½Ã°£ µ¿¾È µÚ·Î ¹Ğ·Á³²
+        //ì „ë‹¬ë°›ì€ ë¬´ì ì‹œê°„ ë™ì•ˆ ë’¤ë¡œ ë°€ë ¤ë‚¨
         while(KnockBackTimer < Timer)
         {
-            //À¯´ÏÆ¼ ¹°¸®»çÀÌÅ¬¿¡ ¸ÂÃç ÇÑÇÁ·¹ÀÓ ½°
+            //ìœ ë‹ˆí‹° ë¬¼ë¦¬ì‚¬ì´í´ì— ë§ì¶° í•œí”„ë ˆì„ ì‰¼
             yield return new WaitForFixedUpdate();
             KnockBackTimer += Time.fixedDeltaTime;
             KnockBackVelocity = dir * KnockBackSpeed;
@@ -973,29 +1030,39 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         isHit = false;
     }
     /// <summary>
-    /// ¹«±â ÀåÂø »óÅÂ º¯°æ ½Ã ½ÇÇàµÇ´Â ÀÌº¥Æ® ÇÔ¼ö
+    /// ë¬´ê¸° ì¥ì°© ìƒíƒœ ë³€ê²½ ì‹œ ì‹¤í–‰ë˜ëŠ” ì´ë²¤íŠ¸ í•¨ìˆ˜
     /// </summary>
     /// <param name="odlweapon"></param>
     /// <param name="newweapon"></param>
     private void WeaponEquipChanged(WeaponData odlweapon, WeaponData newweapon)
     {
-        // ±âÁ¸ »ı¼ºµÈ ¹«±â »èÁ¦
+        // ê¸°ì¡´ ìƒì„±ëœ ë¬´ê¸° ì‚­ì œ
         if(CurrentWeapon != null)
         {
             Destroy(CurrentWeapon);
             CurrentWeapon = null;
         }
 
-        //»õ·Î¿î ¹«±â ÀåÂø ½Ã 3D ¹«±â »ı¼º ¹× Á¤º¸ °»½Å
+        //ìƒˆë¡œìš´ ë¬´ê¸° ì¥ì°© ì‹œ 3D ë¬´ê¸° ìƒì„± ë° ì •ë³´ ê°±ì‹ 
         if(newweapon != null)
         {
             currentWeaponData = newweapon;
             CurrentWeaponAtk = newweapon.weaponAtk;
             CurrentWeaponAtkHalfBox = newweapon.atkHalfbox;
+            CurrentAtkRadius = newweapon.atkRadius;
 
-            if(newweapon.objWeapon != null && TrsWeapons != null)
+            if (newweapon.objWeapon != null && TrsWeapons != null)
             {
                 CurrentWeapon = Instantiate(newweapon.objWeapon, TrsWeapons);
+                // ê³µê²© íŒì  ì§€ì ì„ ê°€ì ¸ì˜´
+                CurrentWeapon.TryGetComponent<WeaponController>(out var weaponCtrl);
+                TrsAtkPoint = weaponCtrl.atkPoint;
+                if(weaponCtrl == null)
+                {
+                    // ì˜ˆì™¸ ì²˜ë¦¬
+                    TrsAtkPoint = CurrentWeapon.transform;
+                }
+
                 CurrentWeapon.transform.localPosition = newweapon.trsWeapon;
                 CurrentWeapon.transform.localRotation = Quaternion.Euler(newweapon.rotWeapon);
                 CurrentWeapon.transform.localScale = Vector3.one;
@@ -1004,7 +1071,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         }
         else
         {
-            //ÀåÂø ÇØÁ¦ ½Ã ÃÊ±âÈ­
+            //ì¥ì°© í•´ì œ ì‹œ ì´ˆê¸°í™”
             currentWeaponData = null;
             CurrentWeaponAtk = 0f;
             CurrentWeaponAtkHalfBox = Vector3.zero;
@@ -1037,5 +1104,21 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     private void UnlockMove()
     {
         isDialogue = false;
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        if(TrsAtkPoint != null)
+        {
+            // ë°•ìŠ¤ ë²”ìœ„
+            Gizmos.color = Color.red;
+            Gizmos.matrix = TrsAtkPoint.localToWorldMatrix;
+            Gizmos.DrawWireCube(Vector3.zero, CurrentWeaponAtkHalfBox * 2f);
+
+            // êµ¬ì²´ ë²”ìœ„
+            Gizmos.matrix = Matrix4x4.identity;
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawWireSphere(TrsAtkPoint.position, CurrentAtkRadius);
+        }
     }
 }

@@ -25,7 +25,7 @@ Transform:
   m_GameObject: {fileID: 3488219782925767891}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.1, z: 0}
+  m_LocalPosition: {x: 0, y: -0.01, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -42,7 +42,6 @@ GameObject:
   - component: {fileID: 8532293782364783227}
   - component: {fileID: 4739775173692984798}
   - component: {fileID: 7359980347611642132}
-  - component: {fileID: 5959538940442421926}
   - component: {fileID: 6164817136952930928}
   m_Layer: 7
   m_Name: WarAxe_1
@@ -125,20 +124,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &5959538940442421926
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 9017080916510562497}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 225d2e772e03dd74daae2c336cd5802a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::TestAtkBox
-  AtkPoint: {fileID: 8852134531495486978}
-  AtkHalfBox: {x: 0.45, y: 0.46, z: 0.2}
 --- !u!114 &6164817136952930928
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -152,6 +137,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WeaponController
   Data: {fileID: 11400000, guid: 7b6d08f629169204383e2ff965eb7885, type: 2}
+  AtkPoint: {fileID: 8852134531495486978}
 --- !u!1001 &3979302638633729276
 PrefabInstance:
   m_ObjectHideFlags: 0

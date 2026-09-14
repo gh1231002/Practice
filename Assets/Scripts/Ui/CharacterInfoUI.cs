@@ -53,7 +53,8 @@ public class CharacterInfoUI : MonoBehaviour
 
     private void UpdateStatUi(float playeratk, float hp, float weaponatk)
     {
-        InfoAtkText.text = $"공격력: ({playeratk} + {weaponatk})";
+        float finalAtk = playeratk + weaponatk;
+        InfoAtkText.text = $"공격력: {finalAtk}";
         InfoHpText.text = $"체력: {hp}";
     }
 }

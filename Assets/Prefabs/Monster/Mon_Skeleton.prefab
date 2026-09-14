@@ -182,6 +182,7 @@ MonoBehaviour:
   maxHp: 100
   curHp: 0
   atkPower: 15
+  monDef: 20
   moveSpeed: 2
   chaseSpeed: 3
 --- !u!114 &6850487695614721691

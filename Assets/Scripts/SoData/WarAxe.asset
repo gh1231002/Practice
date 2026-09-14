@@ -18,6 +18,7 @@ MonoBehaviour:
     \uB3C4\uB07C."
   IsStackable: 0
   WeaponAtk: 10
+  AtkRadius: 1
   TrsWeapon: {x: 1.013031, y: -0.7649647, z: 0.5280116}
   RotWeapon: {x: -30, y: -4.66, z: 50}
   AtkHalfBox: {x: 0.45, y: 0.46, z: 0.2}

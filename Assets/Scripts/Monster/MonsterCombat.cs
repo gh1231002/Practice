@@ -15,6 +15,7 @@ public class MonsterCombat : MonoBehaviour
     public float AtkDistance => atkDistance;
 
     float currentAtkPower;
+    float currentMotionValue;
 
     /// <summary>
     /// AIController에서 초기화 시 호출
@@ -28,8 +29,11 @@ public class MonsterCombat : MonoBehaviour
     /// <summary>
     /// 공격 애니메이션의 타격 프레임에서 1회 호출합니다.
     /// </summary>
-    public void OnHitImpact()
+    public void OnHitImpact(float motionValue)
     {
+        // 몬스터 모션 계수 가져옴
+        currentMotionValue = motionValue;
+
         // atkPoint 미지정 시 몬스터 정면 1.5m, 높이 1.0m를 기준점으로 자동 설정
         Vector3 center = atkPoint != null
             ? atkPoint.position
@@ -45,7 +49,9 @@ public class MonsterCombat : MonoBehaviour
 
             if(damage != null)
             {
-                damage.TakeDamage(gameObject, currentAtkPower);
+                // 몬스터 공격 데미지 계산
+                float finalDamage = currentAtkPower * currentMotionValue;
+                damage.TakeDamage(gameObject, finalDamage);
                 break;
             }
         }

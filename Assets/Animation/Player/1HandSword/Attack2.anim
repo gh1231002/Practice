@@ -237220,7 +237220,7 @@ AnimationClip:
     functionName: StartAtkBox
     data: 
     objectReferenceParameter: {fileID: 0}
-    floatParameter: 0
+    floatParameter: 0.9
     intParameter: 0
     messageOptions: 0
   - time: 0.8666667
