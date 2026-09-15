@@ -726,7 +726,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         CurrentHitType = HitCheckType.Box;
         CurrentMotionValue = motionValue;
         HitTartgetList.Clear();
-    }.
+    }
     private void StartAtkSphere(float motionValue)
     {
         CurrentHitType = HitCheckType.Sphere;
