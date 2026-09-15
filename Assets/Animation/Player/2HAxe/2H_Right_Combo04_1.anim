@@ -115091,7 +115091,7 @@ AnimationClip:
     m_LoopBlendOrientation: 1
     m_LoopBlendPositionY: 1
     m_LoopBlendPositionXZ: 0
-    m_KeepOriginalOrientation: 0
+    m_KeepOriginalOrientation: 1
     m_KeepOriginalPositionY: 1
     m_KeepOriginalPositionXZ: 0
     m_HeightFromFeet: 0
@@ -228983,6 +228983,34 @@ AnimationClip:
   m_Events:
   - time: 0.41666666
     functionName: StartAtkBox
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 1.5
+    intParameter: 0
+    messageOptions: 0
+  - time: 0.45
+    functionName: OnSlashAttack
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 0.5833333
+    functionName: EnableCombo
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 0.6666667
+    functionName: EndAtkBox
+    data: 
+    objectReferenceParameter: {fileID: 0}
+    floatParameter: 0
+    intParameter: 0
+    messageOptions: 0
+  - time: 1.5
+    functionName: DisalbeCombo
     data: 
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0
