@@ -15,7 +15,8 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     [SerializeField] InputActionProperty IapRoll;
     [SerializeField] InputActionProperty IapCrouch;
     [SerializeField] InputActionProperty IapCombat;
-    [SerializeField] InputActionProperty IapAttack;
+    [SerializeField] InputActionProperty IapLeftAttack;
+    [SerializeField] InputActionProperty IapRightAttack;
     [SerializeField] InputActionProperty IapLook;
     [SerializeField] InputActionProperty IapInteract;
     [Header("무기별 애니메이터")]
@@ -230,7 +231,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         Anim = GetComponent<Animator>();
 
         // 시작 위치 설정
-        Teleport(StartPos);
+        //Teleport(StartPos);
 
         //인풋액션이 연결되있다면 활성화
         OnInputAction();
@@ -307,7 +308,8 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         IapCrouch.action?.Disable();
         IapCombat.action?.Disable();
         IapWalk.action?.Disable();
-        IapAttack.action?.Disable();
+        IapLeftAttack.action?.Disable();
+        IapRightAttack.action?.Disable();
 
         MoveDir = Vector3.zero;
     }
@@ -320,7 +322,8 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         IapCrouch.action?.Enable();
         IapCombat.action?.Enable();
         IapWalk.action?.Enable();
-        IapAttack.action?.Enable();
+        IapLeftAttack.action?.Enable();
+        IapRightAttack.action?.Enable();
         IapInteract.action?.Enable();
         IapLook.action?.Enable();
     }
@@ -553,9 +556,26 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     /// </summary>
     private void InputAttack()
     {
-        if (IapAttack.action == null || isCombat == false) return;
-        //전투모드이고 공격키 눌렀을때
-        if(IapAttack.action.WasPressedThisFrame() && isCombat == true)
+        if (IapLeftAttack.action == null || isCombat == false || IapRightAttack.action == null || currentWeaponData == null) return;
+        
+        bool isLmbPressed = IapLeftAttack.action.WasPressedThisFrame();
+        bool isRmbPressed = IapRightAttack.action.WasPressedThisFrame();
+
+        // 전투모드이고 우클릭
+        if(isRmbPressed && currentWeaponData.canHeavyAttack)
+        {
+            HeavyAttackProcess();
+            return;
+        }
+
+        // 양클릭 : 무기가 지원할때만 실행
+        if(isLmbPressed && isRmbPressed && currentWeaponData.canSpecialAttack)
+        {
+            return;
+        }
+
+        // 전투모드이고 좌클릭
+        if (isLmbPressed)
         {
             AttackProcess();
         }
@@ -575,17 +595,31 @@ public class Player_CC : MonoBehaviour, ITakeDamage
             transform.rotation = Quaternion.LookRotation(MoveDir.normalized);
         }
 
-        //첫공격일때
-        if(isAttack == false)
+        //첫공격
+        //콤보 입력일때 (이미 공격중이고, 애니메이션 이벤트에 의해 true가 되면 실행)
+        if (isAttack == false || CanCombo == true)
         {
             Anim.SetTrigger("Attack");
             CanCombo = false;
         }
-        //콤보 입력일때 (이미 공격중이고, 애니메이션 이벤트에 의해 true가 되면 실행
-        else if(CanCombo == true)
+    }
+
+    private void HeavyAttackProcess()
+    {
+        //구르고있거나 앉은상태이거나 공중에 떠있으면 공격불가
+        if (isRoll == true || isCrouch == true || CheckGround() == false) return;
+
+        bool isTransition = Anim.IsInTransition(0);
+        if(isTransition == true) return;
+        if(MoveDir.sqrMagnitude > 0.01f)
         {
-            Anim.SetTrigger("Attack");
-            CanCombo = false;//연타 방지를위해 바로 false
+            transform.rotation = Quaternion.LookRotation(MoveDir.normalized);
+        }
+
+        if(isAttack == false || CanCombo == true)
+        {
+            Anim.SetTrigger("HeavyAttack");
+            CanCombo = false; // 연계 시점 즉시 소모
         }
     }
 
@@ -619,8 +653,12 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         Anim.ResetTrigger("Jump");
         Anim.ResetTrigger("RunningJump");
         Anim.ResetTrigger("Attack");
-        Anim.ResetTrigger("Crouch");
         Anim.ResetTrigger("Roll");
+        Anim.ResetTrigger("Small Hit");
+        Anim.SetBool("Big Hit", false);
+        Anim.SetBool("Crouch", false);
+        Anim.SetBool("Walk", false);
+        Anim.SetBool("Combat", false);
     }
 
     /// <summary>
@@ -638,7 +676,6 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         if(isCombat)
         {
             Anim.SetBool("Combat", isCombat);
-            Anim.SetBool("Combo", CanCombo);
             Anim.SetFloat("CombatValue", CombatValue);
         }
     }
@@ -689,7 +726,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         CurrentHitType = HitCheckType.Box;
         CurrentMotionValue = motionValue;
         HitTartgetList.Clear();
-    }
+    }.
     private void StartAtkSphere(float motionValue)
     {
         CurrentHitType = HitCheckType.Sphere;
@@ -763,12 +800,8 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         // 사망 상태일 때는 이동/회전을 막되, 바닥에 착지할 때까지 중력만 적용
         if(isDeath)
         {
-            // 땅에 닿지 않았다면 중력을 적용해 바닥으로 떨어뜨림
-            if(!isGround)
-            {
-                Vector3 verti = VerticalVelocity();
-                ContPlayer.Move(verti * Time.fixedDeltaTime);
-            }
+            Vector3 verti = VerticalVelocity();
+            ContPlayer.Move(verti * Time.fixedDeltaTime);
             return;
         }
 
@@ -938,7 +971,6 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         //공격하고있을때
         else if(Anim != null && isAttack == true)
         {
-            Anim.applyRootMotion = true;
             Vector3 DeltaPosition = Anim.deltaPosition;
             ContPlayer.Move(DeltaPosition);
         }
@@ -965,6 +997,16 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         finalDamage = MathF.Max(1f, finalDamage);
 
         CurHp -= finalDamage;
+
+        if (CurHp <= 0)//0이 되면 사망처리
+        {
+            // 진행중이던 애니메이션 초기화
+            ResetAni();
+            Anim.SetTrigger("Die");
+            CurHp = 0f;
+            isDeath = true;
+        }
+
         ChangeHp?.Invoke(CurHp, MaxHp);
         
         //비전투상태일때 맞으면 피격애니메이션만 진행
@@ -978,14 +1020,6 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         {
             //전투 중에 맞으면 애니메이션과 함께 살짝 밀려남
             StartCoroutine(Invincible(Attacker.transform.position, InvincibleTime));
-        }
-
-
-        if (CurHp <= 0)//0이 되면 사망처리
-        {
-            CurHp = 0f;
-            Anim.SetTrigger("Die");
-            isDeath = true;
         }
     }
 

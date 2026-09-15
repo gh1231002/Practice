@@ -25,9 +25,18 @@
                     "initialStateCheck": true
                 },
                 {
-                    "name": "Attack",
+                    "name": "LeftAttack",
                     "type": "Button",
                     "id": "6c2ab1b8-8984-453a-af3d-a3c78ae1679a",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "RightAttack",
+                    "type": "Button",
+                    "id": "304ff56b-d096-4320-82e4-9852aba15577",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -342,7 +351,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";Gamepad",
-                    "action": "Attack",
+                    "action": "LeftAttack",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -353,7 +362,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
-                    "action": "Attack",
+                    "action": "LeftAttack",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -364,7 +373,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": ";Touch",
-                    "action": "Attack",
+                    "action": "LeftAttack",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -375,7 +384,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "Joystick",
-                    "action": "Attack",
+                    "action": "LeftAttack",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -386,7 +395,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "XR",
-                    "action": "Attack",
+                    "action": "LeftAttack",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -397,7 +406,7 @@
                     "interactions": "",
                     "processors": "",
                     "groups": "Keyboard&Mouse",
-                    "action": "Attack",
+                    "action": "LeftAttack",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -640,6 +649,17 @@
                     "processors": "",
                     "groups": ";Keyboard&Mouse",
                     "action": "QuickSlot4",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "358ce44f-8e9c-4010-8151-15e9f5c3cf59",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": ";Keyboard&Mouse",
+                    "action": "RightAttack",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

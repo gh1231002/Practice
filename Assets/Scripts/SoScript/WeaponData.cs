@@ -10,6 +10,9 @@ public class WeaponData : ItemData
     [SerializeField] Vector3 RotWeapon;
     [SerializeField] Vector3 AtkHalfBox;
     [SerializeField] GameObject ObjWeapon;
+    [Header("지원하는 공격 커맨드")]
+    [SerializeField] bool CanHeavyAttack;
+    [SerializeField] bool CanSpecialAttack;
 
     public float weaponAtk => WeaponAtk;
     public float atkRadius => AtkRadius;
@@ -17,4 +20,6 @@ public class WeaponData : ItemData
     public Vector3 trsWeapon => TrsWeapon;
     public Vector3 rotWeapon => RotWeapon;
     public Vector3 atkHalfbox => AtkHalfBox;
+    public bool canHeavyAttack => CanHeavyAttack;
+    public bool canSpecialAttack => CanSpecialAttack;
 }

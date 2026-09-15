@@ -2085,7 +2085,6 @@ GameObject:
   m_Component:
   - component: {fileID: 312974529}
   - component: {fileID: 312974528}
-  - component: {fileID: 312974527}
   - component: {fileID: 312974530}
   - component: {fileID: 312974531}
   m_Layer: 0
@@ -2095,14 +2094,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!81 &312974527
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 312974526}
-  m_Enabled: 1
 --- !u!20 &312974528
 Camera:
   m_ObjectHideFlags: 0
@@ -2524,6 +2515,14 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4685886571930254, guid: 69fc34dacc563124f9d53d366de4a6de, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4978031547157168114, guid: 69fc34dacc563124f9d53d366de4a6de, type: 3}
+      propertyPath: m_Size.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4978031547157168114, guid: 69fc34dacc563124f9d53d366de4a6de, type: 3}
+      propertyPath: m_Center.y
       value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []

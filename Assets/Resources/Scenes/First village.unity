@@ -4325,7 +4325,6 @@ GameObject:
   m_Component:
   - component: {fileID: 330585546}
   - component: {fileID: 330585545}
-  - component: {fileID: 330585544}
   - component: {fileID: 330585547}
   - component: {fileID: 330585548}
   m_Layer: 0
@@ -4335,14 +4334,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!81 &330585544
-AudioListener:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 330585543}
-  m_Enabled: 1
 --- !u!20 &330585545
 Camera:
   m_ObjectHideFlags: 0
@@ -8795,7 +8786,7 @@ PrefabInstance:
     - target: {fileID: 5866666021909216657, guid: 4fe3fdb6c2e26fd4caa6e179e640e61a, type: 3}
       propertyPath: m_Controller
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 9100000, guid: 8c41500987c7edc4092351d75a9b6f5a, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -8827,6 +8818,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4fe3fdb6c2e26fd4caa6e179e640e61a, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1125241683}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 4fe3fdb6c2e26fd4caa6e179e640e61a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1125241685}
   m_SourcePrefab: {fileID: 100100000, guid: 4fe3fdb6c2e26fd4caa6e179e640e61a, type: 3}
 --- !u!1 &598132131 stripped
 GameObject:
@@ -17501,18 +17495,30 @@ MonoBehaviour:
       m_SingletonActionBindings: []
       m_Flags: 0
     m_Reference: {fileID: 5379541197445322605, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  IapAttack:
+  IapLeftAttack:
     m_UseReference: 1
     m_Action:
-      m_Name: Iap Attack
+      m_Name: Iap Left Attack
       m_Type: 0
       m_ExpectedControlType: 
-      m_Id: 88f969bf-bdae-488e-898f-6d8b8289b8b8
+      m_Id: 001dafd1-b206-4dd8-957f-435368a5965c
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings: []
       m_Flags: 0
     m_Reference: {fileID: 1120369429361536294, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  IapRightAttack:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Iap Right Attack
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: 93888bdd-65c6-4091-84ac-4d73e311bfbb
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: 1158847215851963535, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   IapLook:
     m_UseReference: 1
     m_Action:
@@ -17633,6 +17639,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PlayerVfxManager
   HealParticle: {fileID: 4678103677468820507, guid: 1245b8d2997d5b34fb1637be70a7eb05, type: 3}
   ChestSocket: {fileID: 798580584}
+--- !u!81 &1125241685
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1125241672}
+  m_Enabled: 1
 --- !u!1 &1126421937 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 104250, guid: b626a2c19b493bc47b8551a65bce8ace, type: 3}

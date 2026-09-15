@@ -6,7 +6,7 @@ AnimationClip:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: 2H_Attack4
+  m_Name: 2H_Left_Combo1_4
   serializedVersion: 7
   m_Legacy: 0
   m_Compressed: 0
@@ -160721,7 +160721,7 @@ AnimationClip:
     m_LoopBlendOrientation: 1
     m_LoopBlendPositionY: 1
     m_LoopBlendPositionXZ: 0
-    m_KeepOriginalOrientation: 1
+    m_KeepOriginalOrientation: 0
     m_KeepOriginalPositionY: 1
     m_KeepOriginalPositionXZ: 0
     m_HeightFromFeet: 0
@@ -320271,13 +320271,6 @@ AnimationClip:
     messageOptions: 0
   - time: 1.8333334
     functionName: DisalbeCombo
-    data: 
-    objectReferenceParameter: {fileID: 0}
-    floatParameter: 0
-    intParameter: 0
-    messageOptions: 0
-  - time: 2.2333333
-    functionName: EndAttack
     data: 
     objectReferenceParameter: {fileID: 0}
     floatParameter: 0
