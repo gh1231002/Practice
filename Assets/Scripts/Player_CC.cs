@@ -26,6 +26,10 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     [Header("플레이어 무기 관련 설정")]
     [SerializeField] Transform TrsWeapons;
     [SerializeField] LayerMask TargetLayer;
+    [Header("양클릭 입력 세팅")]
+    [SerializeField, Tooltip("동시 입력 인정 시간")] float SimultaneousInputTime = 0.08f;
+    float LastlmbTime = -999f;
+    float LastRmbTime = -888f;
     float CurrentAtkRadius; // 도끼 4타 범위
 
     GameObject CurrentWeapon;
@@ -104,6 +108,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     bool isInteract;
     bool isDialogue;
     bool isCanMove = true;
+    bool isSuperArmor;
 
     //이벤트 함수들
     public event Action<float,float> ChangeHp;
@@ -111,6 +116,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     public event Action OffDialogue;
     public event Action OnHeal;
 
+    public void SetSuperArmor(bool state) => isSuperArmor = state;
     public void SetInteract(bool State)
     {
         isInteract = State;
@@ -352,7 +358,6 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         }
         CheckAni();
         CheckRuntimeAnimator();
-        CheckRollInvincible();
         PlayerAttackCheck();
     }
     /// <summary>
@@ -471,7 +476,6 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         //중복실행방지
         if(isRoll == true) yield break;
         isRoll = true;
-        isHit = true;
         //이동입력이 있다면 그 방향으로 회전
         if(MoveDir.sqrMagnitude > 0.01f)
         {
@@ -561,20 +565,25 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         bool isLmbPressed = IapLeftAttack.action.WasPressedThisFrame();
         bool isRmbPressed = IapRightAttack.action.WasPressedThisFrame();
 
-        // 전투모드이고 우클릭
-        if(isRmbPressed && currentWeaponData.canHeavyAttack)
+        // 입력 발생 시 타임스탬프 갱신
+        if(isLmbPressed) LastlmbTime = Time.time;
+        if(isRmbPressed) LastRmbTime = Time.time;
+
+        // 양클릭 : 무기가 양클릭 공격을 지원하고 특정 초 이내에 모두 눌렸을 때
+        if (currentWeaponData.canSpecialAttack && Mathf.Abs(LastlmbTime - LastRmbTime) <= SimultaneousInputTime)
+        {
+            SpecialAttackProcess();
+            return;
+        }
+
+        // 우클릭
+        if (isRmbPressed && currentWeaponData.canHeavyAttack)
         {
             HeavyAttackProcess();
             return;
         }
 
-        // 양클릭 : 무기가 지원할때만 실행
-        if(isLmbPressed && isRmbPressed && currentWeaponData.canSpecialAttack)
-        {
-            return;
-        }
-
-        // 전투모드이고 좌클릭
+        // 좌클릭
         if (isLmbPressed)
         {
             AttackProcess();
@@ -589,16 +598,17 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         bool isTransition = Anim.IsInTransition(0);
         //다른애니메이션으로 전환중이라면
         if (isTransition == true) return;
-        //공격 시작전 입력중인 방향이 있다면 그방향으로 회전
-        if(MoveDir.sqrMagnitude > 0.01f)
-        {
-            transform.rotation = Quaternion.LookRotation(MoveDir.normalized);
-        }
-
+        
         //첫공격
         //콤보 입력일때 (이미 공격중이고, 애니메이션 이벤트에 의해 true가 되면 실행)
         if (isAttack == false || CanCombo == true)
         {
+            //공격 시작전 입력중인 방향이 있다면 그방향으로 회전
+            if (MoveDir.sqrMagnitude > 0.01f)
+            {
+                transform.rotation = Quaternion.LookRotation(MoveDir.normalized);
+            }
+
             Anim.SetTrigger("Attack");
             CanCombo = false;
         }
@@ -611,15 +621,46 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
         bool isTransition = Anim.IsInTransition(0);
         if(isTransition == true) return;
-        if(MoveDir.sqrMagnitude > 0.01f)
-        {
-            transform.rotation = Quaternion.LookRotation(MoveDir.normalized);
-        }
-
+        
         if(isAttack == false || CanCombo == true)
         {
+            if (MoveDir.sqrMagnitude > 0.01f)
+            {
+                transform.rotation = Quaternion.LookRotation(MoveDir.normalized);
+            }
+
             Anim.SetTrigger("HeavyAttack");
             CanCombo = false; // 연계 시점 즉시 소모
+        }
+    }
+
+    private void SpecialAttackProcess()
+    {
+        //구르고있거나 앉은상태이거나 공중에 떠있으면 공격불가
+        if (isRoll == true || isCrouch == true || CheckGround() == false) return;
+
+        AnimatorStateInfo stateInfo = Anim.GetCurrentAnimatorStateInfo(0);
+
+        // 현재 약/강공격이 막 시작된 극초반(15%)인지 체크
+        bool isEarlyAttackCancel = isAttack && (stateInfo.normalizedTime < 0.15f);
+
+        // Idle / 콤보 가능 시점 / 공격 극초반 캔슬일 때 진입
+        if (isAttack == false || CanCombo == true || isEarlyAttackCancel)
+        {
+            if (MoveDir.sqrMagnitude > 0.01f)
+            {
+                transform.rotation = Quaternion.LookRotation(MoveDir.normalized);
+            }
+
+            // 이전 프레임에 켜졌을 수 있는 약/강공격 트리거 제거
+            Anim.ResetTrigger("Attack");
+            Anim.ResetTrigger("HeavyAttack");
+            Anim.CrossFadeInFixedTime("2H_WhirlWind", 0.1f);
+            CanCombo = false; // 연계 시점 즉시 소모
+
+            // 동시 입력 타임스탬프 리셋
+            LastlmbTime = -999f;
+            LastRmbTime = -888f;
         }
     }
 
@@ -684,40 +725,25 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     /// </summary>
     private void CheckRuntimeAnimator()
     {
+        RuntimeAnimatorController targetController = NonCombatController;
+
         //전투 모드상태라면
-       if(isCombat)
+       if(isCombat && CurrentWeapon != null)
         {
             if(CurrentWeapon.layer == LayerMask.NameToLayer("Sword"))
             {
-                Anim.runtimeAnimatorController = OneHandSwordController;
+                targetController = OneHandSwordController;
             }
             else if(CurrentWeapon.layer == LayerMask.NameToLayer("WarAxe"))
             {
-                Anim.runtimeAnimatorController = TwoHandAxeController;
+                targetController = TwoHandAxeController;
             }
         }
-        else
+        
+       // 현재 컨트롤러와 할당하려는 컨트롤러가 다를 때만 1회 변경
+       if(Anim.runtimeAnimatorController != targetController && targetController != null)
         {
-            Anim.runtimeAnimatorController = NonCombatController;
-        }
-    }
-
-    private void CheckRollInvincible()
-    {
-        //현재 roll태그를 가진 애니메이션이 재생중인지 확인
-        bool CheckRollAnim = Anim.GetCurrentAnimatorStateInfo(0).IsTag("Roll");
-        if(CheckRollAnim == true)
-        {
-            //구르는동안 무적
-            isHit = true;
-        }
-        else
-        {
-            //넉백중이 아니라면 무적 플래그 끔
-            if(isKnockBack == false && isRoll == false)
-            {
-                isHit = false;
-            }
+            Anim.runtimeAnimatorController = targetController;
         }
     }
 
@@ -985,8 +1011,8 @@ public class Player_CC : MonoBehaviour, ITakeDamage
 
     public void TakeDamage(GameObject Attacker, float Damage)
     {
-        //이미 경직중이거나 죽으면 실행 금지
-        if (isHit == true || isDeath == true) return;
+        // 구르기, 경직중, 죽으면 실행 금지
+        if (isHit == true || isDeath == true || isRoll == true) return;
 
         // 플레이어 데미지 감소율
         // 플레이어 방어력 / (플레이어 방어력 + 300)
@@ -1008,7 +1034,10 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         }
 
         ChangeHp?.Invoke(CurHp, MaxHp);
-        
+
+        // 슈퍼아머 상태라면 데미지만 입고 피격 실행안함
+        if (isSuperArmor) return;
+
         //비전투상태일때 맞으면 피격애니메이션만 진행
         if (isCombat == false)
         {
@@ -1116,7 +1145,6 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     private void EndRoll()
     {
         isRoll = false;
-        isHit = false;
         Anim.applyRootMotion = false;
     }
 
