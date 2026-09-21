@@ -2,20 +2,6 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-
-public enum QuestState
-{
-    NotStarted,
-    InProgress,
-    CanComplete,
-    Completed,
-}
-
-public enum TalkType
-{
-    Start, Remind, Complete, Default,
-}
-
 [Serializable]
 public class QuestProgress
 {
@@ -98,13 +84,13 @@ public class QuestManager : MonoBehaviour
                     switch(progress.questData.questType)
                     {
                         //단순 대화/보상 수령 퀘스트는 말을 걸면 완료가능 처리
-                        case QuestData.QuestType.General:
-                        case QuestData.QuestType.Reward:
+                        case QuestType.General:
+                        case QuestType.Reward:
                             progress.questState = QuestState.CanComplete;
                             break;
                         //토벌이나 수집 퀘스트는 현재 진행도가 목표치 이상이어야 완료가능 처리
-                        case QuestData.QuestType.Hunt:
-                        case QuestData.QuestType.Collect:
+                        case QuestType.Hunt:
+                        case QuestType.Collect:
                             if(progress.currentCount >= progress.questData.targetCount)
                             {
                                 progress.questState = QuestState.CanComplete;
@@ -290,5 +276,46 @@ public class QuestManager : MonoBehaviour
         currentQuest = null;
         currentDialogues = null;
         currentTalkType = TalkType.Default;
+    }
+
+    /// <summary>
+    /// 몬스터가 상망했을 때 MonsterStats에서 호출하는 함수
+    /// </summary>
+    /// <param name="killedType"></param>
+    public void OnMonsterKilled(MonsterType killedType)
+    {
+        bool isAnyQuestUpdated = false;
+
+        foreach(var progress in ActiveQuests)
+        {
+            // 진행 중이며, 사냥 퀘스트인지 검사
+            if(progress.questState == QuestState.InProgress &&
+                progress.questData.questType == QuestType.Hunt)
+            {
+                // 타깃이 Any이거나 처치한 몬스터와 타깃이 일치하는지 검사
+                bool isTargetMatch = (progress.questData.targetMonster == MonsterType.Any) ||
+                    (progress.questData.targetMonster == killedType);
+
+                if(isTargetMatch)
+                {
+                    progress.currentCount++;
+                    isAnyQuestUpdated = true;
+
+                    // 목표 수량 달성 검사
+                    if(progress.currentCount >= progress.questData.targetCount)
+                    {
+                        progress.questState = QuestState.CanComplete;
+
+                        // 상단 공지 패널 띄우기
+                        UiManager.Instance.StartNoticePanel($"[{progress.questData.questTitle}] 목표를 달성했습니다!");
+                    }
+                }
+            }
+        }
+
+        if(isAnyQuestUpdated && questUi != null)
+        {
+            questUi.UpdateTrackerUi(ActiveQuests);
+        }
     }
 }

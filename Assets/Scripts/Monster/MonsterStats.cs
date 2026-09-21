@@ -13,6 +13,7 @@ public class MonsterStats : MonoBehaviour, ITakeDamage
     [SerializeField] float monDef;
     [SerializeField] float moveSpeed;
     [SerializeField] float chaseSpeed;
+    [SerializeField] MonsterType monsterType;
 
     // 외부 읽기 전용
     public float MaxHp => maxHp;
@@ -21,11 +22,13 @@ public class MonsterStats : MonoBehaviour, ITakeDamage
     public float MonDef => monDef;
     public float MoveSpeed => moveSpeed;
     public float ChaseSpeed => chaseSpeed;
+    public MonsterType MonsterType => monsterType;
 
     public bool IsDead { get; private set; }
 
     // 피격 및 사망 이벤트
     public event Action<GameObject, float> OnTakeDamage;
+    public event Action<float, float> OnHpChanged;
     public event Action OnDeath;
 
     /// <summary>
@@ -35,6 +38,16 @@ public class MonsterStats : MonoBehaviour, ITakeDamage
     {
         IsDead = false;
         curHp = maxHp;
+    }
+
+    /// <summary>
+    /// 복귀시 체력 풀 회복
+    /// </summary>
+    public void RestoreHp()
+    {
+        curHp = maxHp;
+        // ui 슬라이더 채우기용
+        OnHpChanged?.Invoke(curHp, maxHp);
     }
 
     private void Awake()
@@ -58,6 +71,8 @@ public class MonsterStats : MonoBehaviour, ITakeDamage
         curHp -= finalDamage;
         // 피격 알림 이벤트 실행
         OnTakeDamage?.Invoke(attacker, damage);
+        // 체력 변화 이벤트 실행
+        OnHpChanged?.Invoke(curHp, maxHp);
 
         // 데미지 텍스트 출력
         Vector3 hitPos = transform.position;
@@ -69,6 +84,10 @@ public class MonsterStats : MonoBehaviour, ITakeDamage
             IsDead = true;
             // 사망 알림 이벤트 실행
             OnDeath?.Invoke();
+            if(QuestManager.instance != null)
+            {
+                QuestManager.instance.OnMonsterKilled(this.monsterType);
+            }
         }
     }
 }

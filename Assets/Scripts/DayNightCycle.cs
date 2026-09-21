@@ -40,7 +40,7 @@ public class DayNightCycle : MonoBehaviour
     float CurrentAngle;
     float StartY;
     float StartZ;
-    enum TimePhase { Sunrise, Day, Sunset, Night, None}
+    
     TimePhase CurrentPhase = TimePhase.None;
 
     private void Awake()

@@ -17,6 +17,7 @@ public class QuestData : ScriptableObject
     [TextArea(3, 5)]
     [SerializeField] string QuestScription;
     [SerializeField] QuestType Type;
+    [SerializeField] MonsterType TargetMonster;
     [SerializeField] int TargetCount;
     [Header("연계 퀘스트 조건, 없으면 null")]
     [SerializeField] QuestData ParentQuest;
@@ -41,6 +42,7 @@ public class QuestData : ScriptableObject
     public string startNpcName => StartNpcName;
     public string targetNpcName => TargetNpcName;
     public QuestType questType => Type;
+    public MonsterType targetMonster => TargetMonster;
     public int targetCount => TargetCount;
     public string[] startDialogues => StartDialogues;
     public string[] remindDialogues => RemindDialogues;
@@ -49,13 +51,4 @@ public class QuestData : ScriptableObject
     public bool ischoicedialogue => isChoiceDialogue;
     public int choiscedialogueindex => ChoiceDialogueIndex;
     public List<ChoiceData> choices => Choices;
-
-
-    public enum QuestType
-    {
-        General,//일반
-        Hunt,//사냥
-        Collect,//수집
-        Reward,//보상
-    }
 }

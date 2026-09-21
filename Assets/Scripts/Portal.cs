@@ -1,12 +1,5 @@
 using UnityEngine;
 
-// 포탈이 이동시켜야하는 씬의 이름들을 ENUM형태로 선언
-public enum TargetScene
-{
-    FirstVillage,
-    Grave,
-}
-
 public class Portal : MonoBehaviour
 {
     [Header("Portal Setting")]

@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public enum HitCheckType { none, Box, Sphere }
+
 
 public class Player_CC : MonoBehaviour, ITakeDamage
 {

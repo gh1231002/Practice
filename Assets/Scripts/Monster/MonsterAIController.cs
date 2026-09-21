@@ -1,12 +1,7 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.AI;
-
-// 몬스터 상태 정의
-public enum MonsterState
-{
-    Idle, Patrol, Chase, Attack, Hit, Die
-}
 
 // 몬스터의 '뇌' 역할을 담당, 각 모듈의 이벤트를 구독하여 상태를 전환
 // NavMeshagent 및 Animator를 총괄 제어
@@ -40,6 +35,9 @@ public class MonsterAIController : MonoBehaviour
     static readonly int HashMove = Animator.StringToHash("Move");
     static readonly int HashHit = Animator.StringToHash("Hit");
     static readonly int HashDeath = Animator.StringToHash("Death");
+
+    // 전투 상태 변화 알림 이벤트 (true: 전투/추격 시작, false: 전투 해제/순찰 복귀)
+    public event Action<bool> OnCombatStateChanged;
 
     /// <summary>
     /// [오브젝트 풀 연동] 외부 스포너 설정 및 초기 순찰 구역 지정
@@ -93,7 +91,7 @@ public class MonsterAIController : MonoBehaviour
         else
         {
             // 이동 중일 때는 낮은 우선순위를 무작위 할당해 이동체끼리 서로 우회하도록 유도
-            navAgent.avoidancePriority = Random.Range(minMovingPriority, maxMovingPriority);
+            navAgent.avoidancePriority = UnityEngine.Random.Range(minMovingPriority, maxMovingPriority);
         }
     }
 
@@ -148,6 +146,7 @@ public class MonsterAIController : MonoBehaviour
     {
         if(state == MonsterState.Die) return;
         targetPlayer = null;
+        stats.RestoreHp();
         ChangeRoutine(PatrolRoutine(), MonsterState.Patrol);
     }
 
@@ -168,7 +167,15 @@ public class MonsterAIController : MonoBehaviour
 
     private void Death()
     {
+        // 사망 시 비전투 알림 발송
+        bool wasCombat = IsCombatState(state);
         state = MonsterState.Die;
+
+        if(wasCombat)
+        {
+            OnCombatStateChanged?.Invoke(false);
+        }
+
         if (activeRoutine != null) StopCoroutine(activeRoutine);
 
         // 애니메이션 트리거 초기화 및 사망 실행
@@ -184,11 +191,30 @@ public class MonsterAIController : MonoBehaviour
         if(TryGetComponent<Collider>(out var col)) col.enabled = false;
     }
 
+    // 전투 상태 판별 헬퍼 함수 (Chase, Attack, Hit는 전투 중으로 판단)
+    private bool IsCombatState(MonsterState checkState)
+    {
+        return checkState == MonsterState.Chase ||
+            checkState == MonsterState.Attack ||
+            checkState == MonsterState.Hit;
+    }
+
     protected void ChangeRoutine(IEnumerator newRoutine, MonsterState newState)
     {
         if(state == MonsterState.Die) return;
 
+        // 이전 상태와 새 상태의 전투 여부 비교
+        bool wasCombat = IsCombatState(state);
+        bool isCombat = IsCombatState(newState);
+
         state = newState;
+
+        // 비전투 -> 전투, 전투 -> 비전투로 바뀔 때만 이벤트 발송
+        if(wasCombat != isCombat)
+        {
+            OnCombatStateChanged?.Invoke(isCombat);
+        }
+
         // 기존 실행 중인 코루틴 중단 후 새 코루틴 실행
         if(activeRoutine != null) StopCoroutine(activeRoutine);
 
@@ -215,8 +241,8 @@ public class MonsterAIController : MonoBehaviour
             }
 
             // 순찰 영역 내 무작위 좌표 산출
-            float randomX = Random.Range(bounds.min.x, bounds.max.x);
-            float randomZ = Random.Range(bounds.min.z, bounds.max.z);
+            float randomX = UnityEngine.Random.Range(bounds.min.x, bounds.max.x);
+            float randomZ = UnityEngine.Random.Range(bounds.min.z, bounds.max.z);
             Vector3 movePos = new Vector3(randomX, transform.position.y, randomZ);
 
             // 해당 좌표가 이동 가능한 NavMesh 상에 존재하는지 확인
@@ -298,6 +324,8 @@ public class MonsterAIController : MonoBehaviour
         {
             if(targetPlayer == null)
             {
+                // 추격 실패 후 복귀 시 체력 회복
+                stats.RestoreHp();
                 ChangeRoutine(PatrolRoutine(), MonsterState.Patrol);
                 yield break;
             }
