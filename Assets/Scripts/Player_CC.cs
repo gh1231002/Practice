@@ -126,9 +126,9 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         if (CurrentWeapon == null) return null;
         return CurrentWeapon;
     }
-    public float ReturnAtk()
+    public (float atkPower, float weaponAtk, float maxHp, float playerDef) ReturnPlayerStats()
     {
-        return AtkPower;
+        return (AtkPower, CurrentWeaponAtk, MaxHp, PlayerDef);
     }
     public float ReturnCurHp()
     {
@@ -137,10 +137,6 @@ public class Player_CC : MonoBehaviour, ITakeDamage
     public float ReturnMaxHp()
     {
         return MaxHp;
-    }
-    public float ReturnCurrentWeaponAtk()
-    {
-        return CurrentWeaponAtk;
     }
     public bool ReturnWeaponUnlock()
     {

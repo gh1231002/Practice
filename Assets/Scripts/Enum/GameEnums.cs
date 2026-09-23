@@ -57,8 +57,9 @@ public enum HitCheckType
 }
 
 // 포탈이 이동시켜야하는 씬의 이름들을 ENUM형태로 선언
-public enum TargetScene
+public enum SceneName
 {
-    FirstVillage,
+    Town,
     Grave,
+    Boss
 }

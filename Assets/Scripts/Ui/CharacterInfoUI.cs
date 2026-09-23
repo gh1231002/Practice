@@ -9,6 +9,7 @@ public class CharacterInfoUI : MonoBehaviour
     [SerializeField] Image WeaponIconImage;
     [SerializeField] TextMeshProUGUI InfoAtkText;
     [SerializeField] TextMeshProUGUI InfoHpText;
+    [SerializeField] TextMeshProUGUI InfoDefText;
     Player_CC Player;
 
     public void SettingStatPanel()
@@ -16,7 +17,8 @@ public class CharacterInfoUI : MonoBehaviour
         GameObject obj = GameObject.FindWithTag("Player");
         Player = obj.GetComponent<Player_CC>();
         UpdateWeaponUi(Player.ReturnWeapon());
-        UpdateStatUi(Player.ReturnAtk(), Player.ReturnCurHp(),Player.ReturnCurrentWeaponAtk());
+        var stats = Player.ReturnPlayerStats();
+        UpdateStatUi(stats.atkPower,stats.weaponAtk, stats.maxHp, stats.playerDef);
     }
 
     private void UpdateWeaponUi(GameObject Weapon)
@@ -51,10 +53,11 @@ public class CharacterInfoUI : MonoBehaviour
         //}
     }
 
-    private void UpdateStatUi(float playeratk, float hp, float weaponatk)
+    private void UpdateStatUi(float playeratk, float weaponatk, float maxhp, float playerdef)
     {
         float finalAtk = playeratk + weaponatk;
         InfoAtkText.text = $"공격력: {finalAtk}";
-        InfoHpText.text = $"체력: {hp}";
+        InfoDefText.text = $"방어력: {playerdef}";
+        InfoHpText.text = $"최대 체력: {maxhp}";
     }
 }

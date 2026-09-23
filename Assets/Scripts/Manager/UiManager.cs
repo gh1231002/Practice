@@ -15,6 +15,7 @@ public class UiManager : MonoBehaviour
     [SerializeField] GameObject InfoPanel;
     [SerializeField] GameObject InventoryPanel;
     [SerializeField] GameObject ShopPanel;
+    [SerializeField] GameObject TeleportPanel;
 
     [SerializeField] TextMeshProUGUI InteractText;
     [SerializeField] TextMeshProUGUI NpcNameText;
@@ -106,6 +107,7 @@ public class UiManager : MonoBehaviour
         InfoPanel.SetActive(false);
         InventoryPanel.SetActive(false);
         ShopPanel.SetActive(false);
+        TeleportPanel.SetActive(false);
         FadeCanvasGroup.gameObject.SetActive(false);
         FadeCanvasGroup.alpha = 0f;
 
@@ -387,6 +389,27 @@ public class UiManager : MonoBehaviour
         }
         RefreshCursorState();
     }
+
+    /// <summary>
+    /// Portal 스크립트에서 텔레포트 감지 범위에 플레이어가 들어올때 창을 켜고 끔
+    /// </summary>
+    /// <param name="isOn"></param>
+    public void ToggleTeleportPanel(bool isOn)
+    {
+        TeleportPanel.SetActive(isOn);
+        
+        if(isOn)
+        {
+            PanelList.Add(TeleportPanel);
+            TeleportPanel.transform.SetAsLastSibling();
+        }
+        else
+        {
+            PanelList.Remove(TeleportPanel);
+        }
+        RefreshCursorState();
+    }
+
     private void ExitWindow()
     {
         // List 목록에 등록된 창이 있는지 확인
@@ -408,7 +431,6 @@ public class UiManager : MonoBehaviour
     /// </summary>
     private void RefreshCursorState()
     {
-        bool isDialogueActive = DialogueUi.activeSelf;
         // 열려있는 창이 있다면 커서 보이게, 0개라면 커서 숨기기
         bool hasOpenPanel = PanelList.Count > 0;
         isCursorLock = hasOpenPanel;
@@ -433,7 +455,7 @@ public class UiManager : MonoBehaviour
     /// <param name="pos"></param>
     /// <param name="fadeDuration"></param>
     /// <returns></returns>
-    public IEnumerator FadeOutAndLoad(string nextSceneName, Vector3 pos, float fadeDuration = 0.3f)
+    private IEnumerator FadeOutAndLoad(string nextSceneName, Vector3 pos, float fadeDuration = 0.3f)
     {
         if(FadeCanvasGroup != null)
         {
@@ -443,7 +465,7 @@ public class UiManager : MonoBehaviour
             // 화면이 부드럽게 어두워짐 (씬 이동시 멈춤 현상을 가려줌)
             while(timer < fadeDuration)
             {
-                timer += Time.deltaTime;
+                timer += Time.unscaledDeltaTime;
                 FadeCanvasGroup.alpha = Mathf.Lerp(0f, 1f, timer / fadeDuration);
                 yield return null;
             }
@@ -452,6 +474,11 @@ public class UiManager : MonoBehaviour
 
         // 화면이 완전히 암전되면 로딩 씬 호출
         LoadingSceneManager.LoadScene(nextSceneName, pos);
+    }
+
+    public void LoadSceneWithFade(string sceneName, Vector3 pos)
+    {
+        StartCoroutine(FadeOutAndLoad(sceneName, pos));
     }
 
     public void ResetFade()
