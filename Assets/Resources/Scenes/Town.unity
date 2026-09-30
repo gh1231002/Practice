@@ -36020,7 +36020,7 @@ MonoBehaviour:
   BossBtnInfo:
     Btn: {fileID: 12980853}
     BtnText: {fileID: 334363582}
-    Pos: {x: 0, y: 0, z: 0}
+    Pos: {x: 204, y: 3.8, z: 72}
     TargetScene: 2
     DestinationName: "\uBCF4\uC2A4"
 --- !u!114 &2126738861

@@ -1034,18 +1034,30 @@ MonoBehaviour:
       m_SingletonActionBindings: []
       m_Flags: 0
     m_Reference: {fileID: 5379541197445322605, guid: 052faaac586de48259a63d0c4782560b, type: 3}
-  IapAttack:
-    m_UseReference: 1
+  IapLeftAttack:
+    m_UseReference: 0
     m_Action:
-      m_Name: Iap Attack
+      m_Name: Iap Left Attack
       m_Type: 0
       m_ExpectedControlType: 
-      m_Id: 9ca6abd7-2e94-42cf-a305-ad5b4af992a9
+      m_Id: 9fe7a9ab-ed1c-4219-8882-4b4b7ca20eb6
       m_Processors: 
       m_Interactions: 
       m_SingletonActionBindings: []
       m_Flags: 0
-    m_Reference: {fileID: 1120369429361536294, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+    m_Reference: {fileID: 0}
+  IapRightAttack:
+    m_UseReference: 0
+    m_Action:
+      m_Name: Iap Right Attack
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: 01360348-af23-4bd2-92bb-89d6dd7a78dd
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: 0}
   IapLook:
     m_UseReference: 1
     m_Action:
@@ -1070,22 +1082,26 @@ MonoBehaviour:
       m_SingletonActionBindings: []
       m_Flags: 0
     m_Reference: {fileID: 1781555164194001046, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  NonCombatController: {fileID: 0}
+  OneHandSwordController: {fileID: 0}
+  TwoHandAxeController: {fileID: 0}
   TrsWeapons: {fileID: 195259413744425750}
-  AtkPoint: {fileID: 0}
-  AtkHalfBox: {x: 0.1, y: 0.45, z: 0.06}
   TargetLayer:
     serializedVersion: 2
     m_Bits: 1024
-  PlayerAtkDuration: 0.2
+  SimultaneousInputTime: 0.08
+  StartPos: {x: 0, y: 0, z: 0}
   MaxHp: 100
   CurHp: 0
   AtkPower: 10
+  PlayerDef: 0
   InvincibleTime: 0.5
   MoveSpeed: 5
   JumpForce: 12
   BackJumpForce: 6.5
   BackJumpSpeed: 5
   KnockBackSpeed: 5
+  DampTime: 0
   RotationSpeed: 360
   Gravity: -30
   MaxVelocityY: -25
@@ -1097,9 +1113,11 @@ MonoBehaviour:
   SlideSpeed: 5
   VelocityY: 0
   DelayTime: 0.1
+  isGround: 0
   CanCombo: 0
   isHit: 0
   isHaveWeapon: 0
+  isAttack: 0
 --- !u!208 &957957080367161904
 NavMeshObstacle:
   m_ObjectHideFlags: 0

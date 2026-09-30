@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: 98c6073b80f973e4b823217826079a57
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 161795
+  packageName: The Ancient Set - Temples
+  packageVersion: 1.25
+  assetPath: Assets/Ancient Set - Temples/Aquarius Max Character/MakeSomeNoise.cs
+  uploadId: 357033

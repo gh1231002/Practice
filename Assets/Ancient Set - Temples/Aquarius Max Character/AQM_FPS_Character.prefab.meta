@@ -1,0 +1,16 @@
+fileFormatVersion: 2
+guid: 57a1bd413573ff94dbf9cbb717a17f2f
+timeCreated: 1519321296
+licenseType: Store
+NativeFormatImporter:
+  mainObjectFileID: 100100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 161795
+  packageName: The Ancient Set - Temples
+  packageVersion: 1.25
+  assetPath: Assets/Ancient Set - Temples/Aquarius Max Character/AQM_FPS_Character.prefab
+  uploadId: 357033
