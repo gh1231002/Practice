@@ -233,7 +233,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         Anim = GetComponent<Animator>();
 
         // 시작 위치 설정
-        //Teleport(StartPos);
+        Teleport(StartPos);
 
         //인풋액션이 연결되있다면 활성화
         OnInputAction();

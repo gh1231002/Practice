@@ -16,6 +16,8 @@ public class UiManager : MonoBehaviour
     [SerializeField] GameObject InventoryPanel;
     [SerializeField] GameObject ShopPanel;
     [SerializeField] GameObject TeleportPanel;
+    [SerializeField] GameObject BossInfoGroup;
+    [SerializeField] GameObject MainUiGroup;
 
     [SerializeField] TextMeshProUGUI InteractText;
     [SerializeField] TextMeshProUGUI NpcNameText;
@@ -108,6 +110,7 @@ public class UiManager : MonoBehaviour
         InventoryPanel.SetActive(false);
         ShopPanel.SetActive(false);
         TeleportPanel.SetActive(false);
+        BossInfoGroup.SetActive(false);
         FadeCanvasGroup.gameObject.SetActive(false);
         FadeCanvasGroup.alpha = 0f;
 
@@ -408,6 +411,19 @@ public class UiManager : MonoBehaviour
             PanelList.Remove(TeleportPanel);
         }
         RefreshCursorState();
+    }
+
+    /// <summary>
+    /// 보스 등장 컷신 종료쯤 호출하여 보스 HUD 키고 끔
+    /// </summary>
+    /// <param name="isOn"></param>
+    public void ToggleBossInfoGroup(bool isOn)
+    {
+        BossInfoGroup.SetActive(isOn);
+    }
+    public void ToggleMainUi(bool isOn)
+    {
+        MainUiGroup.SetActive(isOn);
     }
 
     private void ExitWindow()
