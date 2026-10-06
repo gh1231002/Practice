@@ -5,11 +5,12 @@ public class BossCutsceneTrigger : MonoBehaviour
     [SerializeField] BossCutsceneManager cutsceneManager;
     bool hasTriggered;
 
-    private void OnTriggerEnter(Collider other)
+    
+    private void OnTriggerExit(Collider other)
     {
         if (hasTriggered) return;
-        
-        if(other.CompareTag("Player"))
+
+        if (other.CompareTag("Player"))
         {
             hasTriggered = true;
 

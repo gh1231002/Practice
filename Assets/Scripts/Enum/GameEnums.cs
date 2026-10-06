@@ -63,3 +63,13 @@ public enum SceneName
     Grave,
     Boss
 }
+
+public enum BossState
+{
+    Idle,
+    Chase,
+    Attack,
+    Groggy,
+    PhaseTransition,
+    Die
+}

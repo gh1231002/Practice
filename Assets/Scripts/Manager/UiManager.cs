@@ -44,6 +44,9 @@ public class UiManager : MonoBehaviour
 
     [SerializeField] CanvasGroup FadeCanvasGroup;
 
+    [Header("Boss Ui")]
+    [SerializeField] BossHpBarUi bossHpBarUi;
+
     string InteractKey;
     string InventoryKey;
     string ShopKey;
@@ -424,6 +427,37 @@ public class UiManager : MonoBehaviour
     public void ToggleMainUi(bool isOn)
     {
         MainUiGroup.SetActive(isOn);
+    }
+    /// <summary>
+    /// 컷신 종료 시 씬의 보스 MonsterStats를 받아 UI와 연동합니다.
+    /// </summary>
+    /// <param name="bossStats"></param>
+    /// <param name="bossName"></param>
+    public void InitBossHpUi(MonsterStats bossStats, string bossName)
+    {
+        if(bossHpBarUi  != null)
+        {
+            bossHpBarUi.BindBoss(bossStats, bossName);
+        }
+    }
+    /// <summary>
+    /// 보스 컷신 진입/종료 시 메인 UI 조절 및 플레이어 입력/커서를 제어합니다.
+    /// </summary>
+    /// <param name="isCutscene"></param>
+    public void ToggleCutsceneMode(bool isCutscene)
+    {
+        // 메인 ui 켜기/끄기
+        ToggleMainUi(!isCutscene);
+
+        // 컷신 진행 중일 때는 마우스 커스를 항상 숨김 및 잠금
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
+        // 플레이어 입력 차단
+        if(Player != null)
+        {
+            Player.SetInputState(!isCutscene);
+        }
     }
 
     private void ExitWindow()
