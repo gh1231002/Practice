@@ -8,9 +8,13 @@ public class BossAIController : MonoBehaviour
     [SerializeField] BossState state = BossState.Idle;
     [Header("패턴 설정")]
     [SerializeField, Tooltip("이 시간동안 사거리에 안닿으면 점프 공격")]
-    float jumpAttackTriggerTime = 4.0f;
+    float jumpAttackTriggerTime;
     [SerializeField, Tooltip("땅 구르기 쿨타임")]
-    float groundSlamCooldown = 15f;
+    float groundSlamCooldown;
+    [Header("광폭화 설정")]
+    [SerializeField, Tooltip("체력이 이 비율 이하로 떨어지면 광폭화")]
+    float enrageHpRatio = 0.5f;
+    bool isEnraged = false;
 
     [Header("모듈 참조")]
     NavMeshAgent agent;
@@ -20,10 +24,13 @@ public class BossAIController : MonoBehaviour
 
     Coroutine activeRoutine;
     Transform targetPlayer;
+    Coroutine lookRoutine;
 
     // 쿨타임 및 타이머 추적용 변수
     float nextGroundSlamTime;
     float currentChaseTime;
+
+    bool wasComboCaceld;
 
     // Animator 파라미터
     static readonly int HashIsRun = Animator.StringToHash("isRun");
@@ -50,6 +57,12 @@ public class BossAIController : MonoBehaviour
     {
         stats.OnTakeDamage += TakeDamage;
         stats.OnDeath += Death;
+
+        // 게임 시작시 기본 이동속도 적용
+        if(stats != null && agent != null)
+        {
+            agent.speed = stats.MoveSpeed;
+        }
     }
 
     private void Update()
@@ -89,6 +102,18 @@ public class BossAIController : MonoBehaviour
     private void TakeDamage(GameObject attacker, float damage)
     {
         if (state == BossState.Die) return;
+
+        // 광폭화 조건 체크 ( 1회 발동)
+        if(!isEnraged && (stats.CurHp / stats.MaxHp) <= enrageHpRatio)
+        {
+            EnterEnrageMode();
+        }
+    }
+
+    private void EnterEnrageMode()
+    {
+        isEnraged = true;
+        agent.speed = stats.ChaseSpeed;
     }
 
     public void StartBossBattle(Transform player)
@@ -150,22 +175,36 @@ public class BossAIController : MonoBehaviour
         if(IsPlayerBehind())
         {
             // 360도 공격 전 살짝 돌아보는 느낌 연출
-            LookAtTarget();
-            yield return ExecutePattern(HashSpinAttack, 2.0f);
+            yield return LookAtTarget(0.4f);
+            yield return ExecutePattern(HashSpinAttack, 2f);
         }
         else
         {
-            LookAtTarget();
-
             // 정면에 있다면 쿨타임 확인 후 땅구르기 vs 기본 콤보 선택
             if(Time.time >= nextGroundSlamTime)
             {
+                StartCoroutine(LookAtTarget(0.45f));
                 nextGroundSlamTime = Time.time + groundSlamCooldown;
-                yield return ExecutePattern(HashStompAttack, 2.5f);
+                yield return ExecutePattern(HashStompAttack, 2f);
             }
             else
             {
-                yield return ExecutePattern(HashComboAttack, 1f);
+                yield return ExecuteComboPattern(HashComboAttack, 3, 1f, 2f);
+
+                // 연계 로직
+                // 콤보가 중단되었고, 플레이어와의 거리가 멀다면 즉시 점프 공격으로 전환
+                if(wasComboCaceld && targetPlayer != null)
+                {
+                    float distance = Vector3.Distance(transform.position, targetPlayer.position);
+
+                    // 일정 거리 이상 멀어졌다면 즉시 점프 공격 실행
+                    if(distance >= combat.AtkDistance * 1.4f)
+                    {
+                        Debug.Log("<color=red>[Boss] 플레이어 도망 감지! 즉시 점프 공격 연계</color>");
+                        ChangeRoutine(JumpAttackRoutine(), BossState.Attack);
+                        yield break; // SelectAttackRoutine 즉시 종료
+                    }
+                }
             }
         }
 
@@ -179,10 +218,47 @@ public class BossAIController : MonoBehaviour
         state = BossState.Attack;
         agent.isStopped = true;
 
-        LookAtTarget();
+        yield return LookAtTarget(0.3f);
+
+        // 가변 점프 이동 처리를 위한 서브 코루틴 병행 시작
+        StartCoroutine(JumpMoveRoutine());
+
         // 후딜레이 3초 부여
         yield return ExecutePattern(HashJumpAttack, 3.0f);
         ChangeRoutine(ChaseRoutine(), BossState.Chase);
+    }
+
+    private IEnumerator JumpMoveRoutine()
+    {
+        if (targetPlayer == null) yield break;
+
+        // 도약 시작 시점의 플레이어 위치 저장
+        Vector3 startPos = transform.position;
+        Vector3 targetPos = targetPlayer.position;
+
+        // 도약 전 대기
+        yield return new WaitForSeconds(0.6f);
+
+        // NavmeshAgent 비활성화 및 이동
+        agent.enabled = false;
+        // 공중에 떠서 목표 위치 까지 날아가는 시간
+        // (애니에미션에 맞춰서)
+        float jumpDuration = 0.933f;
+        float timer = 0f;
+
+        while(timer < jumpDuration)
+        {
+            timer += Time.deltaTime;
+            float progress = timer / jumpDuration;
+
+            // 플레이어 위치까지 보간이동
+            transform.position = Vector3.Lerp(startPos, targetPos, progress);
+            yield return null;
+        }
+
+        // 착지 후 NavMeshAget 다시 활성화
+        transform.position = targetPos;
+        agent.enabled = true;
     }
 
     /// <summary>
@@ -220,14 +296,107 @@ public class BossAIController : MonoBehaviour
         yield return new WaitForSeconds(cooldown);
     }
 
-    private void LookAtTarget()
+    /// <summary>
+    /// 3타 콤보 전용 코루틴
+    /// </summary>
+    /// <param name="triggerName"></param>
+    /// <param name="maxCombo"></param>
+    /// <param name="recoveryTime"></param>
+    /// <param name="coolDown"></param>
+    /// <returns></returns>
+    private IEnumerator ExecuteComboPattern(int triggerName, int maxCombo, float recoveryTime, float coolDown)
     {
-        if(targetPlayer == null) return;
+        // 콤보 시작 시 플래그 초기화
+        wasComboCaceld = false;
+
+        for(int i = 0; i < maxCombo; i++)
+        {
+            if(i> 0)
+            {
+                // 이전 타격의 후딜레이 대기
+                yield return new WaitForSeconds(recoveryTime);
+
+                // 거리 검사 : 플레이어가 사거리 밖으로 너무 멀어졌는지 확인
+                if(targetPlayer != null)
+                {
+                    float currentDistance = Vector3.Distance(transform.position, targetPlayer.position);
+
+                    // 공격 사거리의 1.4배 이상 멀어졌다면 콤보 중단
+                    if (currentDistance > combat.AtkDistance * 1.4f)
+                    {
+                        Debug.Log("<color=yellow>[Boss] 플레이어가 도망침 - 콤보 중단 후 추격 전환</color>");
+                        wasComboCaceld = true; // 취소 플래그 설정
+                        break;
+                    }
+                }
+
+                // 거리 내에 있다면 플레이어를 향해 회전 후 다음 타수 진입
+                if(lookRoutine != null) StopCoroutine(lookRoutine);
+                yield return lookRoutine = StartCoroutine(LookAtTarget(0.3f));
+            }
+            else
+            {
+                // 1타 : 0.6초간 플레이어를 향해 회전
+                if (lookRoutine != null) StopCoroutine(lookRoutine);
+                lookRoutine =  StartCoroutine(LookAtTarget(0.6f));
+            }
+            animator.SetTrigger(triggerName);
+        }
+
+        // 진행 중이던 공격 애니메이션 모션이 와전히 마칠때까지 대기
+        yield return new WaitUntil(() => !animator.GetCurrentAnimatorStateInfo(0).IsTag("Attack")
+        && !animator.IsInTransition(0));
+        
+        // 콤보가 중단된 경우 후딜레이를 대폭 줄여 점프공격으로 빠르게 연결
+        if(wasComboCaceld)
+        {
+            yield return new WaitForSeconds(0.2f);
+        }
+        else
+        {
+            // 정상 완주 시 원래 후딜레이 적용
+            yield return new WaitForSeconds(coolDown);
+        }
+    }
+
+    /// <summary>
+    /// 플레이어를 바라봅니다.
+    /// duration을 넣지 않거나 0이면 즉시 회전, 시간을 넘겨주면 부드럽게 보간 회전합니다.
+    /// </summary>
+    private IEnumerator LookAtTarget(float duration = 0f)
+    {
+        if(targetPlayer == null) yield break;
         Vector3 lookDir = targetPlayer.position - transform.position;
         lookDir.y = 0f;
-        if(lookDir.sqrMagnitude > 0.01f)
+
+        if (lookDir.sqrMagnitude <= 0.01f) yield break;
+
+        Quaternion targetRotation = Quaternion.LookRotation(lookDir);
+
+        // duration = 0 이면 즉시회전
+        if (duration <= 0f)
         {
-            transform.rotation = Quaternion.LookRotation(lookDir);
+            transform.rotation = targetRotation;
+            yield break;
+        }
+
+        // duration이 지정되어 있으면 해당 시간 동안 부드럽게 회전
+        float timer = 0f;
+        Quaternion startRotation = transform.rotation;
+        while(timer < duration)
+        {
+            timer += Time.deltaTime;
+
+            // 회전하는 도중 플레이어가 조금씩 이동하는 것도 실시간 반영
+            lookDir = targetPlayer.position - transform.position;
+            lookDir.y = 0f;
+
+            if(lookDir.sqrMagnitude > 0.01f)
+            {
+                targetRotation = Quaternion.LookRotation(lookDir);
+                transform.rotation = Quaternion.Slerp(startRotation, targetRotation, timer / duration);
+            }
+            yield return null;
         }
     }
 
@@ -251,5 +420,14 @@ public class BossAIController : MonoBehaviour
         agent.enabled = false;
 
         if (TryGetComponent<Collider>(out var col)) col.enabled = false;
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        if (combat == null) combat = GetComponent<MonsterCombat>();
+        if (combat == null) return;
+
+        Gizmos.color = Color.red;
+        Gizmos.DrawWireSphere(transform.position, combat.AtkDistance);
     }
 }

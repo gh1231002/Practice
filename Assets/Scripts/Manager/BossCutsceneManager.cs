@@ -7,6 +7,8 @@ public class BossCutsceneManager : MonoBehaviour
     [SerializeField] GameObject bossRestrictedArea;
     [SerializeField] string bossName;
     [SerializeField] PlayableDirector timeLineDirector;
+    [SerializeField] BossAIController aIController;
+    Transform Trsplayer;
 
     private void Awake()
     {
@@ -38,6 +40,12 @@ public class BossCutsceneManager : MonoBehaviour
                 UiManager.Instance.InitBossHpUi(bossStats, bossName);
             }
             bossRestrictedArea.SetActive(true);
+        }
+        GameObject obj = GameObject.FindWithTag("Player");
+        Trsplayer = obj.GetComponent<Transform>();
+        if(Trsplayer != null)
+        {
+            aIController.StartBossBattle(Trsplayer);
         }
     }
 }
