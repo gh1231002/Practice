@@ -20,11 +20,10 @@ public class BossAIController : MonoBehaviour
     NavMeshAgent agent;
     Animator animator;
     MonsterStats stats;
-    MonsterCombat combat;
+    BossCombat combat;
 
     Coroutine activeRoutine;
     Transform targetPlayer;
-    Coroutine lookRoutine;
 
     // 쿨타임 및 타이머 추적용 변수
     float nextGroundSlamTime;
@@ -48,7 +47,7 @@ public class BossAIController : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
         stats = GetComponent<MonsterStats>();
-        combat = GetComponent<MonsterCombat>();
+        combat = GetComponent<BossCombat>();
 
         animator.applyRootMotion = false;
     }
@@ -57,6 +56,7 @@ public class BossAIController : MonoBehaviour
     {
         stats.OnTakeDamage += TakeDamage;
         stats.OnDeath += Death;
+        combat.Init(stats.AtkPower);
 
         // 게임 시작시 기본 이동속도 적용
         if(stats != null && agent != null)
@@ -76,6 +76,15 @@ public class BossAIController : MonoBehaviour
     private void UpdateMovementAnimation()
     {
         if (agent == null || animator == null) return;
+
+        // 점프 중 에이전트가 비활성화되거나 NavMesh에서 벗어났다면
+        // isStopped와 reainingDistace를 읽지 않는다.
+        if (!agent.isActiveAndEnabled || !agent.isOnNavMesh)
+        {
+            animator.SetFloat(HashMoveX, 0f, 0.1f, Time.deltaTime);
+            animator.SetFloat(HashMoveZ, 0f, 0.1f, Time.deltaTime);
+            return;
+        }
 
         // 에이전트가 멈춰있거나 목적지가 없을 때 0,0 (idle) 처리
         if (agent.isStopped || agent.remainingDistance <= agent.stoppingDistance)
@@ -185,11 +194,12 @@ public class BossAIController : MonoBehaviour
             {
                 StartCoroutine(LookAtTarget(0.45f));
                 nextGroundSlamTime = Time.time + groundSlamCooldown;
+                combat.SetWarningCircleSize(BossAttackPattern.StompAttack);
                 yield return ExecutePattern(HashStompAttack, 2f);
             }
             else
             {
-                yield return ExecuteComboPattern(HashComboAttack, 3, 1f, 2f);
+                yield return ExecuteComboPattern(HashComboAttack, 3, 0.4f, 2f);
 
                 // 연계 로직
                 // 콤보가 중단되었고, 플레이어와의 거리가 멀다면 즉시 점프 공격으로 전환
@@ -236,11 +246,15 @@ public class BossAIController : MonoBehaviour
         Vector3 startPos = transform.position;
         Vector3 targetPos = targetPlayer.position;
 
+        // 경고 원 배치 함수 호출
+        combat.SetWarningCircleSize(BossAttackPattern.JumpAttack);
+
         // 도약 전 대기
         yield return new WaitForSeconds(0.6f);
 
         // NavmeshAgent 비활성화 및 이동
         agent.enabled = false;
+
         // 공중에 떠서 목표 위치 까지 날아가는 시간
         // (애니에미션에 맞춰서)
         float jumpDuration = 0.933f;
@@ -301,23 +315,30 @@ public class BossAIController : MonoBehaviour
     /// </summary>
     /// <param name="triggerName"></param>
     /// <param name="maxCombo"></param>
-    /// <param name="recoveryTime"></param>
+    /// <param name="delayTime"></param>
     /// <param name="coolDown"></param>
     /// <returns></returns>
-    private IEnumerator ExecuteComboPattern(int triggerName, int maxCombo, float recoveryTime, float coolDown)
+    private IEnumerator ExecuteComboPattern(int triggerName, int maxCombo, float delayTime, float coolDown)
     {
         // 콤보 시작 시 플래그 초기화
         wasComboCaceld = false;
 
+        // 콤보 시작 전 플레이어를 향해 한 번 부드럽게 회전한다.
+        if(targetPlayer != null)
+        {
+            yield return LookAtTarget(0.3f);
+        }
+
+        // 1타부터 차례로 공격
         for(int i = 0; i < maxCombo; i++)
         {
-            if(i> 0)
+            if (i > 0)
             {
                 // 이전 타격의 후딜레이 대기
-                yield return new WaitForSeconds(recoveryTime);
+                yield return new WaitForSeconds(delayTime);
 
                 // 거리 검사 : 플레이어가 사거리 밖으로 너무 멀어졌는지 확인
-                if(targetPlayer != null)
+                if (targetPlayer != null)
                 {
                     float currentDistance = Vector3.Distance(transform.position, targetPlayer.position);
 
@@ -329,17 +350,16 @@ public class BossAIController : MonoBehaviour
                         break;
                     }
                 }
+            }
+            AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
 
-                // 거리 내에 있다면 플레이어를 향해 회전 후 다음 타수 진입
-                if(lookRoutine != null) StopCoroutine(lookRoutine);
-                yield return lookRoutine = StartCoroutine(LookAtTarget(0.3f));
-            }
-            else
-            {
-                // 1타 : 0.6초간 플레이어를 향해 회전
-                if (lookRoutine != null) StopCoroutine(lookRoutine);
-                lookRoutine =  StartCoroutine(LookAtTarget(0.6f));
-            }
+            Debug.Log(
+                $"[Combo] 호출 시각: {Time.time:F2}, " +
+                $"상태: {stateInfo.fullPathHash}, " +
+                $"재생 진행률: {stateInfo.normalizedTime:F2}, " +
+                $"전환 중: {animator.IsInTransition(0)}"
+            );
+
             animator.SetTrigger(triggerName);
         }
 
@@ -350,7 +370,7 @@ public class BossAIController : MonoBehaviour
         // 콤보가 중단된 경우 후딜레이를 대폭 줄여 점프공격으로 빠르게 연결
         if(wasComboCaceld)
         {
-            yield return new WaitForSeconds(0.2f);
+            yield return new WaitForSeconds(0.1f);
         }
         else
         {
@@ -424,7 +444,7 @@ public class BossAIController : MonoBehaviour
 
     private void OnDrawGizmosSelected()
     {
-        if (combat == null) combat = GetComponent<MonsterCombat>();
+        if (combat == null) combat = GetComponent<BossCombat>();
         if (combat == null) return;
 
         Gizmos.color = Color.red;

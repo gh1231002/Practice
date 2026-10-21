@@ -73,3 +73,11 @@ public enum BossState
     PhaseTransition,
     Die
 }
+public enum BossAttackPattern
+{
+    leftHandAttack,
+    RightHandAttck,
+    SpinAttack,
+    JumpAttack,
+    StompAttack
+}
