@@ -76,7 +76,7 @@ public enum BossState
 public enum BossAttackPattern
 {
     leftHandAttack,
-    RightHandAttck,
+    RightHandAttack,
     SpinAttack,
     JumpAttack,
     StompAttack

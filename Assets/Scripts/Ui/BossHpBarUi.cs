@@ -6,6 +6,7 @@ public class BossHpBarUi : MonoBehaviour
 {
     [SerializeField] Slider hpBar;
     [SerializeField] TextMeshProUGUI bossNameText;
+    [SerializeField] TextMeshProUGUI bossHpText;
 
     MonsterStats currentBossStats;
 
@@ -22,6 +23,7 @@ public class BossHpBarUi : MonoBehaviour
         currentBossStats = bossStats;
 
         if(bossNameText != null) bossNameText.text = bossName;
+        if (bossHpText != null) bossHpText.text = $"{currentBossStats.CurHp / currentBossStats.MaxHp}";
         if(currentBossStats != null)
         {
             // MonsterStats의 이벤트에 UI 갱신 함수 등록
@@ -40,6 +42,7 @@ public class BossHpBarUi : MonoBehaviour
         if(hpBar != null)
         {
             hpBar.value = curHp / maxHp;
+            bossHpText.text = $"{currentBossStats.CurHp / currentBossStats.MaxHp}";
         }
     }
 

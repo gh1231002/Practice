@@ -29,10 +29,10 @@ public class MonsterCombat : MonoBehaviour
     /// <summary>
     /// 공격 애니메이션의 타격 프레임에서 1회 호출합니다.
     /// </summary>
-    public void OnHitImpact(float motionValue)
+    public void OnHitImpact(float damageMultiplier)
     {
         // 몬스터 모션 계수 가져옴
-        currentMotionValue = motionValue;
+        currentMotionValue = damageMultiplier;
 
         // atkPoint 미지정 시 몬스터 정면 1.5m, 높이 1.0m를 기준점으로 자동 설정
         Vector3 center = atkPoint != null

@@ -1,4 +1,6 @@
 using System.Collections;
+using System.Runtime.InteropServices.WindowsRuntime;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -29,7 +31,19 @@ public class BossAIController : MonoBehaviour
     float nextGroundSlamTime;
     float currentChaseTime;
 
+    // 콤보가 중간에 취소되었는지 기록
     bool wasComboCaceld;
+    // 현재 콤보가 진행 중인지 확인한다.
+    bool isComboActive;
+    // 3타 애니메이션이 끝남을 알리는 값
+    bool comboFinished;
+    // 현재 몇번째 타격인지 기록
+    int comboIndex;
+    // 이번 콤보의 최대 타격 수 기록
+    int comboMaxIndex;
+    // 현재 실행 중인 콤보에서 다음 타격에 사용할 Trigger ID
+    // 콤보마다 다른 Trigger를 사용할 수 있도록 저장한다.
+    int activeCombeNextTriggerHash;
 
     // Animator 파라미터
     static readonly int HashIsRun = Animator.StringToHash("isRun");
@@ -37,7 +51,8 @@ public class BossAIController : MonoBehaviour
     static readonly int HashMoveZ = Animator.StringToHash("MoveZ");
     static readonly int HashDeath = Animator.StringToHash("Death");
     static readonly int HashTaunt = Animator.StringToHash("Taunt");
-    static readonly int HashComboAttack = Animator.StringToHash("ComboAttack");
+    static readonly int HashComboStart = Animator.StringToHash("ComboStart");
+    static readonly int HashComboNext = Animator.StringToHash("ComboNext");
     static readonly int HashJumpAttack = Animator.StringToHash("JumpAttack");
     static readonly int HashSpinAttack = Animator.StringToHash("SpinAttack");
     static readonly int HashStompAttack = Animator.StringToHash("StompAttack");
@@ -161,8 +176,8 @@ public class BossAIController : MonoBehaviour
                 ChangeRoutine(SelectAttackRoutine(), BossState.Attack);
                 yield break;
             }
-            // 거리가 멀어서 사거리에 안닿지만, 일정 시간 이상 추격만 했을 때
-            // 점프 공격 실행 
+            // 일정 시간 이상 추격만 했을 때
+            // 점프 공격 실행
             if(currentChaseTime >= jumpAttackTriggerTime)
             {
                 ChangeRoutine(JumpAttackRoutine(), BossState.Attack);
@@ -185,7 +200,7 @@ public class BossAIController : MonoBehaviour
         {
             // 360도 공격 전 살짝 돌아보는 느낌 연출
             yield return LookAtTarget(0.4f);
-            yield return ExecutePattern(HashSpinAttack, 2f);
+            yield return ExecutePattern(HashSpinAttack, 1f);
         }
         else
         {
@@ -194,12 +209,12 @@ public class BossAIController : MonoBehaviour
             {
                 StartCoroutine(LookAtTarget(0.45f));
                 nextGroundSlamTime = Time.time + groundSlamCooldown;
-                combat.SetWarningCircleSize(BossAttackPattern.StompAttack);
-                yield return ExecutePattern(HashStompAttack, 2f);
+                combat.SetWarningCircle(BossAttackPattern.StompAttack);
+                yield return ExecutePattern(HashStompAttack, 1f);
             }
             else
             {
-                yield return ExecuteComboPattern(HashComboAttack, 3, 0.4f, 2f);
+                yield return ExecuteComboPattern(HashComboStart, HashComboNext, 3, 1f);
 
                 // 연계 로직
                 // 콤보가 중단되었고, 플레이어와의 거리가 멀다면 즉시 점프 공격으로 전환
@@ -233,8 +248,8 @@ public class BossAIController : MonoBehaviour
         // 가변 점프 이동 처리를 위한 서브 코루틴 병행 시작
         StartCoroutine(JumpMoveRoutine());
 
-        // 후딜레이 3초 부여
-        yield return ExecutePattern(HashJumpAttack, 3.0f);
+        // 후딜레이 부여
+        yield return ExecutePattern(HashJumpAttack, 1.5f);
         ChangeRoutine(ChaseRoutine(), BossState.Chase);
     }
 
@@ -247,7 +262,7 @@ public class BossAIController : MonoBehaviour
         Vector3 targetPos = targetPlayer.position;
 
         // 경고 원 배치 함수 호출
-        combat.SetWarningCircleSize(BossAttackPattern.JumpAttack);
+        combat.SetWarningCircle(BossAttackPattern.JumpAttack, targetPlayer);
 
         // 도약 전 대기
         yield return new WaitForSeconds(0.6f);
@@ -311,64 +326,68 @@ public class BossAIController : MonoBehaviour
     }
 
     /// <summary>
-    /// 3타 콤보 전용 코루틴
+    /// 콤보의 시작, 종료 대기, 쿨다운을 관리한다.
+    /// 개별 타격의 진행은 애니메이션 이벤트에 맡긴다.
     /// </summary>
-    /// <param name="triggerName"></param>
-    /// <param name="maxCombo"></param>
-    /// <param name="delayTime"></param>
-    /// <param name="coolDown"></param>
-    /// <returns></returns>
-    private IEnumerator ExecuteComboPattern(int triggerName, int maxCombo, float delayTime, float coolDown)
+    private IEnumerator ExecuteComboPattern(int startTriggerHash, int nextTriggerHash, int maxCombo, float coolDown)
     {
-        // 콤보 시작 시 플래그 초기화
+        // 공격할 횟수가 1회 미만이면 실행하지 않는다.
+        if (maxCombo < 1) yield break;
+
+        // 새로운 콤보 시작 전 bool 초기화
         wasComboCaceld = false;
+        comboFinished = false;
+        isComboActive = false;
+
+        // 첫 타격부터 시작한다.
+        comboIndex = 1;
+        comboMaxIndex = maxCombo;
+        
+        // 현재 콤보가 사용할 다음 타격 Trigger를 저장한다.
+        activeCombeNextTriggerHash = nextTriggerHash;
+
+        // 이전 실행에서 남아 있을 수 잇는 Trigger를 정리한다.
+        animator.ResetTrigger(startTriggerHash);
+        animator.ResetTrigger(nextTriggerHash);
 
         // 콤보 시작 전 플레이어를 향해 한 번 부드럽게 회전한다.
-        if(targetPlayer != null)
+        if (targetPlayer != null)
         {
             yield return LookAtTarget(0.3f);
         }
 
-        // 1타부터 차례로 공격
-        for(int i = 0; i < maxCombo; i++)
+        // 이전 공격에서 남은 트리거를 정리하고 1타를 시작한다.
+        animator.ResetTrigger(startTriggerHash);
+        animator.SetTrigger(nextTriggerHash);
+
+        // 회전하는 동안 플레이어가 사라졌는지 다시 확인한다.
+        if(targetPlayer == null)
         {
-            if (i > 0)
-            {
-                // 이전 타격의 후딜레이 대기
-                yield return new WaitForSeconds(delayTime);
-
-                // 거리 검사 : 플레이어가 사거리 밖으로 너무 멀어졌는지 확인
-                if (targetPlayer != null)
-                {
-                    float currentDistance = Vector3.Distance(transform.position, targetPlayer.position);
-
-                    // 공격 사거리의 1.4배 이상 멀어졌다면 콤보 중단
-                    if (currentDistance > combat.AtkDistance * 1.4f)
-                    {
-                        Debug.Log("<color=yellow>[Boss] 플레이어가 도망침 - 콤보 중단 후 추격 전환</color>");
-                        wasComboCaceld = true; // 취소 플래그 설정
-                        break;
-                    }
-                }
-            }
-            AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
-
-            Debug.Log(
-                $"[Combo] 호출 시각: {Time.time:F2}, " +
-                $"상태: {stateInfo.fullPathHash}, " +
-                $"재생 진행률: {stateInfo.normalizedTime:F2}, " +
-                $"전환 중: {animator.IsInTransition(0)}"
-            );
-
-            animator.SetTrigger(triggerName);
+            wasComboCaceld = true;
         }
+        else
+        {
+            // 실제 콤보가 시작할 때부터 활성 상태로 전환
+            isComboActive = true;
+            // 첫 타격을 시작하는 Trigger를 설정
+            animator.SetTrigger(startTriggerHash);
+        }
+
+        // 3타 종료되거나 콤보가 취소될 때까지 기다린다.
+        yield return new WaitUntil(() => comboFinished || wasComboCaceld);
 
         // 진행 중이던 공격 애니메이션 모션이 와전히 마칠때까지 대기
         yield return new WaitUntil(() => !animator.GetCurrentAnimatorStateInfo(0).IsTag("Attack")
         && !animator.IsInTransition(0));
-        
+
+        // 콤보 종료 후 다음 공격을 준비 할수 있게 상태 정리
+        isComboActive = false;
+        animator.ResetTrigger(startTriggerHash);
+        animator.ResetTrigger(nextTriggerHash);
+        activeCombeNextTriggerHash = 0;
+
         // 콤보가 중단된 경우 후딜레이를 대폭 줄여 점프공격으로 빠르게 연결
-        if(wasComboCaceld)
+        if (wasComboCaceld)
         {
             yield return new WaitForSeconds(0.1f);
         }
@@ -377,6 +396,57 @@ public class BossAIController : MonoBehaviour
             // 정상 완주 시 원래 후딜레이 적용
             yield return new WaitForSeconds(coolDown);
         }
+    }
+
+    /// <summary>
+    /// 애니메이션 이벤트에서 호출한다.
+    /// 다음 공격을 시작할 수 있는지 검사하고 트리거를 전송한다.
+    /// </summary>
+    public void RequestNextCombo()
+    {
+        // 콤보가 진행 중이 아니거나 이미 취소되었다면 종료한다.
+        if (!isComboActive || wasComboCaceld) return;
+        // 최대 타격 수에 도달 했다면 다음 공격을 요청하지 않음
+        if (comboIndex >= comboMaxIndex) return;
+        // 플레이어가 사라졌다면 취소
+        if (targetPlayer == null)
+        {
+            wasComboCaceld = true;
+            animator.ResetTrigger(activeCombeNextTriggerHash);
+            return;
+        }
+
+        // 현재 골렘과 플레이어 사이의 거리를 검사한다.
+        float currentDistance = Vector3.Distance(transform.position, targetPlayer.position);
+
+        // 공격 사거리 보다 멀어졌다면 콤보 중단
+        if (currentDistance > combat.AtkDistance)
+        {
+            wasComboCaceld = true; // 취소 플래그 설정
+            animator.ResetTrigger(activeCombeNextTriggerHash);
+            Debug.Log("<color=yellow>[Boss] 플레이어가 도망침 - 콤보 중단</color>");
+            return;
+        }
+
+        // 다음 콤보 번호로 진행
+        comboIndex++;
+
+        // 다음 공격을 Animator에 요정한다.
+        animator.SetTrigger(HashComboNext);
+    }
+
+    /// <summary>
+    /// 마지막 콤보 종료 시점에 호출한다.
+    /// 코루틴에 콤보가 완료되었다는 사실을 알린다.
+    /// </summary>
+    public void ComboFinished()
+    {
+        // 콤보가 정상적으로 진행 중인지 확인한다.
+        if (!isComboActive || wasComboCaceld) return;
+        // 마지막 콤보가 진행된 상태에서만 정상 완료 처리한다.
+        if (comboIndex != comboMaxIndex) return;
+        
+        comboFinished = true;
     }
 
     /// <summary>

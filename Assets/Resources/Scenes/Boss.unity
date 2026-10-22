@@ -2488,7 +2488,7 @@ GameObject:
   m_Component:
   - component: {fileID: 434643261}
   m_Layer: 0
-  m_Name: RotationAtkPoint
+  m_Name: SpinAtkPoint
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -4485,10 +4485,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MonsterStats
   maxHp: 1000
   curHp: 0
-  atkPower: 30
-  monDef: 50
+  atkPower: 10
+  monDef: 40
   moveSpeed: 3
-  chaseSpeed: 0
+  chaseSpeed: 5
   monsterType: 2
 --- !u!95 &509350808 stripped
 Animator:
@@ -5700,7 +5700,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 671669737}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.0003214297, y: 0.999295, z: -0.036496267, w: -0.008800984}
+  m_LocalRotation: {x: -0.00032143205, y: 0.999295, z: -0.03649626, w: -0.0088010505}
   m_LocalPosition: {x: 212.11, y: 14.67, z: 14.81}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -6450,7 +6450,7 @@ MonoBehaviour:
         value:
           x: 0.00000004397199
           y: 0.8291303
-          z: 0.000000029648872
+          z: 0.000000029648875
           w: 0.55905545
     - Position:
         x: 7.4299927
@@ -8093,7 +8093,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 975679371}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.0023131801, y: 0.9901984, z: 0.016517788, w: 0.1386691}
+  m_LocalRotation: {x: -0.002313178, y: 0.9901983, z: 0.01651778, w: 0.13866903}
   m_LocalPosition: {x: 207.869, y: 12, z: 3.726}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -12483,8 +12483,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 10.681763, y: 3.2517366, z: 0.90245056}
-  m_Center: {x: 0.6158142, y: 1.1258683, z: -0.04877472}
+  m_Size: {x: 10.681763, y: 4.71931, z: 1.6000328}
+  m_Center: {x: 0.6158142, y: 1.8596549, z: 0.4747448}
 --- !u!1001 &1690069335
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -12951,7 +12951,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1763986054}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.033904634, y: 0.9594988, z: -0.13192277, w: 0.24659471}
+  m_LocalRotation: {x: 0.03390463, y: 0.9594988, z: -0.13192277, w: 0.2465947}
   m_LocalPosition: {x: 194.04, y: 21.26, z: 22.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -14880,8 +14880,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossAIController
   state: 0
-  jumpAttackTriggerTime: 4
-  groundSlamCooldown: 15
+  jumpAttackTriggerTime: 5
+  groundSlamCooldown: 20
   enrageHpRatio: 0.5
 --- !u!114 &2110263277
 MonoBehaviour:
@@ -14897,18 +14897,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossCombat
   leftHandAtkPoint: {fileID: 903172242}
   rightHandAtkPoint: {fileID: 391382752}
-  stompHandAtkPoint: {fileID: 260680163}
-  rotationAtkPoint: {fileID: 434643261}
+  stompAtkPoint: {fileID: 260680163}
+  spinAtkPoint: {fileID: 434643261}
   jumpAtkPoint: {fileID: 216587518}
-  leftHandRadius: 1.5
-  rightHandRadius: 1.5
-  stompHandRadius: 4
+  leftHandRadius: 2
+  rightHandRadius: 2
+  stompRadius: 0
   rotationRadius: 4.5
   jumpRadius: 4.5
   atkDistance: 4.5
   targetLayer:
     serializedVersion: 2
     m_Bits: 8
+  stompDamageMultiplier: 1.1
+  jumpDamageMultiplier: 1.5
+  spinDamageMultiplier: 1.3
   warningCirclePrefab: {fileID: 2600109055867650478, guid: 64c006785fca4364b9e2c1ddf6c2d7d1, type: 3}
   warningGroundOffset: 0.01
 --- !u!1001 &2111685361
