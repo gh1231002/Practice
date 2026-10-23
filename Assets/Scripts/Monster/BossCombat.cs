@@ -60,9 +60,9 @@ public class BossCombat : MonoBehaviour
 
     // 이미 피해를 받은 대상을 기록한다.
     // 같은 대상의 콜라이더가 여러 개여도 중복 피해를 막기 위한 용도이다.
-    readonly HashSet<ITakeDamage> jumpAndStompAttackTargets = new HashSet<ITakeDamage>();
-    readonly HashSet<ITakeDamage> comboTargets = new HashSet<ITakeDamage>();
-    readonly HashSet<ITakeDamage> spinTargets = new HashSet<ITakeDamage>();
+    readonly HashSet<ITakeDamageWithReaction> jumpAndStompAttackTargets = new HashSet<ITakeDamageWithReaction>();
+    readonly HashSet<ITakeDamageWithReaction> comboTargets = new HashSet<ITakeDamageWithReaction>();
+    readonly HashSet<ITakeDamageWithReaction> spinTargets = new HashSet<ITakeDamageWithReaction>();
 
     private void Awake()
     {
@@ -159,7 +159,7 @@ public class BossCombat : MonoBehaviour
 
         Collider[] hits = Physics.OverlapSphere(stompAtkPoint.position, stompRadius, targetLayer);
         // 피해 함수 호출
-        ApplyDamageToTargets(hits, jumpAndStompAttackTargets, stompDamageMultiplier);
+        ApplyDamageToTargets(hits, jumpAndStompAttackTargets, stompDamageMultiplier, HitReactionType.Knockback);
     }
     /// <summary>
     /// 점프공격 애니메이션의 실제 충격 프레임에서 호출한다.
@@ -170,7 +170,7 @@ public class BossCombat : MonoBehaviour
         if(!hasJumpLandingPos) return;
 
         Collider[] hits = Physics.OverlapSphere(jumpLandingPos, jumpRadius, targetLayer);
-        ApplyDamageToTargets(hits, jumpAndStompAttackTargets, jumpDamageMultiplier);
+        ApplyDamageToTargets(hits, jumpAndStompAttackTargets, jumpDamageMultiplier, HitReactionType.Knockback);
 
         // 같은 착지 위치가 다음 공격에서 잘못 재사용되지 않도록 정리한다.
         hasJumpLandingPos = false;
@@ -180,12 +180,12 @@ public class BossCombat : MonoBehaviour
     /// 검출된 콜라이더를 대상으로 피해를 적용한다.
     /// 지정된 공격 구간에서 같은 대상은 한 번만 피해를 받는다.
     /// </summary>
-    private void ApplyDamageToTargets(Collider[] hitColliders, HashSet<ITakeDamage> hitTargets, float damageMultiplier)
+    private void ApplyDamageToTargets(Collider[] hitColliders, HashSet<ITakeDamageWithReaction> hitTargets, float damageMultiplier, HitReactionType reactionType = HitReactionType.Normal)
     {
         foreach (Collider col in hitColliders)
         {
             // 콜라이더가 자식에 있더라도 부모에서 피해 처리 인터페이스를 찾는다.
-            ITakeDamage damage = col.GetComponentInParent<ITakeDamage>();
+            ITakeDamageWithReaction damage = col.GetComponentInParent<ITakeDamageWithReaction>();
 
             // 피해 처리 인터페이스가 없으면 건너뛴다.
             if (damage == null)
@@ -198,7 +198,12 @@ public class BossCombat : MonoBehaviour
 
             // 기본 공격력과 해당 공격의 배율을 적용한 피해를 전달한다.
             float finalDamage = currentAtkPower * damageMultiplier;
-            damage.TakeDamage(gameObject, finalDamage);
+
+            // 피격 반응을 지원하는지에 따라 구분하여 데미지 전달
+            if(damage is ITakeDamageWithReaction reactionTarget)
+            {
+                reactionTarget.TakeDamage(gameObject, finalDamage, reactionType);
+            }
         }
     }
 
@@ -220,10 +225,10 @@ public class BossCombat : MonoBehaviour
         {
             CheckComboDamage();
         }
-        if(isSpinDamageActive)
+        if(isSpinDamageActive && spinAtkPoint != null)
         {
             Collider[] hits = Physics.OverlapSphere(spinAtkPoint.position, rotationRadius, targetLayer);
-            ApplyDamageToTargets(hits, spinTargets, spinDamageMultiplier);
+            ApplyDamageToTargets(hits, spinTargets, spinDamageMultiplier, HitReactionType.Knockback);
         }
     }
 
@@ -232,6 +237,8 @@ public class BossCombat : MonoBehaviour
     /// </summary>
     private void CheckComboDamage()
     {
+        if (leftHandAtkPoint == null || rightHandAtkPoint == null) return;
+
         Collider[] hits;
 
         // 현재 타격 종류에 따라 올바른 공격 포인트와 반경을 선택한다.

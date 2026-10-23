@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Runtime.InteropServices.WindowsRuntime;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -9,8 +8,10 @@ public class BossAIController : MonoBehaviour
     [Header("기본 상태")]
     [SerializeField] BossState state = BossState.Idle;
     [Header("패턴 설정")]
-    [SerializeField, Tooltip("이 시간동안 사거리에 안닿으면 점프 공격")]
-    float jumpAttackTriggerTime;
+    [SerializeField, Tooltip("플레이어가 이 거리 이상 멀어지면 점프 공격")]
+    float jumpAttackDistance;
+    [SerializeField, Tooltip("점프 공격 재사용 대기시간")]
+    float jumpAttackCooldown;
     [SerializeField, Tooltip("땅 구르기 쿨타임")]
     float groundSlamCooldown;
     [Header("광폭화 설정")]
@@ -29,7 +30,7 @@ public class BossAIController : MonoBehaviour
 
     // 쿨타임 및 타이머 추적용 변수
     float nextGroundSlamTime;
-    float currentChaseTime;
+    float nextJumpAttackTime;
 
     // 콤보가 중간에 취소되었는지 기록
     bool wasComboCaceld;
@@ -69,15 +70,16 @@ public class BossAIController : MonoBehaviour
 
     private void Start()
     {
-        stats.OnTakeDamage += TakeDamage;
+        if (stats == null || combat == null || agent == null)
+        {
+            enabled = false;
+            return;
+        }
+
+        stats.OnTakeDamage += HandleBossDamaged;
         stats.OnDeath += Death;
         combat.Init(stats.AtkPower);
-
-        // 게임 시작시 기본 이동속도 적용
-        if(stats != null && agent != null)
-        {
-            agent.speed = stats.MoveSpeed;
-        }
+        agent.speed = stats.MoveSpeed;
     }
 
     private void Update()
@@ -123,12 +125,26 @@ public class BossAIController : MonoBehaviour
         animator.SetFloat(HashMoveZ, moveZ, 0.1f, Time.deltaTime);
     }
 
-    private void TakeDamage(GameObject attacker, float damage)
+    /// <summary>
+    /// MonsterStats에서 피해 발생 이벤트를 전달받았을 때 실행한다.
+    /// 실제 체력 감소는 MonsterStats가 담당하며,
+    /// 이 함수는 보스의 광폭화 여부만 판단한다.
+    /// </summary>
+    /// <param name="attacker"></param>
+    /// <param name="damage"></param>
+    private void HandleBossDamaged(GameObject attacker, float damage)
     {
+        // 사망한 보스는 광폭화 처리 하지 않음
         if (state == BossState.Die) return;
+        // 이미 광폭화했다면 중복 발동 금지
+        if (isEnraged) return;
+        // 최대 체력이 0 이하라면 체력비율 계산 안함
+        if (stats.MaxHp <= 0) return;
 
+        // 정수 나눗셈으로 소수점 이하가 사라지는 상황을 방지한다.
+        float hpRatio = (float)stats.CurHp / stats.MaxHp;
         // 광폭화 조건 체크 ( 1회 발동)
-        if(!isEnraged && (stats.CurHp / stats.MaxHp) <= enrageHpRatio)
+        if (hpRatio <= enrageHpRatio)
         {
             EnterEnrageMode();
         }
@@ -160,8 +176,6 @@ public class BossAIController : MonoBehaviour
     {
         state = BossState.Chase;
         agent.isStopped = false;
-        // 추격 시작 시 타이머 초기화
-        currentChaseTime = 0f;
 
         while(true)
         {
@@ -176,17 +190,21 @@ public class BossAIController : MonoBehaviour
                 ChangeRoutine(SelectAttackRoutine(), BossState.Attack);
                 yield break;
             }
-            // 일정 시간 이상 추격만 했을 때
-            // 점프 공격 실행
-            if(currentChaseTime >= jumpAttackTriggerTime)
+            // 일정 거리 이상 플레이어가 멀고,
+            // 점프 공격의 재사용 대기시간도 끝났다면 점프 공격 선택
+            if(distance >= jumpAttackDistance && Time.time >= nextJumpAttackTime)
             {
+                // 다음 점프 공격이 가능해지는 시각을 저장한다.
+                // 공격 시작 직후 같은 패턴이 반복해서 선택되는 것을 방지한다.
+                nextJumpAttackTime = Time.time + jumpAttackCooldown;
                 ChangeRoutine(JumpAttackRoutine(), BossState.Attack);
                 yield break;
             }
 
+            // 위 조건에 해당하지 않으면 플레이어를 계속 추격한다.
+            // 설정한 초마다 위치와 거리를 다시 확인한다.
             agent.SetDestination(targetPlayer.position);
             yield return new WaitForSeconds(0.2f);
-            currentChaseTime += 0.1f;
         }
     }
 
@@ -356,10 +374,6 @@ public class BossAIController : MonoBehaviour
             yield return LookAtTarget(0.3f);
         }
 
-        // 이전 공격에서 남은 트리거를 정리하고 1타를 시작한다.
-        animator.ResetTrigger(startTriggerHash);
-        animator.SetTrigger(nextTriggerHash);
-
         // 회전하는 동안 플레이어가 사라졌는지 다시 확인한다.
         if(targetPlayer == null)
         {
@@ -510,6 +524,15 @@ public class BossAIController : MonoBehaviour
         agent.enabled = false;
 
         if (TryGetComponent<Collider>(out var col)) col.enabled = false;
+    }
+
+    private void OnDestroy()
+    {
+        if(stats != null)
+        {
+            stats.OnTakeDamage -= HandleBossDamaged;
+            stats.OnDeath -= Death;
+        }
     }
 
     private void OnDrawGizmosSelected()

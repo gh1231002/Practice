@@ -81,3 +81,9 @@ public enum BossAttackPattern
     JumpAttack,
     StompAttack
 }
+// 공격을 맞았을 때 플레이어에게 적용할 피격 반응을 구분한다.
+public enum HitReactionType
+{
+    Normal,
+    Knockback
+}

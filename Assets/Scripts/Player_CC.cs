@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 
 
 
-public class Player_CC : MonoBehaviour, ITakeDamage
+public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
 {
     [Header("InputAction")]
     [SerializeField] InputActionProperty IapMove;
@@ -233,7 +233,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         Anim = GetComponent<Animator>();
 
         // 시작 위치 설정
-        //Teleport(StartPos);
+        Teleport(StartPos);
 
         //인풋액션이 연결되있다면 활성화
         OnInputAction();
@@ -708,7 +708,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         Anim.SetFloat("MoveValue", MoveValue, DampTime, Time.deltaTime);
         Anim.SetInteger("CrouchMove", CrouchMove);
         Anim.SetBool("Walk", isWalk);
-        Anim.SetBool("Big Hit", isKnockBack);
+        Anim.SetBool("KnockBack Hit", isKnockBack);
         Anim.SetBool("Crouch", isCrouch);
         if(isCombat)
         {
@@ -803,6 +803,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
                 // 데미지 계산 공식
                 // 기본 데미지 = 무기 공격력 + 플레이어 공격력
                 // 최종 데미지 : 기본 데미지 * 타격 모션 계수 * (1 – 몬스터 데미지 감소율) 
+                //(구현예정)
                 // 속성 폭발 시: 최종 데미지 + 속성 폭발 데미지
                 // 속성 폭발 데미지 = 무기 속성값 * 4.0 (조건 만족 시 1회 발동)
                 float baseDamage = AtkPower + CurrentWeaponAtk;
@@ -1005,7 +1006,10 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         //}
     }
 
-    public void TakeDamage(GameObject Attacker, float Damage)
+    /// <summary>
+    /// 피격 반응 종류를 전달받아 플레이어의 피해와 피격 반응을 처리한다.
+    /// </summary>
+    public void TakeDamage(GameObject attacker, float damage, HitReactionType reactionType)
     {
         // 구르기, 경직중, 죽으면 실행 금지
         if (isHit == true || isDeath == true || isRoll == true) return;
@@ -1015,7 +1019,7 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         // 최종 데미지 = 몬스터 공격력 * 몬스터 모션 계수 * (1 - 플레이어 데미지 감소율)
         // 최소 데미지 보장 = 최종 데미지가 1미만이면 1의 데미지 보장
         float damageReduction = PlayerDef / (PlayerDef + 300f);
-        float finalDamage = Damage * (1f - damageReduction);
+        float finalDamage = damage * (1f - damageReduction);
         finalDamage = MathF.Max(1f, finalDamage);
 
         CurHp -= finalDamage;
@@ -1024,34 +1028,84 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         {
             // 진행중이던 애니메이션 초기화
             ResetAni();
-            Anim.SetTrigger("Die");
             CurHp = 0f;
             isDeath = true;
+            Anim.SetTrigger("Die");
         }
 
         ChangeHp?.Invoke(CurHp, MaxHp);
 
-        // 슈퍼아머 상태라면 데미지만 입고 피격 실행안함
-        if (isSuperArmor) return;
+        // 사망했거나 슈퍼아머 상태라면 데미지만 입고 피격 실행안함
+        if (isSuperArmor || isDeath) return;
 
-        //비전투상태일때 맞으면 피격애니메이션만 진행
-        if (isCombat == false)
+        // 공격 쪽에서 전달한 피격 반응에 따라 처리 방식을 구분한다.
+        switch(reactionType)
         {
-            Anim.SetTrigger("Small Hit");
-        }
+            case HitReactionType.Normal:
+                Anim.SetTrigger("Small Hit");
+                StartCoroutine(NormalHitReaction(InvincibleTime));
+                break;
 
-        //잠깐의 무적시간 후 조작가능
-        else if(isCombat == true)
-        {
-            //전투 중에 맞으면 애니메이션과 함께 살짝 밀려남
-            StartCoroutine(Invincible(Attacker.transform.position, InvincibleTime));
+            case HitReactionType.Knockback:
+                // 공격자의 위치를 기준으로 넉백을 실행한다.
+                // 공격자 참조가 없다면 플레이어의 정면 반대 방향으로 밀려나게 한다.
+                Vector3 attackerPos = attacker != null ?
+                    attacker.transform.position : transform.position + transform.forward;
+                StartCoroutine(Invincible(attackerPos, InvincibleTime));
+                break;
         }
+    }
+
+    /// <summary>
+    /// 넉백 없이 피격 상태만 유지하는 코루틴
+    /// 이동 입력 제한과 추가 피격 방지 기능을 유지하기 위해 사용한다.
+    /// </summary>
+    /// <param name="timer"></param>
+    /// <returns></returns>
+    private IEnumerator NormalHitReaction(float timer)
+    {
+        // 피격 상태를 활성화해 이동 입력과 추가 피해를 제한한다.
+        isHit = true;
+        isKnockBack = false;
+        KnockBackVelocity = Vector3.zero;
+        float elapsedTime = 0f;
+        // 기존 InvincibleTime 설정값 동안 피격 상태를 유지한다.
+        while(elapsedTime < timer)
+        {
+            // 이동처리와 시간을 맞추기 위해 다음 물리프레임까지 기다린다.
+            yield return new WaitForFixedUpdate();
+            elapsedTime += Time.fixedDeltaTime;
+        }
+        // 피격 상태를 해제해 다시 이동하고 피해를 받을 수 있도록 한다.
+        isHit = false;
+    }
+
+    IEnumerator Invincible(Vector3 Pos, float Timer)
+    {
+        isHit = true;
+        isKnockBack = true;
+        //넉백 방향 계산
+        Vector3 dir = transform.position - Pos;
+        dir.y = 0f;
+        dir.Normalize();
+        float KnockBackTimer = 0f;
+        //전달받은 무적시간 동안 뒤로 밀려남
+        while(KnockBackTimer < Timer)
+        {
+            //유니티 물리사이클에 맞춰 한프레임 기다린다.
+            yield return new WaitForFixedUpdate();
+            KnockBackTimer += Time.fixedDeltaTime;
+            KnockBackVelocity = dir * KnockBackSpeed;
+        }
+        KnockBackVelocity = Vector3.zero;
+        isKnockBack = false;
+        isHit = false;
     }
 
     public void SetWeapon(WeaponData weapondata, GameObject weapon)
     {
         //퀘스트로 얻은 무기라면
-        if(weapon != null && CurrentWeapon == null)
+        if (weapon != null && CurrentWeapon == null)
         {
             weapon.SetActive(false);
         }
@@ -1067,27 +1121,6 @@ public class Player_CC : MonoBehaviour, ITakeDamage
         CurrentWeaponAtkHalfBox = weapondata.atkHalfbox;
     }
 
-    IEnumerator Invincible(Vector3 Pos, float Timer)
-    {
-        isHit = true;
-        isKnockBack = true;
-        //넉백 방향 계산
-        Vector3 dir = transform.position - Pos;
-        dir.y = 0f;
-        dir.Normalize();
-        float KnockBackTimer = 0f;
-        //전달받은 무적시간 동안 뒤로 밀려남
-        while(KnockBackTimer < Timer)
-        {
-            //유니티 물리사이클에 맞춰 한프레임 쉼
-            yield return new WaitForFixedUpdate();
-            KnockBackTimer += Time.fixedDeltaTime;
-            KnockBackVelocity = dir * KnockBackSpeed;
-        }
-        KnockBackVelocity = Vector3.zero;
-        isKnockBack = false;
-        isHit = false;
-    }
     /// <summary>
     /// 무기 장착 상태 변경 시 실행되는 이벤트 함수
     /// </summary>

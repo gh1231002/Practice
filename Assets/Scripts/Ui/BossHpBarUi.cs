@@ -42,7 +42,13 @@ public class BossHpBarUi : MonoBehaviour
         if(hpBar != null)
         {
             hpBar.value = curHp / maxHp;
-            bossHpText.text = $"{currentBossStats.CurHp / currentBossStats.MaxHp}";
+
+            // 텍스트 표시는 정수로 변환하여 가독성 확보
+            // 0.1이라도 살아있다면 1로 표시
+            int displayCurHp = Mathf.CeilToInt(curHp);
+            int displayMaxHp = Mathf.RoundToInt(maxHp);
+
+            bossHpText.text = $"{displayCurHp} / {displayMaxHp}";
         }
     }
 

@@ -77859,6 +77859,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BossHpBarUi
   hpBar: {fileID: 1888084005}
   bossNameText: {fileID: 1563612616}
+  bossHpText: {fileID: 1357458565}
 --- !u!1 &1761852833 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2321642457921037363, guid: a9d98a23934d3054388d48574880d059, type: 3}

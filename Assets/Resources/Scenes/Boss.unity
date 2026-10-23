@@ -4381,6 +4381,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8468617057500289297, guid: 4534b9cc6330aed499be54b02abf5283, type: 3}
       insertIndex: 0
       addedObject: {fileID: 260680163}
+    - targetCorrespondingSourceObject: {fileID: 8468617057500289297, guid: 4534b9cc6330aed499be54b02abf5283, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1276068635}
     - targetCorrespondingSourceObject: {fileID: 8858709699657268956, guid: 4534b9cc6330aed499be54b02abf5283, type: 3}
       insertIndex: 0
       addedObject: {fileID: 216587518}
@@ -4483,13 +4486,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bac397dce796f2244911fdc150b97d45, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MonsterStats
-  maxHp: 1000
+  maxHp: 1500
   curHp: 0
-  atkPower: 10
+  atkPower: 15
   monDef: 40
   moveSpeed: 3
   chaseSpeed: 5
   monsterType: 2
+  damageTextPoint: {fileID: 1276068635}
 --- !u!95 &509350808 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 2550935751187727211, guid: 4534b9cc6330aed499be54b02abf5283, type: 3}
@@ -5700,7 +5704,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 671669737}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.00032143205, y: 0.999295, z: -0.03649626, w: -0.0088010505}
+  m_LocalRotation: {x: -0.00032142957, y: 0.999295, z: -0.03649627, w: -0.008800981}
   m_LocalPosition: {x: 212.11, y: 14.67, z: 14.81}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -8093,7 +8097,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 975679371}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.002313178, y: 0.9901983, z: 0.01651778, w: 0.13866903}
+  m_LocalRotation: {x: -0.0023131801, y: 0.9901983, z: 0.016517784, w: 0.13866912}
   m_LocalPosition: {x: 207.869, y: 12, z: 3.726}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -10068,6 +10072,37 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3767988273335728387, guid: 4a0a95883125fba43bd91bc8c671c16b, type: 3}
   m_PrefabInstance: {fileID: 1272443356}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1276068634
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1276068635}
+  m_Layer: 10
+  m_Name: DamageTextPoint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1276068635
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1276068634}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.414, y: 0.871, z: 0.314}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2110263273}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1286236820
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -12951,7 +12986,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1763986054}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.03390463, y: 0.9594988, z: -0.13192277, w: 0.2465947}
+  m_LocalRotation: {x: 0.03390463, y: 0.9594988, z: -0.13192275, w: 0.24659474}
   m_LocalPosition: {x: 194.04, y: 21.26, z: 22.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -14246,6 +14281,63 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 113.693, z: 0}
+--- !u!1001 &1975980559
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3361126104003521423, guid: ce51c858156ab064b91717bb229b8f4a, type: 3}
+      propertyPath: m_Name
+      value: DamageManager
+      objectReference: {fileID: 0}
+    - target: {fileID: 6431908626309662560, guid: ce51c858156ab064b91717bb229b8f4a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6431908626309662560, guid: ce51c858156ab064b91717bb229b8f4a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6431908626309662560, guid: ce51c858156ab064b91717bb229b8f4a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6431908626309662560, guid: ce51c858156ab064b91717bb229b8f4a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6431908626309662560, guid: ce51c858156ab064b91717bb229b8f4a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6431908626309662560, guid: ce51c858156ab064b91717bb229b8f4a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6431908626309662560, guid: ce51c858156ab064b91717bb229b8f4a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6431908626309662560, guid: ce51c858156ab064b91717bb229b8f4a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6431908626309662560, guid: ce51c858156ab064b91717bb229b8f4a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6431908626309662560, guid: ce51c858156ab064b91717bb229b8f4a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: ce51c858156ab064b91717bb229b8f4a, type: 3}
 --- !u!1001 &2009652889
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -14880,7 +14972,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossAIController
   state: 0
-  jumpAttackTriggerTime: 5
+  jumpAttackDistance: 15
+  jumpAttackCooldown: 10
   groundSlamCooldown: 20
   enrageHpRatio: 0.5
 --- !u!114 &2110263277
@@ -14902,7 +14995,7 @@ MonoBehaviour:
   jumpAtkPoint: {fileID: 216587518}
   leftHandRadius: 2
   rightHandRadius: 2
-  stompRadius: 0
+  stompRadius: 4.5
   rotationRadius: 4.5
   jumpRadius: 4.5
   atkDistance: 4.5
@@ -15185,3 +15278,4 @@ SceneRoots:
   - {fileID: 671669740}
   - {fileID: 1127784572}
   - {fileID: 3420708}
+  - {fileID: 1975980559}

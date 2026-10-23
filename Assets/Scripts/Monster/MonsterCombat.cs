@@ -45,13 +45,13 @@ public class MonsterCombat : MonoBehaviour
         foreach(Collider target in hitTargets)
         {
             // 자식 충돌체와 최상위 오브젝트 모두에서 ITakeDamage 확인
-            ITakeDamage damage = target.GetComponent<ITakeDamage>() ?? target.GetComponentInParent<ITakeDamage>();
+            ITakeDamageWithReaction damage = target.GetComponent<ITakeDamageWithReaction>() ?? target.GetComponentInParent<ITakeDamageWithReaction>();
 
             if(damage != null)
             {
                 // 몬스터 공격 데미지 계산
                 float finalDamage = currentAtkPower * currentMotionValue;
-                damage.TakeDamage(gameObject, finalDamage);
+                damage.TakeDamage(gameObject, finalDamage, HitReactionType.Normal);
                 break;
             }
         }

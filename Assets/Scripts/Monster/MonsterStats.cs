@@ -15,6 +15,9 @@ public class MonsterStats : MonoBehaviour, ITakeDamage
     [SerializeField] float chaseSpeed;
     [SerializeField] MonsterType monsterType;
 
+    [Header("데미지 텍스트 스폰 위치")]
+    [SerializeField] Transform damageTextPoint;
+
     // 외부 읽기 전용
     public float MaxHp => maxHp;
     public float CurHp => curHp;
@@ -74,9 +77,11 @@ public class MonsterStats : MonoBehaviour, ITakeDamage
         // 체력 변화 이벤트 실행
         OnHpChanged?.Invoke(curHp, maxHp);
 
-        // 데미지 텍스트 출력
-        Vector3 hitPos = transform.position;
-        DamageTextManager.Instance.ShowDamageText(hitPos, finalDamage);
+        // 데미지 텍스트 스폰 기준점이 설정되어 있다면 그 위치를 사용하고,
+        // 설정되지 않았다면 기존 몬스터 루트 위치를 사용한다.
+        Vector3 textPos = damageTextPoint != null ? damageTextPoint.position : transform.position;
+        // 데미지 텍스트 매니저에 텍스트 스폰 위치를 전달한다.
+        DamageTextManager.Instance.ShowDamageText(textPos, finalDamage);
 
         if(curHp <= 0f)
         {
