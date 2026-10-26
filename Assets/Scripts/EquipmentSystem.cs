@@ -16,7 +16,6 @@ public class EquipmentSystem : MonoBehaviour
     public void UnlockWeapon(WeaponData weapon)
     {
         IsWeaponUnlocked = true;
-
     }
 
     // 장착/해제/교체를 처리하는 함수

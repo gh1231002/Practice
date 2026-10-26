@@ -69,8 +69,7 @@ public enum BossState
     Idle,
     Chase,
     Attack,
-    Groggy,
-    PhaseTransition,
+    Enrage,
     Die
 }
 public enum BossAttackPattern

@@ -1,6 +1,5 @@
 using TMPro;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class ShopSlotUi : MonoBehaviour
@@ -23,14 +22,23 @@ public class ShopSlotUi : MonoBehaviour
         }
         if(BtnBuy != null)
         {
-            BtnBuy.onClick.AddListener(ButButtonClick);
+            BtnBuy.onClick.AddListener(BuyButtonClick);
         }
     }
 
     // 구매 버튼 클릭 시
-    private void ButButtonClick()
+    private void BuyButtonClick()
     {
         if (inventory == null || itemData == null) return;
+
+        // 무기 아이템인 경우 실제 구매 직전에도 언락 조건 확인
+        if(itemData is WeaponData && !CanPurchaseWeapon())
+        {
+            // 조건이 충족되지 않았다면 구매하지 않고 버튼 상태 갱신
+            RefreshSlot();
+            return;
+        }
+
         // 구매 성공 notice panel 띄움
         UiManager.Instance.StartNoticePanel("구매 성공");
         // 인벤토리에 아이템 추가
@@ -47,14 +55,6 @@ public class ShopSlotUi : MonoBehaviour
         // 무기 아이템인 경우 소지/장착 여부 확인
         if(itemData is WeaponData weaponData)
         {
-            // 퀘스트 완료 상태인지 확인
-            if(player.ReturnWeaponUnlock() == false)
-            {
-                BtnBuy.interactable = false;
-                BtnBuyText.text = "구매불가";
-                return;
-            }
-
             // 현재 장착 중인지
             bool isEquipped = (player.CurrentWeaponData == weaponData);
             // 인벤토리에 보관 중인지
@@ -67,10 +67,34 @@ public class ShopSlotUi : MonoBehaviour
                 BtnBuyText.text = isEquipped ? "장착중" : "보유중";
                 return;
             }
+
+            // 무기 해금을 완료했거나 디버그모드로 언락했는지 확인
+            if (!CanPurchaseWeapon())
+            {
+                BtnBuy.interactable = false;
+                BtnBuyText.text = "구매불가";
+                return;
+            }
         }
 
         // 소비성 아이템이거나 미소지 무기인 경우 구매 가능
         BtnBuy.interactable = true;
         BtnBuyText.text = "구 매";
+    }
+
+    /// <summary>
+    /// 현재 무기를 구매할 수 있는지 판단하는 함수
+    /// </summary>
+    /// <returns></returns>
+    private bool CanPurchaseWeapon()
+    {
+        // 정상적인 게임 진행으로 무기 구매 조건을 해금했는지 확인
+        bool questUnlock = player != null && player.ReturnWeaponUnlock();
+
+        // 디버그 매니저가 존재하고 무기 언락 토글이 켜져 있는지 확인
+        bool debugUnlock = DebugManager.Instance != null && DebugManager.Instance.WeaponUnlock;
+
+        // 정상 해금 또는 디버그 해금 중 하나라도 만족하면 구매 가능
+        return questUnlock || debugUnlock;
     }
 }
