@@ -24,12 +24,18 @@ public class BossAIController : MonoBehaviour
 
     [Header("광폭화 머터리얼 설정")]
     [SerializeField] Renderer[] enrageRenderers;
-    [SerializeField] Color enrageTint;
+    [SerializeField, Min(0f), Tooltip("발광 정도")] float enrageGlowStrength;
 
-    static readonly int HashMaterialBaseColor = Shader.PropertyToID("_BaseColor");
+    [Header("광폭화 디버그 확인 (읽기용)")]
+    [SerializeField] float debugCurrentMoveSpeed;
+    [SerializeField] float debugCurrentAttackPower;
+    [SerializeField] float debugEffectiveJumpCooldown;
+    [SerializeField] float debugEffectiveGroundSlamCooldown;
+    [SerializeField] float debugJumpCooldownRemaining;
+    [SerializeField] float debugGroundSlamCooldownRemaining;
 
-    // 광폭화 전 원래 렌더러 설정을 보관.
-    MaterialPropertyBlock[] originalEnragePropertyBlocks;
+    // Shader Graph의 EnrageGlowStrength 속성 Reference와 일치해야한다.
+    static readonly int HashEnrageGlowStrength = Shader.PropertyToID("_EnrageGlowStrength");
 
     // 색상을 변경할 때 재사용할 변수
     MaterialPropertyBlock workingPropertyBlock;
@@ -64,6 +70,12 @@ public class BossAIController : MonoBehaviour
     /// </summary>
     bool shouldUseEnrage => isEnraged || (DebugManager.Instance != null && DebugManager.Instance.BossEnraged);
 
+    public bool ShouldUseEnrage => shouldUseEnrage;
+
+    // 현재 진행 중인 점프 공격을 광폭화 상태에서 시작했는지 기록한다.
+    // 공격 도중 광폭화가 시작되더라도 이 값은 해당 공격이 끝날 때까지 유지한다.
+    public bool IsCurrentJumpEnraged {  get; private set; }
+
     // 현재 몇번째 타격인지 기록
     int comboIndex;
     // 이번 콤보의 최대 타격 수 기록
@@ -92,72 +104,6 @@ public class BossAIController : MonoBehaviour
         combat = GetComponent<BossCombat>();
 
         animator.applyRootMotion = false;
-
-        CacheOriginalEnrageMaterialBlocks();
-    }
-
-    /// <summary>
-    /// 광폭화에 사용할 Renderer의 원래 BaterialPropertyBlock을 저장한다.
-    /// 광폭화 해제시 원래 상태로 복원하는데 사용
-    /// </summary>
-    private void CacheOriginalEnrageMaterialBlocks()
-    {
-        // 색상 변경에 사용할 임시 PropertyBlock 생성
-        workingPropertyBlock = new MaterialPropertyBlock();
-
-        // Renderer가 연결되지 않았다면 적용 못함
-        if(enrageRenderers == null)
-        {
-            originalEnragePropertyBlocks = null;
-            return;
-        }
-
-        // 각 Renderer의 원래 설정을 저장할 배열 생성
-        originalEnragePropertyBlocks = new MaterialPropertyBlock[enrageRenderers.Length];
-
-        for(int i = 0; i < enrageRenderers.Length; i++)
-        {
-            // 인스펙터에서 연결되지 않은 항목은 건너뛴다.
-            if (enrageRenderers[i] == null) return;
-
-            // Renderer별 원래 PropertyBlock을 저장한다.
-            MaterialPropertyBlock originalBlock = new MaterialPropertyBlock();
-
-            enrageRenderers[i].GetPropertyBlock(originalBlock);
-            originalEnragePropertyBlocks[i] = originalBlock;
-        }
-    }
-
-    /// <summary>
-    /// 광폭화 상태에 따라 골렘의 머테리얼 색상을 변경한다.
-    /// </summary>
-    /// <param name="useEnrageColor"></param>
-    private void SetEnrageMaterialColor(bool useEnrageColor)
-    {
-        // 원래 설정을 저장하지 못했다면 처리하지 않는다.
-        if (originalEnragePropertyBlocks == null || enrageRenderers == null) return;
-
-        for(int i = 0; i < enrageRenderers.Length; i++)
-        {
-            Renderer targetRenderer = enrageRenderers[i];
-
-            if (targetRenderer == null) continue;
-
-            if(!useEnrageColor)
-            {
-                // 광폭화 해제, 원래 설정으로 복원
-                targetRenderer.SetPropertyBlock(originalEnragePropertyBlocks[i]);
-                continue;
-            }
-
-            // 광폭화 진입, 현재 PropertyBlock의 다른 속성은 유지한다.
-            workingPropertyBlock.Clear();
-            targetRenderer.GetPropertyBlock(workingPropertyBlock);
-
-            // 색상 속성을 모두 설정
-            workingPropertyBlock.SetColor(HashMaterialBaseColor, enrageTint);
-            targetRenderer.SetPropertyBlock(workingPropertyBlock);
-        }
     }
 
     private void Start()
@@ -180,9 +126,68 @@ public class BossAIController : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 광폭화 여부에 따라 골렘의 붉은 발광 강도를 변경한다.
+    /// </summary>
+    /// <param name="isEnabled"></param>
+    private void SetEnrageGlow(bool isEnabled)
+    {
+        // 변경할 렌더러가 없다면 종료한다.
+        if (enrageRenderers == null) return;
+        
+        // PropertyBlock을 준비한다.
+        if(workingPropertyBlock == null)
+        {
+            workingPropertyBlock = new MaterialPropertyBlock();
+        }
+
+        foreach(Renderer targetRenderer in enrageRenderers)
+        {
+            // 인스펙터에 연결되지 않은 항목은 건너뛴다.
+            if (targetRenderer == null) continue;
+
+            // 현재 렌더러의 기존 속성을 가져온다.
+            targetRenderer.GetPropertyBlock(workingPropertyBlock);
+
+            // 광폭화 여부에 따라 설정 값을 적용한다.
+            workingPropertyBlock.SetFloat(HashEnrageGlowStrength, isEnabled ? enrageGlowStrength : 0f);
+
+            // 변경한 속성을 렌더러에 적용한다.
+            targetRenderer.SetPropertyBlock(workingPropertyBlock);
+        }
+    }
+
     private void Update()
     {
         UpdateMovementAnimation();
+        UpdateDebugreadouts();
+    }
+
+    private void UpdateDebugreadouts()
+    {
+        debugCurrentMoveSpeed = agent != null ? agent.speed : 0f;
+
+        // 실제 광폭화 상태를 고려한 공격력 계산값
+        if (stats != null)
+        {
+            debugCurrentAttackPower = shouldUseEnrage
+                ? stats.AtkPower * attackMultiplier
+                : stats.AtkPower;
+        }
+
+        // 현재 상태에서 다음에 사용할 쿨타임
+        debugEffectiveJumpCooldown =
+            GetPatternCooldown(jumpAttackCooldown);
+
+        debugEffectiveGroundSlamCooldown =
+            GetPatternCooldown(groundSlamCooldown);
+
+        // 쿨타임이 끝날 때까지 남은 시간
+        debugJumpCooldownRemaining =
+            Mathf.Max(0f, nextJumpAttackTime - Time.time);
+
+        debugGroundSlamCooldownRemaining =
+            Mathf.Max(0f, nextGroundSlamTime - Time.time);
     }
 
     /// <summary>
@@ -305,7 +310,9 @@ public class BossAIController : MonoBehaviour
 
         // 디버그로만 활성화한 광폭화 해제한다.
         ApplyNormalSettings();
-        SetEnrageMaterialColor(false);
+
+        // 붉은 발광을 끈다.
+        SetEnrageGlow(false);
     }
 
     /// <summary>
@@ -319,10 +326,12 @@ public class BossAIController : MonoBehaviour
         if (state == BossState.Enrage) return;
         if (isJumpAttackInProgress) return;
 
-        //  현재 공격 루틴 및 이동을 중단한다.
+        //  현재 공격 루틴 및 이동, 경고 원이 배치되어있다면 중단한다.
         StopBossActionForEnrage();
         state = BossState.Enrage;
-        SetEnrageMaterialColor(true);
+
+        // 붉은 발광은 킨다.
+        SetEnrageGlow(true);
 
         // 포효 애니메이션 재생
         animator.ResetTrigger(HashTaunt);
@@ -355,13 +364,15 @@ public class BossAIController : MonoBehaviour
         animator.ResetTrigger(HashSpinAttack);
         animator.ResetTrigger(HashStompAttack);
 
+        // 경고 원을 비활성화 처리한다.
+        combat.HideWarningCircle();
+
         // NavMeshAgent가 정상적으로 활성화되어 있을때만 이동을 멈춘다.
         if(agent.isActiveAndEnabled && agent.isOnNavMesh)
         {
             agent.isStopped = true;
             agent.ResetPath();
         }
-
         // 이동 Blen Tree 값도 초기화 해 정지 애니메이션을 유도한다.
         animator.SetFloat(HashMoveX, 0f);
         animator.SetFloat(HashMoveZ, 0f);
@@ -510,6 +521,11 @@ public class BossAIController : MonoBehaviour
                     if(distance >= combat.AtkDistance * 1.4f)
                     {
                         Debug.Log("<color=red>[Boss] 플레이어 도망 감지! 즉시 점프 공격 연계</color>");
+
+                        // 다음 점프 공격 가능 시각을 갱신한다.
+                        nextJumpAttackTime = Time.time + GetPatternCooldown(jumpAttackCooldown);
+
+                        // 쿨타임 갱신 후 점프 공격으로 전환한다.
                         ChangeRoutine(JumpAttackRoutine(), BossState.Attack);
                         yield break; // SelectAttackRoutine 즉시 종료
                     }
@@ -524,12 +540,18 @@ public class BossAIController : MonoBehaviour
     // 점프 공격 전용 루틴
     private IEnumerator JumpAttackRoutine()
     {
+        // 점프 공격을 시작할 때 광폭화가 이미 요청된 상태였는지 기록한다.
+        bool enrageRequestedBeforeJump = shouldUseEnrage;
+
+        // 이번 점프 공격의 충격파 발생 여부를 판단할 수 있도록 전달
+        IsCurrentJumpEnraged = enrageRequestedBeforeJump;
+
         state = BossState.Attack;
         agent.isStopped = true;
 
         yield return LookAtTarget(0.3f);
 
-        // 가변 점프 이동 처리를 위한 서브 코루틴 병행 시작
+        // 점프 이동과 공격 애니메이션을 병행한다.
         Coroutine moveRoutine = StartCoroutine(JumpMoveRoutine());
 
         // 후딜레이 부여
@@ -538,13 +560,10 @@ public class BossAIController : MonoBehaviour
         // 공격 애니메이션이 먼저 끝났더라도 점프 이동이 진행 중이라면 기다린다.
         yield return moveRoutine;
 
-        // 점프 착지 후 NavMeshAgent가 정상 복구되었는지 확인한다.
-        if (agent == null ||
-            !agent.isActiveAndEnabled ||
-            !agent.isOnNavMesh)
+        // 점프 이동이 끝난 뒤 에이전트가 정상적으로 복구되었는지 확인한다.
+        if(agent ==null || !agent.isActiveAndEnabled || !agent.isOnNavMesh)
         {
-            Debug.LogError("[BossAI] 점프 공격 종료 후 에이전트가 정상 상태가 아닙니다.", this);
-
+            Debug.LogError("[Boss Ai] 점프 공격 종료 후 NavMeshAgent가 정상 상태가 아닙니다.", this);
             state = BossState.Idle;
             activeRoutine = null;
             yield break;
@@ -552,9 +571,9 @@ public class BossAIController : MonoBehaviour
 
         if (state == BossState.Die) yield break;
 
-        // 점프 도중 광폭화가 요청되었다면 착지한 위치에서 시작한다.
-        // 토글이 중간에 OFF 되었다면 실제 광폭화 상태가 아닌 한 시작하지 않는다.
-        if (shouldUseEnrage)
+        // 점프 공격이 시작한 뒤 새롭게 광폭화 요청된 경우에만 전환한다.
+        // 이미 광폭화가 요청된 상태였다면 포효를 반복하지 않는다.
+        if (shouldUseEnrage && !enrageRequestedBeforeJump)
         {
             BeginEnrageTransition();
             yield break;
@@ -635,14 +654,14 @@ public class BossAIController : MonoBehaviour
         // 점프 공격이 종료되었다고 기록한다.
         isJumpAttackInProgress = false;
 
-        // 복구 실패 시 잘못된 상태로 추격을 재개하지 않도록 한다.
-        if (!warpSucceeded || !agent.isOnNavMesh)
+        // 에이전트 복구에 실패하면 이후 이동 처리를 실행하지 않는다.
+        if(!warpSucceeded || !agent.isOnNavMesh)
         {
-            Debug.LogError("[BossAI] 착지 후 NavMeshAgent 복구에 실패했습니다.", this);
-
+            Debug.LogError("[Boss Ai] 착지 후 NavMeshAgent 복구에 실패했습니다.", this);
             yield break;
         }
 
+        // 정상적으로 복구가 되었을 때만 정지 상태로 전환한다.
         agent.isStopped = true;
     }
 
@@ -856,6 +875,7 @@ public class BossAIController : MonoBehaviour
     {
         state = BossState.Die;
 
+        combat.HideWarningCircle();
         // 실행 중인 모든 코루틴을 중단한다.
         StopAllCoroutines();
         activeRoutine = null;
@@ -891,16 +911,26 @@ public class BossAIController : MonoBehaviour
         {
             // 광폭화 설정을 적용한다.
             ApplyEnrageSettings();
-            // 광폭화 머터리얼 색상을 유지한다.
-            SetEnrageMaterialColor(true);
+
+            // 붉은 발광을 유지한다.
+            SetEnrageGlow(true);
+            // 실제 적용된 이동 속도를 확인한다.
+            Debug.Log(
+                $"[광폭화 적용 완료] " +
+                $"현재 속도={agent.speed}, " +
+                $"기본 속도={stats.MoveSpeed}, " +
+                $"광폭화 속도={stats.ChaseSpeed}"
+            );
         }
         else
         {
             // 포효 중 디버그 토글이 OFF가 되었다면 일반 설정으로 복원한다.
             ApplyNormalSettings();
 
-            // 몸체의 원래 머티리얼 색상을 복원한다.
-            SetEnrageMaterialColor(false);
+            // 붉은 발광은 끈다.
+            SetEnrageGlow(false);
+
+            Debug.Log("[광폭화 해제] 일반 설정을 적용했습니다.");
         }
 
         // 기존 타깃을 이용해 추격을 재개한다.

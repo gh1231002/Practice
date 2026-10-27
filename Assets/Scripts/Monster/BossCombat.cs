@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -38,11 +39,15 @@ public class BossCombat : MonoBehaviour
     [SerializeField] GameObject warningCirclePrefab;
     [SerializeField, Tooltip("바닥과 겹쳐 깜빡이는 현상 방지")] float warningGroundOffset;
 
+    [Header("광폭화 점프 공격 충격파 프리팹")]
+    [SerializeField] GameObject ShockWavePrefab;
+
     public float AtkDistance => atkDistance;
 
     float currentAtkPower;
 
     GameObject warningCircleInstance;
+    GameObject shockWaveInstance;
 
     // 피해 판정이 활성화되어 있는지 확인한다.
     bool isSpinDamageActive;
@@ -58,6 +63,8 @@ public class BossCombat : MonoBehaviour
 
     BossAttackPattern attackPattern;
 
+    BossAIController bossAi;
+
     // 이미 피해를 받은 대상을 기록한다.
     // 같은 대상의 콜라이더가 여러 개여도 중복 피해를 막기 위한 용도이다.
     readonly HashSet<ITakeDamageWithReaction> jumpAndStompAttackTargets = new HashSet<ITakeDamageWithReaction>();
@@ -69,19 +76,29 @@ public class BossCombat : MonoBehaviour
         // Inspector에 프리팹이 연결되어 있는지 확인한다.
         if (warningCirclePrefab == null)
         {
-            Debug.LogWarning("내려찍기 예고 원 프리팹이 연결되지 않았습니다.");
+            Debug.LogWarning("내려찍기 예고 원 프리팹이 연결되지 않았습니다.", this);
             return;
         }
+        if(ShockWavePrefab == null)
+        {
+            Debug.LogWarning("[BossCombat] 충격파 프리팹이 Inspector에 연결되지 않았습니다.", this);
+            return;
+        }
+
+        bossAi = GetComponent<BossAIController>();
 
         // 프리팹을 현재 씬에 한번만 생성한다.
         // 부모를 지정하지 않아 분리된 오브젝트로 유지한다.
         warningCircleInstance = Instantiate(warningCirclePrefab);
+        shockWaveInstance = Instantiate(ShockWavePrefab);
 
         // Hierarchy에서 원본과 실행 중 인스턴스를 구별하기 위한 이름설정
         warningCircleInstance.name = warningCirclePrefab.name + "_Runtime";
+        shockWaveInstance.name = warningCirclePrefab.name + "_Runtime";
 
         // 게임 시작 시에는 화면에 나타나지 않도록 비활성화한다.
         warningCircleInstance.SetActive(false);
+        shockWaveInstance.SetActive(false);
     }
 
     /// <summary>
@@ -210,7 +227,7 @@ public class BossCombat : MonoBehaviour
     /// <summary>
     /// 피해 판정이 일어나는 시점에 호출되어 경고 원을 비활성화한다.
     /// </summary>
-    private void HideWarningCircle()
+    public void HideWarningCircle()
     {
         if(warningCircleInstance != null)
         {
@@ -314,6 +331,12 @@ public class BossCombat : MonoBehaviour
         jumpAndStompAttackTargets.Clear();
         attackPattern = BossAttackPattern.JumpAttack;
         JumpImpact();
+
+        // 이번 점프 공격이 광폭화 상태에서 시작한 경우에만 충격파를 재생한다.
+        if(bossAi != null && bossAi.IsCurrentJumpEnraged)
+        {
+            StartCoroutine(PlayShockWaveroutine());
+        }
         HideWarningCircle();
     }
     // 내려찍기 공격
@@ -377,5 +400,45 @@ public class BossCombat : MonoBehaviour
 
         // 화면에 남아 있는 경고 원도 숨긴다.
         HideWarningCircle();
+    }
+
+    /// <summary>
+    /// 광폭화 점프 공격의 충격파를 재생하고,
+    /// 모든 파티클이 재생을 마치면 오브젝트를 비활성화한다.
+    /// </summary>
+    /// <returns></returns>
+    private IEnumerator PlayShockWaveroutine()
+    {
+        // 인스펙터 누락시 오류 방지
+        if (shockWaveInstance == null)
+        {
+            Debug.LogWarning("[BossCombat] 충격파 오브젝트가 연결되지 않았습니다.");
+            yield break;
+        }
+
+        ParticleSystem particle = shockWaveInstance.GetComponent<ParticleSystem>();
+        if (particle == null)
+        {
+            Debug.LogWarning("[BossCombat] 충격파 오브젝트에 ParticleSystem이 없습니다.");
+            yield break;
+        }
+
+        // 이전 재생에서 남아 있는 파티클을 제거할 수 있도록 오브젝트 활성화
+        shockWaveInstance.SetActive(true);
+        // 충격파 위치를 착지위치로 옮긴다.
+        shockWaveInstance.transform.position = jumpLandingPos;
+
+        // 이전에 남아있는 파티클을 제거하고 새로 재생한다.
+        particle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+        particle.Play();
+
+        // 루트와 자식 파티클의 재생이 모두 끝날 때까지 기다린다.
+        while(particle.IsAlive(true))
+        {
+            yield return null;
+        }
+
+        // 충격파가 완전히 비활성화하여 다음 공격에서 재사용한다.
+        shockWaveInstance.SetActive(false);
     }
 }
