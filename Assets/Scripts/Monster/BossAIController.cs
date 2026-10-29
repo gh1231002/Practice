@@ -679,7 +679,7 @@ public class BossAIController : MonoBehaviour
 
         // 내적값이 0미만이면 보스 양옆 90도 바깥(뒤쪽)에 있다는 뜻입니다.
         // -0.2f 정도롤 설정하면 확실히 등 뒤쪽 100~180도 범위에 있을 때만 발동됩니다.
-        return dotProduct < 0.2f;
+        return dotProduct < -0.2f;
     }
 
     /// <summary>
@@ -690,6 +690,12 @@ public class BossAIController : MonoBehaviour
     /// <returns></returns>
     private IEnumerator ExecutePattern(int triggerName, float cooldown)
     {
+        // 다른 공격의 Trigger가 남아 있다면 먼저 초기화한다.
+        // 현재 재생 중인 애니메이션으 강제로 취소하는 코드는 아니다.
+        animator.ResetTrigger(HashJumpAttack);
+        animator.ResetTrigger(HashSpinAttack);
+        animator.ResetTrigger(HashStompAttack);
+
         animator.SetTrigger(triggerName);
         // 애니메이션 완료 대기
         yield return new WaitUntil(() => animator.GetCurrentAnimatorStateInfo(0).IsTag("Attack")
