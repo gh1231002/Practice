@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Runtime.InteropServices.WindowsRuntime;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -55,14 +56,29 @@ public class BossAIController : MonoBehaviour
 
     // 콤보가 중간에 취소되었는지 기록
     bool wasComboCaceld;
+
     // 현재 콤보가 진행 중인지 확인한다.
     bool isComboActive;
+
     // 3타 애니메이션이 끝남을 알리는 값
     bool comboFinished;
+
     // 실제 체력조건에 의한 광폭화인지 확인하는 값
     bool isEnraged = false;
+
     // 점프 공격을 시작해 착지 전까지 광폭화 전환을 보류하는 변수
     bool isJumpAttackInProgress;
+
+    // 요청한 공격 State에 실제로 진입했는지 기록한다.
+    // 공격 State 진입 실패 시 이동이나 다음 공격 처리를 진행하지 않도록 사용한다.
+    bool requestedPatternStarted;
+
+    // 점프 애니메이션의 도약 이벤트를 기다리고있는지 확인한다.
+    bool waitingForJumpTakeOff;
+    // 실제 도약 이벤트가 호출되었는지 확인한다.
+    bool jumpTakeOffReceived;
+    // Animation Event에서 시작한 점프 이동 코루틴을 저장한다.
+    Coroutine jumpMoveRoutine;
 
     /// <summary>
     /// 실제 체력 조건 또는 디버그 토글로 광폭화가 요청되었는지 확인한다.
@@ -95,6 +111,11 @@ public class BossAIController : MonoBehaviour
     static readonly int HashJumpAttack = Animator.StringToHash("JumpAttack");
     static readonly int HashSpinAttack = Animator.StringToHash("SpinAttack");
     static readonly int HashStompAttack = Animator.StringToHash("StompAttack");
+
+    // Animator State 이름
+    static readonly int HashJumpAttackState = Animator.StringToHash("State_JumpAttack");
+    static readonly int HashSpinAttackState = Animator.StringToHash("State_SpinAttack");
+    static readonly int HashStompAttackState = Animator.StringToHash("State_StompAttack");
 
     private void Awake()
     {
@@ -495,7 +516,7 @@ public class BossAIController : MonoBehaviour
         {
             // 360도 공격 전 살짝 돌아보는 느낌 연출
             yield return LookAtTarget(0.4f);
-            yield return ExecutePattern(HashSpinAttack, 1f);
+            yield return ExecutePattern(HashSpinAttack, HashSpinAttackState, 1f);
         }
         else
         {
@@ -505,7 +526,7 @@ public class BossAIController : MonoBehaviour
                 yield return LookAtTarget(0.45f);
                 nextGroundSlamTime = Time.time + GetPatternCooldown(groundSlamCooldown);
                 combat.SetWarningCircle(BossAttackPattern.StompAttack);
-                yield return ExecutePattern(HashStompAttack, 1f);
+                yield return ExecutePattern(HashStompAttack, HashStompAttackState, 1f);
             }
             else
             {
@@ -517,8 +538,9 @@ public class BossAIController : MonoBehaviour
                 {
                     float distance = Vector3.Distance(transform.position, targetPlayer.position);
 
-                    // 일정 거리 이상 멀어졌다면 즉시 점프 공격 실행
-                    if(distance >= combat.AtkDistance * 1.4f)
+                    // 일정 거리 이상 멀어졌고 점프 공격 쿨타임도 끝났을 때만 실행한다.
+                    if(distance >= combat.AtkDistance * 1.4f &&
+                        Time.time >= nextJumpAttackTime)
                     {
                         Debug.Log("<color=red>[Boss] 플레이어 도망 감지! 즉시 점프 공격 연계</color>");
 
@@ -542,26 +564,77 @@ public class BossAIController : MonoBehaviour
     {
         // 점프 공격을 시작할 때 광폭화가 이미 요청된 상태였는지 기록한다.
         bool enrageRequestedBeforeJump = shouldUseEnrage;
-
         // 이번 점프 공격의 충격파 발생 여부를 판단할 수 있도록 전달
         IsCurrentJumpEnraged = enrageRequestedBeforeJump;
 
         state = BossState.Attack;
         agent.isStopped = true;
 
+        // 이전 점프 실행 정보 초기화
+        waitingForJumpTakeOff = false;
+        jumpTakeOffReceived = false;
+        jumpMoveRoutine = null;
+
+        // 플레이어 방향으로 회전
         yield return LookAtTarget(0.3f);
 
-        // 점프 이동과 공격 애니메이션을 병행한다.
-        Coroutine moveRoutine = StartCoroutine(JumpMoveRoutine());
+        // 점프 공격 예고 원 표시
+        combat.SetWarningCircle(BossAttackPattern.JumpAttack, targetPlayer);
+        // 도약 이벤트를 받을 준비
+        waitingForJumpTakeOff = true;
 
-        // 후딜레이 부여
-        yield return ExecutePattern(HashJumpAttack, 1.5f);
+        // 점프 공격 애니메이션 요청 및 state 진입 확인
+        yield return RequestPatternAndWaitForStart(HashJumpAttack, HashJumpAttackState);
+        // state 진입 실패 시 점프 공격 취소
+        if(!requestedPatternStarted)
+        {
+            waitingForJumpTakeOff = false;
+            combat.HideWarningCircle();
+            Debug.LogError("[BossAI] 점프 공격 State 진입 실패");
 
-        // 공격 애니메이션이 먼저 끝났더라도 점프 이동이 진행 중이라면 기다린다.
-        yield return moveRoutine;
+            ChangeRoutine(ChaseRoutine(), BossState.Chase);
+            yield break;
+        }
+
+        // 점프 공격 준비부터 착지까지 광폭화 전환 보류
+        isJumpAttackInProgress = true;
+
+        // 애니메이션 이벤트에서 실제 이동이 시작될때까지 기다린다.
+        float eventTimer = 0f;
+        const float eventTimeout = 3f;
+
+        while (!jumpTakeOffReceived && eventTimer < eventTimeout)
+        {
+            if (state == BossState.Die)
+                yield break;
+
+            eventTimer += Time.deltaTime;
+            yield return null;
+        }
+        // 이벤트가 호출되지 않았다면 잘못된 애니메이션 이벤트 설정으로 판단한다.
+        waitingForJumpTakeOff = false;
+
+        if (!jumpTakeOffReceived)
+        {
+            isJumpAttackInProgress = false;
+            combat.HideWarningCircle();
+
+            Debug.LogError("[BossAI] 도약 Animation Event가 호출되지 않았습니다.");
+
+            ChangeRoutine(ChaseRoutine(), BossState.Chase);
+            yield break;
+        }
+        // 점프 애니메이션 종료 대기
+        yield return waitForPatternEnd(HashJumpAttackState, 1.5f);
+
+        // 실제 점프 이동 종료 대기
+        if (jumpMoveRoutine != null)
+        {
+            yield return jumpMoveRoutine;
+        }
 
         // 점프 이동이 끝난 뒤 에이전트가 정상적으로 복구되었는지 확인한다.
-        if(agent ==null || !agent.isActiveAndEnabled || !agent.isOnNavMesh)
+        if (agent == null || !agent.isActiveAndEnabled || !agent.isOnNavMesh)
         {
             Debug.LogError("[Boss Ai] 점프 공격 종료 후 NavMeshAgent가 정상 상태가 아닙니다.", this);
             state = BossState.Idle;
@@ -618,12 +691,6 @@ public class BossAIController : MonoBehaviour
 
         Vector3 targetPos = targetHit.position;
 
-        // 경고 원 배치 함수 호출
-        combat.SetWarningCircle(BossAttackPattern.JumpAttack, targetPlayer);
-
-        // 도약 전 대기
-        yield return new WaitForSeconds(0.6f);
-
         // NavmeshAgent 비활성화 및 이동
         agent.enabled = false;
 
@@ -666,6 +733,22 @@ public class BossAIController : MonoBehaviour
     }
 
     /// <summary>
+    /// 점프 애니메이션에서 발이 지면을 떠나는 프레임에 호출된다.
+    /// 이 시점을 기준으로 실제 점프 이동을 시작한다.
+    /// </summary>
+    public void OnJumpTakeOff()
+    {
+        // 현재 점프 공격에서 도약 이벤트를 기다리는 중이 아니라면 무시한다.
+        if (!waitingForJumpTakeOff) return;
+        // 애니메이션 이벤트가 중복 호출되는 것을 방지한다.
+        if (jumpTakeOffReceived) return;
+
+        // 실제 도약 이벤트가 발생했음을 기록
+        jumpTakeOffReceived = true;
+        jumpMoveRoutine = StartCoroutine(JumpMoveRoutine());
+    }
+
+    /// <summary>
     /// 플레이어가 보스 등 뒤에 있는지 판별하는 함수
     /// </summary>
     /// <returns></returns>
@@ -683,27 +766,21 @@ public class BossAIController : MonoBehaviour
     }
 
     /// <summary>
-    /// 패턴 실행 및 애니메이션 완료 대기 공통 로직
+    /// 단일 공격 패턴의 애니메이션 시작, 종료 및 후딜레이를 관리한다.
     /// </summary>
-    /// <param name="triggerName"></param>
+    /// <param name="triggerHash"></param>
     /// <param name="cooldown">공격 후 후딜레이</param>
     /// <returns></returns>
-    private IEnumerator ExecutePattern(int triggerName, float cooldown)
+    private IEnumerator ExecutePattern(int triggerHash, int expectedStateHash, float cooldown)
     {
-        // 다른 공격의 Trigger가 남아 있다면 먼저 초기화한다.
-        // 현재 재생 중인 애니메이션으 강제로 취소하는 코드는 아니다.
-        animator.ResetTrigger(HashJumpAttack);
-        animator.ResetTrigger(HashSpinAttack);
-        animator.ResetTrigger(HashStompAttack);
+        // 이번에 요청항 공격 State가 실제로 시작될 때까지 기다린다.
+        yield return RequestPatternAndWaitForStart(triggerHash, expectedStateHash);
 
-        animator.SetTrigger(triggerName);
-        // 애니메이션 완료 대기
-        yield return new WaitUntil(() => animator.GetCurrentAnimatorStateInfo(0).IsTag("Attack")
-        || animator.IsInTransition(0));
-        yield return new WaitUntil(() => !animator.GetCurrentAnimatorStateInfo(0).IsTag("Attack")
-        && !animator.IsInTransition(0));
+        // State 진입에 실패 했다면 공격 종료 대기까지 진행하지 않는다.
+        if (!requestedPatternStarted) yield break;
 
-        yield return new WaitForSeconds(cooldown);
+        // 해당 공격 State가 끝난 뒤 후딜레이까지 기다린다.
+        yield return waitForPatternEnd(expectedStateHash, cooldown);
     }
 
     /// <summary>
@@ -773,6 +850,70 @@ public class BossAIController : MonoBehaviour
             // 정상 완주 시 원래 후딜레이 적용
             yield return new WaitForSeconds(coolDown);
         }
+    }
+
+    /// <summary>
+    /// 지정한 공격 Trigger를 요청하고, 해당 공격 State가 시작될 때까지 기다린다.
+    /// </summary>
+    /// <returns></returns>
+    private IEnumerator RequestPatternAndWaitForStart(int triggerHash, int expectedStateHash)
+    {
+        // 이전 공격에서 소비되지 않은 Trigger가 남아 있지 않도록 정리한다.
+        // 이번에 실행한 Trigger는 정리한 뒤 다시 설정한다.
+        animator.ResetTrigger(HashJumpAttack);
+        animator.ResetTrigger(HashSpinAttack);
+        animator.ResetTrigger(HashStompAttack);
+
+        // Trigger 설정
+        animator.SetTrigger(triggerHash);
+
+        // Animator State 전환이 무한정 기다리는 상황을 방지한다.
+        float timer = 0f;
+        const float stateEntryTimeout = 2f;
+
+        while(timer < stateEntryTimeout)
+        {
+            // 실제 현재 Animator State 정보를 가져온다.
+            AnimatorStateInfo currentState =
+                animator.GetCurrentAnimatorStateInfo(0);
+
+            // 전환이 완전히 끝났고, 현재 State가 요청한 공격 State인지 확인한다.
+            if (!animator.IsInTransition(0) &&
+                currentState.shortNameHash == expectedStateHash)
+            {
+                requestedPatternStarted = true;
+                yield break;
+            }
+
+            timer += Time.deltaTime;
+            yield return null;
+        }
+
+        // 제한 시간 안에 진입하지 못했다면 실패로 기록한다.
+        requestedPatternStarted = false;
+
+        Debug.LogError(
+            $"[BossAI] 공격 State 진입 실패. " +
+            $"요청 State Hash={expectedStateHash}, " +
+            $"현재 State Hash={animator.GetCurrentAnimatorStateInfo(0).shortNameHash}",
+            this
+        );
+    }
+
+    /// <summary>
+    /// 지정한 공격 State가 끝나고 다른 State로 전환될 때까지 기다린다.
+    /// 공격 State를 벗어난 이후 후딜레이도 적용한다.
+    /// </summary>
+    /// <param name="expectedStateHash"></param>
+    /// <param name="cooldown"></param>
+    /// <returns></returns>
+    private IEnumerator waitForPatternEnd(int expectedStateHash, float cooldown)
+    {
+        yield return new WaitUntil(() =>
+        !animator.IsInTransition(0) &&
+        animator.GetCurrentAnimatorStateInfo(0).shortNameHash != expectedStateHash);
+
+        yield return new WaitForSeconds(cooldown);
     }
 
     /// <summary>

@@ -94,7 +94,7 @@ public class BossCombat : MonoBehaviour
 
         // Hierarchy에서 원본과 실행 중 인스턴스를 구별하기 위한 이름설정
         warningCircleInstance.name = warningCirclePrefab.name + "_Runtime";
-        shockWaveInstance.name = warningCirclePrefab.name + "_Runtime";
+        shockWaveInstance.name = ShockWavePrefab.name + "_Runtime";
 
         // 게임 시작 시에는 화면에 나타나지 않도록 비활성화한다.
         warningCircleInstance.SetActive(false);
@@ -416,17 +416,16 @@ public class BossCombat : MonoBehaviour
             yield break;
         }
 
-        ParticleSystem particle = shockWaveInstance.GetComponent<ParticleSystem>();
-        if (particle == null)
-        {
-            Debug.LogWarning("[BossCombat] 충격파 오브젝트에 ParticleSystem이 없습니다.");
-            yield break;
-        }
+        // 충격파 위치 보정값
+        const float offSet = 0.1f;
 
-        // 이전 재생에서 남아 있는 파티클을 제거할 수 있도록 오브젝트 활성화
         shockWaveInstance.SetActive(true);
-        // 충격파 위치를 착지위치로 옮긴다.
-        shockWaveInstance.transform.position = jumpLandingPos;
+
+        Vector3 effectPos = jumpLandingPos;
+        effectPos.y += offSet;
+        shockWaveInstance.transform.position = effectPos;
+
+        ParticleSystem particle = shockWaveInstance.GetComponent<ParticleSystem>();
 
         // 이전에 남아있는 파티클을 제거하고 새로 재생한다.
         particle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
