@@ -47135,6 +47135,11 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2.2358513, y: 39.586555, z: 173.94609}
   m_Center: {x: -0.3443737, y: 12.293278, z: -73.45352}
+--- !u!4 &936639837 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 4675408295691341778, guid: 4fe3fdb6c2e26fd4caa6e179e640e61a, type: 3}
+  m_PrefabInstance: {fileID: 597594023}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &937930084
 GameObject:
   m_ObjectHideFlags: 0
@@ -56235,6 +56240,7 @@ MonoBehaviour:
   BackJumpForce: 6.5
   BackJumpSpeed: 5
   KnockBackSpeed: 5
+  ikFootRoot: {fileID: 936639837}
   DampTime: 0.15
   RotationSpeed: 360
   Gravity: -30

@@ -19,13 +19,16 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
     [SerializeField] InputActionProperty IapRightAttack;
     [SerializeField] InputActionProperty IapLook;
     [SerializeField] InputActionProperty IapInteract;
+
     [Header("무기별 애니메이터")]
     [SerializeField] RuntimeAnimatorController NonCombatController;
     [SerializeField] RuntimeAnimatorController OneHandSwordController;
     [SerializeField] RuntimeAnimatorController TwoHandAxeController;
+
     [Header("플레이어 무기 관련 설정")]
     [SerializeField] Transform TrsWeapons;
     [SerializeField] LayerMask TargetLayer;
+
     [Header("양클릭 입력 세팅")]
     [SerializeField, Tooltip("동시 입력 인정 시간")] float SimultaneousInputTime = 0.08f;
     float LastlmbTime = -999f;
@@ -56,17 +59,22 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
     [SerializeField] float BackJumpForce;
     [SerializeField] float BackJumpSpeed;
     [SerializeField] float KnockBackSpeed;
+    [SerializeField] Transform ikFootRoot;
+
     [Header("블렌드 트리 보간 속도")]
     [Tooltip("값이 작을수록 즉각 반응하고, 크면 부드럽지만 느리게 전환됩니다.")]
     [SerializeField] float DampTime;
     float CurBackJumpSpeed;
+
     [Header("회전속도")]
     [SerializeField] float RotationSpeed = 360f;
+
     [Header("중력관련")]
     [SerializeField] float Gravity = -9.81f;
     [SerializeField, Tooltip("최대 하강 속도")] float MaxVelocityY;
     [SerializeField] float RayDistance = 0.3f;
     [SerializeField] LayerMask GroundLayer;
+
     [Header("경사면 미끄러짐 설정(캐릭터 컨트롤러와 동일)")]
     [SerializeField] float SlopeLimitAngle;
     [SerializeField] float SlideSpeed;
@@ -116,6 +124,7 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
     public event Action OffDialogue;
     public event Action OnHeal;
 
+    public Transform IkFootRoot => ikFootRoot;
     public void SetSuperArmor(bool state) => isSuperArmor = state;
     public void SetInteract(bool State)
     {

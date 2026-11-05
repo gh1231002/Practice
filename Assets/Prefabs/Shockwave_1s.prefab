@@ -5136,8 +5136,8 @@ ParticleSystem:
     startSize:
       serializedVersion: 2
       minMaxState: 3
-      scalar: 9
-      minScalar: 9.9
+      scalar: 13
+      minScalar: 15
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -5242,8 +5242,8 @@ ParticleSystem:
     startSizeZ:
       serializedVersion: 2
       minMaxState: 3
-      scalar: 9
-      minScalar: 9.9
+      scalar: 13
+      minScalar: 15
       maxCurve:
         serializedVersion: 2
         m_Curve:
@@ -5883,7 +5883,7 @@ ParticleSystem:
       repeatInterval: 0.01
       probability: 1
   SizeModule:
-    enabled: 1
+    enabled: 0
     curve:
       serializedVersion: 2
       minMaxState: 1

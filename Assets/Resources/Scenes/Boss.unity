@@ -6506,7 +6506,7 @@ MonoBehaviour:
         value:
           x: 0.00000004397199
           y: 0.8291303
-          z: 0.000000029648872
+          z: 0.000000029648875
           w: 0.55905545
     - Position:
         x: 7.4299927
@@ -15287,7 +15287,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BossAIController
   state: 0
-  jumpAttackDistance: 15
+  jumpAttackDistance: 10
   jumpAttackCooldown: 10
   groundSlamCooldown: 20
   enrageHpRatio: 0.5

@@ -1,5 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
+using NUnit.Framework.Constraints;
+using Unity.Mathematics;
 using UnityEngine;
 
 /// <summary>
@@ -178,21 +180,7 @@ public class BossCombat : MonoBehaviour
         // 피해 함수 호출
         ApplyDamageToTargets(hits, jumpAndStompAttackTargets, stompDamageMultiplier, HitReactionType.Knockback);
     }
-    /// <summary>
-    /// 점프공격 애니메이션의 실제 충격 프레임에서 호출한다.
-    /// </summary>
-    private void JumpImpact()
-    {
-        // 착지 위치가 설정되지 않았다면 실행하지 않는다.
-        if(!hasJumpLandingPos) return;
-
-        Collider[] hits = Physics.OverlapSphere(jumpLandingPos, jumpRadius, targetLayer);
-        ApplyDamageToTargets(hits, jumpAndStompAttackTargets, jumpDamageMultiplier, HitReactionType.Knockback);
-
-        // 같은 착지 위치가 다음 공격에서 잘못 재사용되지 않도록 정리한다.
-        hasJumpLandingPos = false;
-    }
-
+    
     /// <summary>
     /// 검출된 콜라이더를 대상으로 피해를 적용한다.
     /// 지정된 공격 구간에서 같은 대상은 한 번만 피해를 받는다.
@@ -339,6 +327,22 @@ public class BossCombat : MonoBehaviour
         }
         HideWarningCircle();
     }
+
+    /// <summary>
+    /// 점프공격 애니메이션의 실제 충격 프레임에서 호출한다.
+    /// </summary>
+    private void JumpImpact()
+    {
+        // 착지 위치가 설정되지 않았다면 실행하지 않는다.
+        if(!hasJumpLandingPos) return;
+
+        Collider[] hits = Physics.OverlapSphere(jumpLandingPos, jumpRadius, targetLayer);
+        ApplyDamageToTargets(hits, jumpAndStompAttackTargets, jumpDamageMultiplier, HitReactionType.Knockback);
+
+        // 같은 착지 위치가 다음 공격에서 잘못 재사용되지 않도록 정리한다.
+        hasJumpLandingPos = false;
+    }
+
     // 내려찍기 공격
     public void OnStompLanding()
     {
@@ -430,6 +434,10 @@ public class BossCombat : MonoBehaviour
         // 이전에 남아있는 파티클을 제거하고 새로 재생한다.
         particle.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         particle.Play();
+        yield return null;
+
+        // 피격 판정 진행
+        ShockWaveImpact();
 
         // 루트와 자식 파티클의 재생이 모두 끝날 때까지 기다린다.
         while(particle.IsAlive(true))
@@ -439,5 +447,97 @@ public class BossCombat : MonoBehaviour
 
         // 충격파가 완전히 비활성화하여 다음 공격에서 재사용한다.
         shockWaveInstance.SetActive(false);
+    }
+    
+    /// <summary>
+    /// 점프 충격파 피해 판정을 처리하는 함수
+    /// </summary>
+    private void ShockWaveImpact()
+    {
+        if (shockWaveInstance == null)
+            return;
+        
+        // 충격파 중심 위치
+        Vector3 effectPos = shockWaveInstance.transform.position;
+
+        // 파티클 오브젝트와 자식 오브젝트의 렌더러를 모두 가져온다
+        ParticleSystemRenderer[] renderers = shockWaveInstance.GetComponentsInChildren<ParticleSystemRenderer>();
+        bool hasBounds = false;
+        Bounds effectBounds = default;
+
+        foreach(ParticleSystemRenderer parti in renderers)
+        {
+            // 사용하지 않는 렌더러는 실제 효과 범위에 포함하지 않는다
+            if(parti == null || !parti.enabled) continue;
+            // 렌더러가 붙어있는 오브젝트의 파티클 시스템을 확인한다
+            ParticleSystem particleSystem = parti.GetComponent<ParticleSystem>();
+            // 재생 후에도 파티클이 없는 시스템은 경계 계산에서 제외한다
+            if(particleSystem == null || particleSystem.particleCount == 0) continue;
+            
+            // 첫 렌더러의 경계를 시작점으로 삼고 나머지 경계를 합친다
+            if(!hasBounds)
+            {
+                effectBounds = parti.bounds;
+                hasBounds = true;
+            }
+            else
+            {
+                effectBounds.Encapsulate(parti.bounds);
+            }
+        }
+        // 사용할 수 있는 파티클렌더러 경계가 없으면 판정하지 않는다
+        if(!hasBounds) return;
+        // 렌더러 경계의 중심이 충격파 중심과 다를 수 있으므로
+        // 중심 위치 차이와 경계 반폭을 더해 X/Z 방향의 최대 범위를 구한다
+        float radiusX = Mathf.Abs(effectBounds.center.x - effectPos.x) + effectBounds.extents.x;
+        float radiusZ = Mathf.Abs(effectBounds.center.z - effectPos.z) + effectBounds.extents.z;
+
+        // 두 축 중 더 큰 범위를 원의 반경으로 사용한다
+        float radius = Mathf.Max(radiusX, radiusZ);
+        // 원기둥 판정 높이 설정
+        float cylinderHeight = 1f;
+        float halfHeight = cylinderHeight * 0.5f;
+
+        // 원기둥의 절반 높이만큼 위아래로 검색 영역 설정
+        Vector3 halfExtents = new Vector3(radius, halfHeight, radius);
+        // OverlapBox로 주변 후보 콜라이더를 찾는다
+        Collider[] hits = Physics.OverlapBox(effectPos, halfExtents, Quaternion.identity, targetLayer);
+        // 실제 원기둥 안에 있는 대상만 저장한다
+        List<Collider> targets = new List<Collider>();
+        foreach(Collider col in hits)
+        {
+            // 예외 조건
+            if(col == null) continue;
+            // 플레이어 컴포넌트를 찾는다
+            Player_CC player = col.GetComponentInParent<Player_CC>();
+            if(player == null || player.IkFootRoot == null) continue;
+
+            // 충격파 중심에 가장 가까운 표면 지점을 구한다
+            // 콜라이더 가장자리가 원 안에 걸치는 경우도 판정할 수 있다
+            Vector3 closestPoint = col.ClosestPoint(effectPos);
+            
+            // X/Z 평면에서만 거리를 비교한다
+            Vector2 horiOffset = new Vector2(closestPoint.x - effectPos.x, closestPoint.z - effectPos.z);
+            // 제곱 거리로 비교해 제곱근 계산을 생략한다
+            // 원의 경계에 정확히 닿은 경우는 판정에 포함한다
+            if(horiOffset.sqrMagnitude > radius * radius) continue;
+
+            // 플레이어 발밑 기준 위치를 가져온다.
+            Vector3 footPos = player.IkFootRoot.position;
+            // 충격파 발생 지점과 플레이어 발밑의 높이 차이를 계산
+            float distance = Mathf.Abs(footPos.y - effectPos.y);
+
+            // cylinderHeight는 원기둥의 전체 높이다
+            // 중심에서 위아래로 허용할 거리는 전체 높이의 절반인 halfHeight로 계산한다
+            // 플레이어 발 위치와 충격파 중심의 높이 차이가 halfHeight를 넘으면 판정에서 제외한다
+            if(distance > halfHeight) continue;
+
+            // 맞는 높이에 있다면 list추가
+            targets.Add(col);
+        }
+
+        // 데미지 처리 함수에 전달한다.
+        // jumpAndStompAttackTargets를 공유해 같은 점프 공격 중 이미 맞은 대상의 중복 피해를 막는다
+        ApplyDamageToTargets(targets.ToArray(), jumpAndStompAttackTargets, jumpDamageMultiplier, HitReactionType.Knockback);
     }
 }
