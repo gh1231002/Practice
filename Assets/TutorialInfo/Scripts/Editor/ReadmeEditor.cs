@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System;
-using System.IO;
-using System.Reflection;
 
+namespace UnityTechnologies.ParticlePack
+{
 [CustomEditor(typeof(Readme))]
 [InitializeOnLoad]
 public class ReadmeEditor : Editor {
@@ -26,39 +26,28 @@ public class ReadmeEditor : Editor {
 			var readme = SelectReadme();
 			SessionState.SetBool(kShowedReadmeSessionStateName, true);
 			
-			if (readme && !readme.loadedLayout)
-			{
-				LoadLayout();
+			if (readme)
 				readme.loadedLayout = true;
-			}
-		} 
-	}
-	
-	static void LoadLayout()
-	{
-		var assembly = typeof(EditorApplication).Assembly; 
-		var windowLayoutType = assembly.GetType("UnityEditor.WindowLayout", true);
-		var method = windowLayoutType.GetMethod("LoadWindowLayout", BindingFlags.Public | BindingFlags.Static);
-		method.Invoke(null, new object[]{Path.Combine(Application.dataPath, "IgniteCoders/Simple Water Shader/Info/Layout.wlt"), false});
-	}
-	
-	[MenuItem("Documentation/Simple Water Shader")]
-	static Readme SelectReadme() 
-	{
-		var ids = AssetDatabase.FindAssets("Readme t:Readme");
-		if (ids.Length == 1)
-		{
-			var readmeObject = AssetDatabase.LoadMainAssetAtPath(AssetDatabase.GUIDToAssetPath(ids[0]));
-			
-			Selection.objects = new UnityEngine.Object[]{readmeObject};
-			
-			return (Readme)readmeObject;
 		}
-		else
+	}
+
+	[MenuItem("Tutorial/Show Tutorial Instructions")]
+	static Readme SelectReadme()
+	{
+		// Other templates may ship their own "Readme" type, so only accept ours.
+		foreach (var id in AssetDatabase.FindAssets("Readme t:Readme"))
 		{
-			Debug.Log("Couldn't find a readme");
-			return null;
+			var readme = AssetDatabase.LoadMainAssetAtPath(AssetDatabase.GUIDToAssetPath(id)) as Readme;
+			if (readme == null)
+				continue;
+
+			Selection.objects = new UnityEngine.Object[]{readme};
+
+			return readme;
 		}
+
+		Debug.Log("Couldn't find a readme");
+		return null;
 	}
 	
 	protected override void OnHeaderGUI()
@@ -154,5 +143,6 @@ public class ReadmeEditor : Editor {
 
 		return GUI.Button (position, label, LinkStyle);
 	}
+}
 }
 

@@ -1828,7 +1828,7 @@ Transform:
   m_GameObject: {fileID: 326303275}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 209.93355, y: 11.1, z: 8.7}
+  m_LocalPosition: {x: 209.93355, y: 11.1, z: 0.09}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4540,7 +4540,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::MonsterStats
   maxHp: 1500
   curHp: 0
-  atkPower: 15
+  atkPower: 20
   monDef: 40
   moveSpeed: 3
   chaseSpeed: 5
@@ -6506,7 +6506,7 @@ MonoBehaviour:
         value:
           x: 0.00000004397199
           y: 0.8291303
-          z: 0.000000029648875
+          z: 0.000000029648872
           w: 0.55905545
     - Position:
         x: 7.4299927
@@ -15326,16 +15326,21 @@ MonoBehaviour:
   stompRadius: 4.5
   rotationRadius: 4.5
   jumpRadius: 4.5
+  rockSpikeRadius: 1
+  rockSpikeHeightScale: 0.25
   atkDistance: 4.5
   targetLayer:
     serializedVersion: 2
     m_Bits: 8
+  rockSpikeDamageWindow: 2
   stompDamageMultiplier: 1.1
   jumpDamageMultiplier: 1.5
   spinDamageMultiplier: 1.3
+  rockSpikeDamageMultiplier: 1
   warningCirclePrefab: {fileID: 2600109055867650478, guid: 64c006785fca4364b9e2c1ddf6c2d7d1, type: 3}
   warningGroundOffset: 0.01
-  ShockWavePrefab: {fileID: 1921079115439858272, guid: ff41eb19cba73e64c97eeb32bbdd749b, type: 3}
+  shockWavePrefab: {fileID: 1921079115439858272, guid: ff41eb19cba73e64c97eeb32bbdd749b, type: 3}
+  earthShatter: {fileID: 1314945738539566, guid: 32c9fd11a72259d45aa26ae41c34c5aa, type: 3}
 --- !u!1001 &2111685361
 PrefabInstance:
   m_ObjectHideFlags: 0

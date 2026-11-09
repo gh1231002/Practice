@@ -69,6 +69,9 @@ public class BossAIController : MonoBehaviour
     // 점프 공격을 시작해 착지 전까지 광폭화 전환을 보류하는 변수
     bool isJumpAttackInProgress;
 
+    // 내려찍기 공격이 끝날 때까지 광폭화 전환을 보류하는 변수
+    bool isGroundSlamInProgress;
+
     // 요청한 공격 State에 실제로 진입했는지 기록한다.
     // 공격 State 진입 실패 시 이동이나 다음 공격 처리를 진행하지 않도록 사용한다.
     bool requestedPatternStarted;
@@ -86,11 +89,9 @@ public class BossAIController : MonoBehaviour
     /// </summary>
     bool shouldUseEnrage => isEnraged || (DebugManager.Instance != null && DebugManager.Instance.BossEnraged);
 
-    public bool ShouldUseEnrage => shouldUseEnrage;
-
-    // 현재 진행 중인 점프 공격을 광폭화 상태에서 시작했는지 기록한다.
+    // 현재 진행 중인 공격을 광폭화 상태에서 시작했는지 기록한다.
     // 공격 도중 광폭화가 시작되더라도 이 값은 해당 공격이 끝날 때까지 유지한다.
-    public bool IsCurrentJumpEnraged {  get; private set; }
+    public bool IsCurrentAttackEnraged {  get; private set; }
 
     // 현재 몇번째 타격인지 기록
     int comboIndex;
@@ -338,7 +339,7 @@ public class BossAIController : MonoBehaviour
 
     /// <summary>
     /// 광폭화 포효를 시작한다.
-    /// 점프 공격 도중에는 착지할때까지 진입을 보류한다.
+    /// 점프 또는 내려찍기 공격 중에는 패턴이 끝날 때까지 진입을 보류한다.
     /// </summary>
     private void BeginEnrageTransition()
     {
@@ -346,6 +347,7 @@ public class BossAIController : MonoBehaviour
         if (targetPlayer == null) return;
         if (state == BossState.Enrage) return;
         if (isJumpAttackInProgress) return;
+        if (isGroundSlamInProgress) return;
 
         //  현재 공격 루틴 및 이동, 경고 원이 배치되어있다면 중단한다.
         StopBossActionForEnrage();
@@ -526,7 +528,18 @@ public class BossAIController : MonoBehaviour
                 yield return LookAtTarget(0.45f);
                 nextGroundSlamTime = Time.time + GetPatternCooldown(groundSlamCooldown);
                 combat.SetWarningCircle(BossAttackPattern.StompAttack);
+                bool enrageRequestedBeforeStomp = shouldUseEnrage;
+                IsCurrentAttackEnraged = enrageRequestedBeforeStomp;
+                isGroundSlamInProgress = true;
                 yield return ExecutePattern(HashStompAttack, HashStompAttackState, 1f);
+
+                // 패턴과 후딜레이가 끝난 뒤에 보류했던 광폭화 전환을 재개한다.
+                isGroundSlamInProgress = false;
+                if (shouldUseEnrage && !enrageRequestedBeforeStomp)
+                {
+                    BeginEnrageTransition();
+                    yield break;
+                }
             }
             else
             {
@@ -565,7 +578,7 @@ public class BossAIController : MonoBehaviour
         // 점프 공격을 시작할 때 광폭화가 이미 요청된 상태였는지 기록한다.
         bool enrageRequestedBeforeJump = shouldUseEnrage;
         // 이번 점프 공격의 충격파 발생 여부를 판단할 수 있도록 전달
-        IsCurrentJumpEnraged = enrageRequestedBeforeJump;
+        IsCurrentAttackEnraged = enrageRequestedBeforeJump;
 
         state = BossState.Attack;
         agent.isStopped = true;
@@ -1027,8 +1040,9 @@ public class BossAIController : MonoBehaviour
         StopAllCoroutines();
         activeRoutine = null;
         
-        // 점프 이동 상태를 정리한다.
+        // 점프 이동 및 내려찍기 상태를 정리한다.
         isJumpAttackInProgress = false;
+        isGroundSlamInProgress = false;
 
         animator.SetTrigger(HashDeath);
         if(agent != null)
