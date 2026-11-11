@@ -15326,13 +15326,15 @@ MonoBehaviour:
   stompRadius: 4.5
   rotationRadius: 4.5
   jumpRadius: 4.5
-  rockSpikeRadius: 1
-  rockSpikeHeightScale: 0.25
   atkDistance: 4.5
   targetLayer:
     serializedVersion: 2
     m_Bits: 8
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 256
   rockSpikeDamageWindow: 2
+  groundRayDistance: 20
   stompDamageMultiplier: 1.1
   jumpDamageMultiplier: 1.5
   spinDamageMultiplier: 1.3

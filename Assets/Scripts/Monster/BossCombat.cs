@@ -8,6 +8,29 @@ using UnityEngine;
 /// </summary>
 public class BossCombat : MonoBehaviour
 {
+    // 바위 하나의 기즈모 정보를 저장하는 구조체
+    private struct RockSpikeGizmoData
+    {
+        // 파티클의 원래 위치
+        public Vector3 particlePosition;
+
+        // Pivot을 적용한 메시의 기준 위치
+        public Vector3 renderedMeshPosition;
+
+        // 바위와 지면이 만나는 위치
+        public Vector3 groundPoint;
+
+        // 충돌 캡슐의 아래쪽과 위쪽 위치
+        public Vector3 capsuleBottom;
+        public Vector3 capsuleTop;
+
+        // 바위의 성장 방향과 충돌 반지름
+        public Vector3 growthDir;
+        public float radius;
+    }
+    // 현재 활성화된 모든 바위의 기즈모 정보를 저장한다.
+    private List<RockSpikeGizmoData> rockSpikeGizmos = new List<RockSpikeGizmoData>();
+
     [Header("공격 관련 설정")]
     [SerializeField, Tooltip("왼손 공격 포인트")] Transform leftHandAtkPoint;
     [SerializeField, Tooltip("오른손 공격 포인트")] Transform rightHandAtkPoint;
@@ -20,12 +43,12 @@ public class BossCombat : MonoBehaviour
     [SerializeField, Tooltip("내려찍기 임팩트 범위 반지름")] float stompRadius;
     [SerializeField, Tooltip("회전 공격 임팩트 범위 반지름")] float rotationRadius;
     [SerializeField, Tooltip("점프 공격 임팩트 범위 반지름")] float jumpRadius;
-    [SerializeField, Tooltip("지면 분쇄 판정 반지름")] float rockSpikeRadius;
-    [SerializeField, Tooltip("Inspector에서 프리팹에 맞게 조절할 보정값")] float rockSpikeHeightScale = 0.25f;
 
     [SerializeField, Tooltip("공격 가능 사거리")] float atkDistance;
     [SerializeField, Tooltip("타격 대상 레이어")] LayerMask targetLayer;
+    [SerializeField, Tooltip("지면 레이어")] LayerMask groundLayer;
     [SerializeField, Tooltip("파티클 위치를 읽고 피해 판정을 수행할 시간")] float rockSpikeDamageWindow;
+    [SerializeField, Tooltip("바위가 지면을 찾을 때 사용할 탐색 거리")] float groundRayDistance;
 
     [Header("공격별 피해 배율 설정")]
     [SerializeField, Min(0f)]
@@ -54,6 +77,8 @@ public class BossCombat : MonoBehaviour
     ParticleSystem rockSpikeParticle;
     // 현재 파티클 위치들을 임시 저장할 배열
     ParticleSystem.Particle[] rockSpikeParticles;
+    // RockSpike의 MeshRenderer를 캐싱한다
+    ParticleSystemRenderer rockSpikeRenderer;
     
     public float AtkDistance => atkDistance;
 
@@ -85,12 +110,6 @@ public class BossCombat : MonoBehaviour
     readonly HashSet<ITakeDamageWithReaction> jumpAndStompAttackTargets = new HashSet<ITakeDamageWithReaction>();
     readonly HashSet<ITakeDamageWithReaction> comboTargets = new HashSet<ITakeDamageWithReaction>();
     readonly HashSet<ITakeDamageWithReaction> spinTargets = new HashSet<ITakeDamageWithReaction>();
-
-    // 디버그 관련 변수
-    Vector3 debugRockSpikeBottom;
-    Vector3 debugRockSpikeTop;
-    Vector3 debugRockSpikeDir;
-    float debugSpkeHitRadius;
 
     private void Awake()
     {
@@ -125,11 +144,17 @@ public class BossCombat : MonoBehaviour
         if(rockSpikeTrs != null)
         {
             rockSpikeParticle = rockSpikeTrs.GetComponent<ParticleSystem>();
+
+            // 매 프레임 Renderer를 다시 찾지 않도록 미리 저장한다
+            if(rockSpikeParticle != null)
+            {
+                rockSpikeRenderer = rockSpikeParticle.GetComponent<ParticleSystemRenderer>();
+            }
         }
         // 프리팹 구조나 이름이 다르면 로그 출력
-        if(rockSpikeParticle == null)
+        if(rockSpikeParticle == null || rockSpikeRenderer == null)
         {
-            Debug.LogWarning("[BossCombat] EarthShatter 프리팹에서 RockSpike 파티클을 찾지 못했습니다.", this);
+            Debug.LogWarning("[BossCombat] EarthShatter 프리팹에서 RockSpike 파티클 시스템 또는 Renderer 찾지 못했습니다.", this);
         }
 
         // Hierarchy에서 원본과 실행 중 인스턴스를 구별하기 위한 이름설정
@@ -331,29 +356,50 @@ public class BossCombat : MonoBehaviour
         }
 
         // 대지 분쇄 기즈모
-        Vector3 axis = debugRockSpikeDir.normalized;
-        // 축과 평행하지 않은 방향을 골라 캡슐 옆면의 두 축을 만든다.
-        Vector3 side = Vector3.Cross(axis, Vector3.up);
+        foreach(RockSpikeGizmoData data in rockSpikeGizmos)
+        {
+            Vector3 axis = data.growthDir.normalized;
+            Vector3 side = Vector3.Cross(axis, Vector3.up);
+            if(side.sqrMagnitude < 0.001f)
+            {
+                side = Vector3.Cross(axis, Vector3.right);
+            }
+            side.Normalize();
 
-        if (side.sqrMagnitude < 0.001f)
-        side = Vector3.Cross(axis, Vector3.right);
-        side.Normalize();
-        Vector3 otherSide = Vector3.Cross(axis, side).normalized;
+            Vector3 otherSide = Vector3.Cross(axis, side).normalized;
 
-        Gizmos.color = Color.magenta;
-        
-        // 캡슐의 아래쪽과 위쪽 끝을 구로 표시한다.
-        Gizmos.DrawWireSphere(debugRockSpikeBottom, debugSpkeHitRadius);
-        Gizmos.DrawWireSphere(debugRockSpikeTop, debugSpkeHitRadius);
+            // 충돌 캡슐의 양쪽 끝을 자홍색으로 표시한다.
+            Gizmos.color = Color.magenta;
 
-        // 캡슐 옆면을 네 개의 선으로 표시한다.
-        Vector3 sideOffset = side * debugSpkeHitRadius;
-        Vector3 otherSideOffset = otherSide * debugSpkeHitRadius;
+            Gizmos.DrawWireSphere(data.capsuleBottom, data.radius);
+            Gizmos.DrawWireSphere(data.capsuleTop, data.radius);
 
-        Gizmos.DrawLine(debugRockSpikeBottom + sideOffset, debugRockSpikeTop + sideOffset);
-        Gizmos.DrawLine(debugRockSpikeBottom - sideOffset, debugRockSpikeTop - sideOffset);
-        Gizmos.DrawLine(debugRockSpikeBottom + otherSideOffset, debugRockSpikeTop + otherSideOffset);
-        Gizmos.DrawLine(debugRockSpikeBottom - otherSideOffset, debugRockSpikeTop - otherSideOffset);
+            // 파티클의 원래 위치를 노란색으로 표시한다.
+            Gizmos.color = Color.yellow;
+            Gizmos.DrawSphere(data.particlePosition, 0.2f);
+
+            // Pivot을 적용한 메시의 기준 위치를 주황색으로 표시한다.
+            Gizmos.color = new Color(1f, 0.5f, 0f);
+            Gizmos.DrawSphere(data.renderedMeshPosition, 0.2f);
+
+            // 실제 지면과 만나는 지점을 흰색으로 표시한다.
+            Gizmos.color = Color.white;
+            Gizmos.DrawSphere(data.groundPoint, 0.15f);
+
+            // 캡슐의 옆면을 네 방향의 선으로 표시한다.
+            Vector3 sideOffset = side * data.radius;
+            Vector3 otherSideOffset = otherSide * data.radius;
+
+            Gizmos.color = Color.magenta;
+
+            Gizmos.DrawLine(data.capsuleBottom + sideOffset, data.capsuleTop + sideOffset);
+
+            Gizmos.DrawLine(data.capsuleBottom - sideOffset, data.capsuleTop - sideOffset);
+
+            Gizmos.DrawLine(data.capsuleBottom + otherSideOffset, data.capsuleTop + otherSideOffset);
+
+            Gizmos.DrawLine(data.capsuleBottom - otherSideOffset, data.capsuleTop - otherSideOffset);
+        }
     }
 
     private void OnDestroy()
@@ -479,10 +525,13 @@ public class BossCombat : MonoBehaviour
             // 파티클 위치가 월드 좌표인지 로컬 좌표인지 확인할때 사용한다
             var main = rockSpikeParticle.main;
 
+            rockSpikeGizmos.Clear();
+
             for(int i = 0; i < count; i++)
             {
                 ParticleSystem.Particle particle = rockSpikeParticles[i];
 
+                // 파티클의 현재 위치를 가져온다
                 Vector3 hitPos;
 
                 // 파티클 시스템의 Simulation Space에 맞춰 월드 좌표로 변환한다
@@ -507,10 +556,8 @@ public class BossCombat : MonoBehaviour
                     break;
                 }
 
-                // 바위 메시의 길이 방향 축
-                // 메시의 긴 축이 로컬 Y축이 아니라면 vector3.forward등으로 바꿔 확인한다
+                // 파티클의 회전값을 이용해 바위의 성장 방향을 계산한다
                 Vector3 localGrowthAxis = Vector3.right;
-                // 파티클 회전을 적용해 성장 방향을 구한다
                 Vector3 growthDir = Quaternion.Euler(particle.rotation3D) * localGrowthAxis;
 
                 // 파티클 시뮬레이션 공간에 맞춰 월드 방향으로 반환한다
@@ -523,36 +570,71 @@ public class BossCombat : MonoBehaviour
                     case ParticleSystemSimulationSpace.Custom:
                         if (main.customSimulationSpace != null)
                         {
-                            growthDir =
-                                main.customSimulationSpace.TransformDirection(growthDir);
+                            growthDir = main.customSimulationSpace.TransformDirection(growthDir);
                         }
                         else
                         {
-                            growthDir =
-                                rockSpikeParticle.transform.TransformDirection(growthDir);
+                            growthDir = rockSpikeParticle.transform.TransformDirection(growthDir);
                         }
                         break;
 
                     default: // Local
-                        growthDir =
-                            rockSpikeParticle.transform.TransformDirection(growthDir);
+                        growthDir = rockSpikeParticle.transform.TransformDirection(growthDir);
                         break;
                 }
                 growthDir.Normalize();
 
-                // 파티클 크기를 바위 높이의 근사값으로 사용한다
-                float spikeHeight = particle.GetCurrentSize(rockSpikeParticle) * rockSpikeHeightScale;
-                float radius = Mathf.Min(rockSpikeRadius, spikeHeight * 0.25f);
+                // Renderer Pivot을 적용해 바위의 밑부분 위치를 계산한다
+                Vector3 particleSize = particle.GetCurrentSize3D(rockSpikeParticle);
+                // 메시의 원본 크기를 가져온다.
+                Vector3 meshSize = rockSpikeRenderer.mesh.bounds.size;
 
-                // hitpos를 바위 밑동으로 보고, 밑동부터 꼭대기까지 캡슐을 만든다
-                Vector3 capsuleBottom = hitPos + growthDir * radius;
-                Vector3 capsuleTop = hitPos + growthDir * Mathf.Max(radius, spikeHeight - radius);
+                // 메시의 중심에서 X축 가장자리까지의 거리를 구한다.
+                // 현재 메시에서는 X축이 바위의 성장 방향이다.
+                float halfMeshLength = meshSize.x * 0.5f;
+
+                // 메시의 가장 아래쪽에 해당하는 로컬 오프셋을 계산한다.
+                // 기존 Renderer Pivot(-0.32) 대신 메시의 실제 절반 길이를 사용한다.
+                Vector3 scaledPivot = new Vector3(-halfMeshLength * particleSize.x, 0f, 0f);
+
+                // 파티클의 회전을 적용해 로컬 오프셋을 월드 방향으로 변환한다.
+                Vector3 worldPivotOffset = Quaternion.Euler(particle.rotation3D) * scaledPivot;
+
+                // 충돌 계산에 사용할 바위의 시작 위치를 구한다.
+                Vector3 meshBasePos = hitPos + worldPivotOffset;
+
+                // 바위의 전체 길이를 계산하고 꼭대기 위치를 구한다
+                float spikeHeight = meshSize.x * particleSize.x;
+                // Y/Z축 중 큰 값을 바위의 단면 크기로 사용한다
+                float spikeWidth = Mathf.Max(meshSize.y * particleSize.y, meshSize.z * particleSize.z);
+                Vector3 meshTopPos = meshBasePos + growthDir * spikeHeight;
+
+                // 바위의 성장 방향을 따라 지면과 만나는 위치를 찾는다
+                if(!TryGetRockGroundPoint(meshBasePos, growthDir, out Vector3 groundPoint)) continue;
                 
-                // 씬에서 확인하기위한 기즈모 변수
-                debugRockSpikeBottom = capsuleBottom;
-                debugRockSpikeTop = capsuleTop;
-                debugSpkeHitRadius = radius;
-                debugRockSpikeDir = growthDir;
+                // 지면부터 바위 꼭대기까지 실제 노출된 길이를 계산한다
+                float exposedLength = Vector3.Dot(meshTopPos - groundPoint, growthDir);
+
+                // 지면 위로 노출된 영역이 없다면 충돌 판정을 생략한다
+                if(exposedLength <= 0f) continue;
+
+                // 노출된 바위 크기에 맞춰 캡슐 반지름을 계산한다
+                float radius = Mathf.Min(spikeWidth * 0.5f, exposedLength * 0.5f);
+
+                // 캡슐의 양 끝 구 중심을 계산한다
+                Vector3 capsuleBottom = groundPoint + growthDir * radius;
+                Vector3 capsuleTop = meshTopPos - growthDir * radius;
+                
+                // 기즈모 정보를 리스트에 추가한다
+                RockSpikeGizmoData gizmoData = new RockSpikeGizmoData();
+                gizmoData.particlePosition = hitPos;
+                gizmoData.renderedMeshPosition = meshBasePos;
+                gizmoData.groundPoint = groundPoint;
+                gizmoData.capsuleBottom = capsuleBottom;
+                gizmoData.capsuleTop = capsuleTop;
+                gizmoData.growthDir = growthDir;
+                gizmoData.radius = radius;
+                rockSpikeGizmos.Add(gizmoData);
 
                 // 파티클 위치를 중심으로 구형 물리 판정을 실행한다
                 // targetLayer에 포함된 콜라이더만 검색한다
@@ -567,6 +649,35 @@ public class BossCombat : MonoBehaviour
             elapsed += Time.deltaTime;
             yield return null;
         }
+    }
+
+    /// <summary>
+    /// 바위의 밑부분에서 성장 방향으로 이어지는 직선과 지면이 만나는 위치를 찾는다
+    /// </summary>
+    /// <param name="meshBasePos"></param>
+    /// <param name="growthDir"></param>
+    /// <param name="groundPoint"></param>
+    /// <returns></returns>
+    private bool TryGetRockGroundPoint(Vector3 meshBasePos, Vector3 growthDir, out Vector3 groundPoint)
+    {
+        groundPoint = Vector3.zero;
+        // 바위가 거의 수평 또는 아래쪽을 향한다면
+        // 지면 교차점을 안정적으로 구하기 어려우므로 제외한다
+        if(growthDir.y <= 0.05f) return false;
+
+        // 바위 밑부분에서 성장 방향으로 일정거리 떨어진 곳을 Raycast 시작점으로 설정
+        // 밑부분이 지면 아래에 있더라도 지면 위에서 탐색이 시작되도록 한다
+        Vector3 rayOrigin = meshBasePos + growthDir * groundRayDistance;
+
+        // 성장 방향의 반대쪽으로 Raycast하여 지면과 만나는 지점을 찾는다
+        float rayLength = groundRayDistance * 2f;
+        if(Physics.Raycast(rayOrigin, - growthDir, out RaycastHit groundHit, rayLength, groundLayer, QueryTriggerInteraction.Ignore))
+        {
+            groundPoint = groundHit.point;
+            return true;
+        }
+        // 지정한 지면 Layer에서 충돌 지점을 찾지 못한 경우 
+        return false;
     }
 
     // 콤보 공격
