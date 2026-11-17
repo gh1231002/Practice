@@ -26,8 +26,8 @@ TagManager:
   - Npc
   - MiniMap
   - Ui3D
-  - 
-  - 
+  - WorldDropGround
+  - WorldDropTrigger
   - 
   - 
   - 

@@ -39,10 +39,22 @@ public class ShopSlotUi : MonoBehaviour
             return;
         }
 
+        // 인벤토리에 아이템 추가하고 성공 여부를 확인한다
+        bool success = inventory.Additem(itemData, 1);
+
+        // 인벤토리에 아이템을 넣지 못했다면 구매 성공 처리를 하지 않는다
+        if(!success)
+        {
+            RefreshSlot();
+            if(UiManager.Instance != null)
+            {
+                UiManager.Instance.StartNoticePanel("인벤토리 공간이 부족합니다.");
+            }
+            return;
+        }
+
         // 구매 성공 notice panel 띄움
         UiManager.Instance.StartNoticePanel("구매 성공");
-        // 인벤토리에 아이템 추가
-        inventory.Additem(itemData, 1);
         // 구매 후 버튼 상태 재갱신 ( 무기 구매시 즉시 소유중으로 변경 )
         RefreshSlot();
     }

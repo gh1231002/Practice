@@ -390,6 +390,11 @@ MonoBehaviour:
   chaseSpeed: 3
   monsterType: 1
   damageTextPoint: {fileID: 1565615736413619057}
+  worldDropPrefab: {fileID: 1271375421484469979, guid: 3f58a2c7671330047a4ebca6c8db7842, type: 3}
+  dropSpawnHeight: 1
+  itemDrops:
+  - itemData: {fileID: 11400000, guid: e0cfc932e1d9f1543817ba4de6b3900a, type: 2}
+    dropAmount: 1
 --- !u!114 &6850487695614721691
 MonoBehaviour:
   m_ObjectHideFlags: 0

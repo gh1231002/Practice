@@ -1,5 +1,6 @@
 using System;
 using Unity.VisualScripting;
+using UnityEditor.ShaderKeywordFilter;
 using UnityEngine;
 
 //인벤토리 한 칸의 데이터를 관리할 헬퍼 클래스
@@ -19,10 +20,14 @@ public class InventorySlot
         ItemData = null;
         Amount = 0;
     }
-    //아이템 갯수 추가
+    //아이템 수량을 추가하거나 차감하는 함수
     public void AddAmount(int value)
     {
+        // 전달받은 값만큼 수량을 변경한다
         Amount += value;
+
+        // 수량이 음수가 되는 것을 방지한다
+        Amount = Mathf.Max(0, Amount);
     }
     //처음 빈 슬롯에 새로운 아이템을 할당할 때 사용할 함수
     public void SetItem(ItemData newItem, int newAmount)
@@ -35,6 +40,7 @@ public class InventorySlot
 public class PlayerInventory : MonoBehaviour
 {
     [Header("인벤토리 세팅")]
+    [SerializeField] int MaxStackAmount= 99;
     [SerializeField] int MaxCapacity;
     [SerializeField] InventorySlot[] Slots;
 
@@ -52,10 +58,11 @@ public class PlayerInventory : MonoBehaviour
         else
         {
             Destroy(gameObject);
+            return;
         }
 
-            //게임 시작시 지정된 용량만큼 슬롯 배렬 초기화
-            Slots = new InventorySlot[MaxCapacity];
+        //게임 시작시 지정된 용량만큼 슬롯 배렬 초기화
+        Slots = new InventorySlot[MaxCapacity];
         for(int i = 0; i < MaxCapacity; i++)
         {
             Slots[i] = new InventorySlot();
@@ -76,37 +83,125 @@ public class PlayerInventory : MonoBehaviour
     }
 
     //아이템 획득 로직
-    public void Additem(ItemData item, int amount = 1)
+    public bool Additem(ItemData item, int amount = 1)
     {
-        //아이템이 중첩가능한 타입인지 먼저 확인
+        // 잘못된 아이템이나 수량이 전달되면 지급하지 않는다
+        if(item == null || amount <= 0)
+        {
+            Debug.LogWarning("[PlayerInventory] 유효하지 않은 아이템 또는 수량입니다.");
+            return false;
+        }
+        // 인벤토리 슬롯이 초기화되지 않았다면 지급할 수 없다
+        if(Slots == null || Slots.Length == 0)
+        {
+            Debug.LogWarning("[PlayerInventory] 인벤토리 슬롯이 초기화되지 않았습니다.");
+            return false;
+        }
+        // 슬롯당 최대 중첩 수량이 0 이하라면 정상적인 지급이 불가능하다.
+        if (item.isStackable && MaxStackAmount <= 0)
+        {
+            Debug.LogWarning("[PlayerInventory] 최대 중첩 수량이 올바르지 않습니다.");
+            return false;
+        }
+
+        // 비중첩 아이템은 슬롯당 1개
+        // 중첩 가능 아이템은 설정된 최대 수량까지 들어갈 수 있다
+        int stackLimit = item.isStackable ? MaxStackAmount : 1;
+        // 지급할 수량을 아직 변경하지 않고 별도로 관리
+        int remainingAmount = amount;
+
+        // 1. 전체 수량을 수용할 수 있는지 사전검사
+        // 아이템이 중첩가능하다면 기존 동일 아이템 슬롯의 여유 공간을 확인
         if(item.isStackable)
         {
-            //이미 같은 아이템이 인벤토리에 있는지 확인하고, 있다면 갯수 누적
-            for (int i = 0; i < MaxCapacity; i++)
+            for (int i = 0; i < Slots.Length; i++)
             {
-                if (!Slots[i].IsEmpty && Slots[i].itemData == item)
+                // 초기화되지 않은 슬롯은 건너뛴다
+                if(Slots[i] == null) continue;
+                // 비어 있거나 다른 아이템이라면 확인할 필요 없다
+                if(Slots[i].IsEmpty || Slots[i].itemData != item) continue;
+
+                // 현재 슬롯에서 추가로 보관할 수 있는 수량을 계산
+                int availableAmount = stackLimit - Slots[i].amount;
+                // 음수 또는 0이라면 더 이상 추가할 공간이 없다
+                if(availableAmount <= 0) continue;
+                // 기존 슬롯의 여유 공간만큼 지급 예정 수량에서 차감
+                remainingAmount -= Mathf.Min(remainingAmount, availableAmount);
+                // 모든 수량을 기존 슬롯에 보관할 수 있다면 검사 종료
+                if(remainingAmount <= 0) break;
+            }
+        }
+
+        // 기존 슬롯만으로 부족하다면 빈 슬롯이 얼마나 필요한지 확인한다
+        if(remainingAmount > 0 )
+        {
+            int emptySlotCount = 0;
+            // 사용 가능한 빈 슬롯 개수를 확인한다
+            for(int i = 0; i < Slots.Length; i++)
+            {
+                // null이거나 비어 있는 슬롯을 사용할 수 있는 슬롯으로 취급한다
+                if(Slots[i] == null || Slots[i].IsEmpty)
                 {
-                    Slots[i].AddAmount(amount);
-                    OnInventoryChanged?.Invoke();// ui 갱신 요청
-                    return;
+                    emptySlotCount++;
                 }
             }
-        }
 
-        //중첩이 불가능한 아이템이거나
-        //중첩 가능하지만 인벤토리에 처음 들어온 아이템인 경우 무조건 빈 칸을 찾음
-        for(int i = 0;i < MaxCapacity; i++)
-        {
-            if (Slots[i].IsEmpty)
+            // 빈 슬롯 하나에 들어갈 수 있는 수량을 기준으로 필요한 슬롯 수를 계산한다
+            int requiredSlotCount = Mathf.CeilToInt((float)remainingAmount / stackLimit);
+            // 필요한 슬롯보다 빈 슬롯이 적다면 전체 지급을 취소한다
+            // 알림은 AddItem()을 호출한 함수에서 처리한다
+            if(emptySlotCount < requiredSlotCount)
             {
-                Slots[i].SetItem(item,amount);
-                OnInventoryChanged?.Invoke();
-                return;
+                return false;
             }
         }
 
-        //빈 칸도 없다면 가득 찬 상태
-        UiManager.Instance.StartNoticePanel("인벤토리가 가득 찼습니다.");
+        // 2. 사전검사에 성공했으므로 실제 아이템 지급
+        remainingAmount = amount;
+        // 중첩 가능한 아이템은 기존 동일 아이템 슬롯부터 채운다
+        if(item.isStackable)
+        {
+            for(int i = 0; i < Slots.Length; i++)
+            {
+                if(Slots[i] == null) continue;
+                // 같은 아이템이 들어 있는 슬롯만 처리한다
+                if(Slots[i].IsEmpty || Slots[i].itemData != item) continue;
+                // 기존 슬롯에 추가할 수 있는 수량을 계산한다
+                int availableAmount = stackLimit - Slots[i].amount;
+                if(availableAmount <= 0) continue;
+
+                // 남은 수량과 슬롯의 여유 공간 중 작은 값을 추가한다
+                int addAmount = Mathf.Min(remainingAmount, availableAmount);
+                Slots[i].AddAmount(addAmount);
+                // 실제 추가한 수량만큼 남은 수량을 줄인다
+                remainingAmount -= addAmount;
+
+                // 모든 수량을 지급했다면 기존 슬롯 처리를 종료한다
+                if(remainingAmount <= 0) break;
+            }
+        }
+        // 남은 수량을 빈 슬롯에 배치한다
+        for(int i = 0; i < Slots.Length; i++)
+        {
+            // 더 지급할 수량이 없다면 종료한다
+            if(remainingAmount <= 0) break;
+            // null 슬롯은 새 슬롯 객체로 초기화한다
+            if(Slots[i] == null)
+            {
+                Slots[i] = new InventorySlot();
+            }
+            // 이미 아이템이 들어 있는 슬롯은 건너뛴다
+            if(!Slots[i].IsEmpty) continue;
+
+            // 비중첩 아이템은 1개씩
+            // 중첩 가능한 아이템은 최대 제한 수량만큼 배치한다
+            int addAmount = Mathf.Min(remainingAmount, stackLimit);
+            Slots[i].SetItem(item, addAmount);
+            remainingAmount -= addAmount;
+        }
+        // 모든 지급이 끝난 뒤 UI 갱신을 한번 요청
+        OnInventoryChanged?.Invoke();
+        return true;
     }
 
     // 인벤토리에 특정 itemdata가 존재하는지 체크
@@ -124,6 +219,7 @@ public class PlayerInventory : MonoBehaviour
         }
         return false; // 미소지
     }
+
     /// <summary>
     /// 지정한 슬롯의 아이템 수량을 차감하고 0개가 되면 슬롯을 비움
     /// </summary>
@@ -147,6 +243,7 @@ public class PlayerInventory : MonoBehaviour
         // 인벤토리 UI 갱신 이벤트 호출
         OnInventoryChanged?.Invoke();
     }
+
     /// <summary>
     /// 인벤토리 전체에서 특정 아이템의 총 보유 수량을 반환하는 함수
     /// </summary>

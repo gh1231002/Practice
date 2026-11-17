@@ -116,7 +116,7 @@ public class QuickSlotManager : MonoBehaviour
                 UiManager.Instance.StartNoticePanel("체력이 이미 가득 차 있습니다.");
                 return;
             }
-
+            
             // 포션 효과 실행
             potion.UseItem(player);
 
