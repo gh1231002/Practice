@@ -1,39 +1,47 @@
 using System;
-using Unity.VisualScripting;
-using UnityEditor.ShaderKeywordFilter;
 using UnityEngine;
 
 //인벤토리 한 칸의 데이터를 관리할 헬퍼 클래스
 [Serializable]
 public class InventorySlot
 {
-    [SerializeField] ItemData ItemData;
-    [SerializeField] int Amount;
+    // 실제로 획득한 개별 아이템 데이터를 보관
+    [SerializeField] InventoryItemInstance itemInstance;
+
     //칸이 비어있는지 확인하는 프로퍼티
-    public bool IsEmpty => ItemData == null;
-    public ItemData itemData => ItemData;
-    public int amount => Amount;
+    public bool IsEmpty => itemInstance == null;
+    // 개별 아이템 데이터 접근
+    public InventoryItemInstance ItemInstance => itemInstance;
+
+    // 기존 코드와의 호환성을 위해 유지하는 프로퍼티
+    public ItemData itemData => ItemInstance?.ItemData;
+    public int amount => ItemInstance?.Amount ?? 0;
 
     //슬롯 초기화
     public void Clear()
     {
-        ItemData = null;
-        Amount = 0;
+        itemInstance = null;
     }
+
     //아이템 수량을 추가하거나 차감하는 함수
     public void AddAmount(int value)
     {
-        // 전달받은 값만큼 수량을 변경한다
-        Amount += value;
+        // 비어 있는 슬롯에는 수량을 변경할 아이템이 없다.
+        if (ItemInstance == null) return;
 
-        // 수량이 음수가 되는 것을 방지한다
-        Amount = Mathf.Max(0, Amount);
+        // 실제 수량 변경은 개별 아이템 데이터에 위임한다.
+        ItemInstance.AddAmount(value);
     }
-    //처음 빈 슬롯에 새로운 아이템을 할당할 때 사용할 함수
+    
+    // 빈 슬롯에 새로운 아이템을 할당하는 함수
     public void SetItem(ItemData newItem, int newAmount)
     {
-        ItemData = newItem;
-        Amount = newAmount;
+        // 유효하지 않은 아이템이나 수량은 할당하지 않는다.
+        if (newItem == null || newAmount <= 0) return;
+
+        // 새로운 아이템 인스턴스를 생성한다.
+        // 이때 고유 ID가 발급되고 강화 단계는 +0으로 시작한다.
+        itemInstance = new InventoryItemInstance(newItem, newAmount);
     }
 }
 
@@ -69,20 +77,26 @@ public class PlayerInventory : MonoBehaviour
         }
     }
 
-    //외부에서 인벤토리 최대 용량을 가져갈 수 있게 하는 함수
+    /// <summary>
+    /// 외부에서 인벤토리 최대 용량을 가져갈 수 있게 하는 함수
+    /// </summary>
     public int GetMaxCapacity()
     {
         return MaxCapacity;
     }
 
-    //특정 인덱스의 슬롯 데이터를 반환하는 함수
+    /// <summary>
+    /// 특정 인덱스의 슬롯 데이터를 반환하는 함수
+    /// </summary>
     public InventorySlot Getslot(int index)
     {
-        if(index < 0 || index >= Slots.Length || Slots == null) return null;
+        if(Slots == null || index < 0 || index >= Slots.Length) return null;
         return Slots[index];
     }
 
-    //아이템 획득 로직
+    /// <summary>
+    /// 아이템 획득 로직
+    /// </summary>
     public bool Additem(ItemData item, int amount = 1)
     {
         // 잘못된 아이템이나 수량이 전달되면 지급하지 않는다
@@ -204,7 +218,9 @@ public class PlayerInventory : MonoBehaviour
         return true;
     }
 
-    // 인벤토리에 특정 itemdata가 존재하는지 체크
+    /// <summary>
+    /// 인벤토리에 특정 itemdata가 존재하는지 체크
+    /// </summary>
     public bool HasItem(ItemData item)
     {
         for(int i = 0; i < Slots.Length; i++)
@@ -223,15 +239,18 @@ public class PlayerInventory : MonoBehaviour
     /// <summary>
     /// 지정한 슬롯의 아이템 수량을 차감하고 0개가 되면 슬롯을 비움
     /// </summary>
-    /// <param name="slotIndex"></param>
-    /// <param name="amount"></param>
     public void ConsumeItem(int slotIndex, int amount = 1)
     {
-        // 지정한 슬롯번호가 0보다 작거나
-        // 인벤토리 총 슬롯보다 크거나
-        // 해당 슬롯이 비어있다면 return
-        if (slotIndex < 0 || slotIndex >= Slots.Length || Slots[slotIndex].IsEmpty) return;
+        // 인벤토리 배열이 초기화되지 않았거나 차감 수량이 잘못되었다면 종료
+        if (Slots == null || amount <= 0) return;
 
+        // 슬롯 번호가 유효한 범위를 벗어나면 종료
+        if (slotIndex < 0 || slotIndex >= Slots.Length) return;
+
+        // 해당 슬롯 객체가 존재하지 않거나 비어 있다면 종료
+        if (Slots[slotIndex] == null || Slots[slotIndex].IsEmpty) return;
+
+        // 수량만큼 차감
         Slots[slotIndex].AddAmount(-amount);
 
         // 수량이 0 이하가 되면 슬롯 비우기
@@ -247,8 +266,6 @@ public class PlayerInventory : MonoBehaviour
     /// <summary>
     /// 인벤토리 전체에서 특정 아이템의 총 보유 수량을 반환하는 함수
     /// </summary>
-    /// <param name="item"></param>
-    /// <returns></returns>
     public int GetItemCount(ItemData item)
     {
         if (item == null) return 0;
@@ -269,9 +286,6 @@ public class PlayerInventory : MonoBehaviour
     /// 특정 ItemData를 소지한 첫 번째 슬롯을 찾아 수량을 차감하는 함수
     /// (퀵슬롯 사용 시 호출)
     /// </summary>
-    /// <param name="item"></param>
-    /// <param name="amount"></param>
-    /// <returns></returns>
     public bool ConsumeItem(ItemData item, int amount = 1)
     {
         if(item == null) return false;
@@ -287,5 +301,14 @@ public class PlayerInventory : MonoBehaviour
         
         // 해당 아이템이 인벤토리에 없음
         return false;
+    }
+
+    public InventoryItemInstance GetItemInstance(int index)
+    {
+       InventorySlot slot = Getslot(index);
+       
+       // 슬롯이 없거나 비어 있다면 null 반환
+       if(slot == null || slot.IsEmpty) return null;
+       return slot.ItemInstance;
     }
 }

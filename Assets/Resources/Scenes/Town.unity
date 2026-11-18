@@ -56270,7 +56270,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d30446ad17524e439c45d3099fa5dbd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInventory
-  MaxStackAmount: 1
+  MaxStackAmount: 99
   MaxCapacity: 42
   Slots: []
 --- !u!114 &1125241680
