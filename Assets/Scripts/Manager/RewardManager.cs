@@ -41,10 +41,10 @@ public class RewardManager : MonoBehaviour
         PlayerInventory inventory = Player.GetComponent<PlayerInventory>();
         if(inventory == null) return;
         
-        // 인벤토리에 무기 지급을 시도하고 성공 여부를 확인한다
-        bool success = inventory.Additem(rewardweapon, 1);
+        // 인벤토리에 무기 지급을 시도하고 생성된 인스턴스를 직접 받아온다
+        bool success = inventory.Additem(rewardweapon, 1, out InventoryItemInstance createdWeaponInstance);
         // 지급 실패 시 장비 해금과 장착도 진행하지 않는다
-        if(!success)
+        if(!success || createdWeaponInstance == null)
         {
             if(UiManager.Instance != null)
             {
@@ -54,13 +54,13 @@ public class RewardManager : MonoBehaviour
         }
 
         // 인벤토리 지급에 성공한 경우
-        //EquipmentSystem을 통한 자동 장착 처리
+        // EquipmentSystem을 통한 자동 장착 처리 (실제 생성된 인스턴스 지정)
         // 이벤트 호출을 통해 3d 생성과 ui 태그 갱신이 동시에 실행됩니다.
         EquipmentSystem equipment = Player.GetComponent<EquipmentSystem>();
         if(equipment != null)
         {
             equipment.UnlockWeapon(rewardweapon);
-            equipment.ToggleEquip(rewardweapon);
+            equipment.ToggleEquip(createdWeaponInstance);
         }
     }
 }

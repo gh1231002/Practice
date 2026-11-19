@@ -3,14 +3,19 @@ using UnityEngine;
 
 public class EquipmentSystem : MonoBehaviour
 {
-    public WeaponData CurrentWeapon {  get; private set; }
+    // í˜„ì¬ ì¥ì°© ì¤‘ì¸ ë¬´ê¸° ì•„ì´í…œ ì¸ìŠ¤í„´ìŠ¤
+    public InventoryItemInstance CurrentWeaponInstance { get; private set; }
+
+    // ê¸°ì¡´ ì½”ë“œ í˜¸í™˜ì„±ì„ ìœ„í•œ WeaponData í”„ë¡œí¼í‹°
+    public WeaponData CurrentWeapon => CurrentWeaponInstance?.ItemData as WeaponData;
+
     public bool IsWeaponUnlocked { get; private set; } = false;
 
-    // (ÀÌÀü ¹«±â µ¥ÀÌÅÍ, »õ·Î ÀåÂøµÈ ¹«±â µ¥ÀÌÅÍ)¸¦ Àü´ŞÇÏ´Â ÀÌº¥Æ®
-    public event Action<WeaponData, WeaponData> OnWeaponEquippedChanged;
+    // (ì´ì „ ë¬´ê¸° ì¸ìŠ¤í„´ìŠ¤, ìƒˆë¡œ ì¥ì°©ëœ ë¬´ê¸° ì¸ìŠ¤í„´ìŠ¤)ë¥¼ ì „ë‹¬í•˜ëŠ” ì´ë²¤íŠ¸
+    public event Action<InventoryItemInstance, InventoryItemInstance> OnWeaponEquippedChanged;
 
     /// <summary>
-    /// ¹«±â ÇØ±İ Ã³¸®
+    /// ë¬´ê¸° í•´ê¸ˆ ì²˜ë¦¬
     /// </summary>
     /// <param name="weapon"></param>
     public void UnlockWeapon(WeaponData weapon)
@@ -18,25 +23,59 @@ public class EquipmentSystem : MonoBehaviour
         IsWeaponUnlocked = true;
     }
 
-    // ÀåÂø/ÇØÁ¦/±³Ã¼¸¦ Ã³¸®ÇÏ´Â ÇÔ¼ö
-    public void ToggleEquip(WeaponData clickedWeapon)
+    /// <summary>
+    /// ê°œë³„ ë¬´ê¸° ì¸ìŠ¤í„´ìŠ¤ ê¸°ì¤€ ì¥ì°©/í•´ì œ/êµì²´ ì²˜ë¦¬ í•¨ìˆ˜
+    /// </summary>
+    /// <param name="clickedWeaponInstance"></param>
+    public void ToggleEquip(InventoryItemInstance clickedWeaponInstance)
     {
-        if(clickedWeapon == null) return;
+        if (clickedWeaponInstance == null || !(clickedWeaponInstance.ItemData is WeaponData)) return;
 
-        WeaponData previousWeapon = CurrentWeapon;
+        InventoryItemInstance previousWeaponInstance = CurrentWeaponInstance;
 
-        // ÀÌ¹Ì ÀåÂø ÁßÀÎ ¹«±â¸¦ ´Ù½Ã ´õºíÅ¬¸¯ÇÑ °æ¿ì > ÀåÂøÇØÁ¦
-        if(CurrentWeapon == clickedWeapon)
+        // ì´ë¯¸ ì¥ì°© ì¤‘ì¸ ë™ì¼í•œ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ë‹¤ì‹œ í´ë¦­í•œ ê²½ìš° > ì¥ì°© í•´ì œ
+        if (CurrentWeaponInstance == clickedWeaponInstance)
         {
-            CurrentWeapon = null;
+            CurrentWeaponInstance = null;
         }
-        // ¹ÌÀåÂø ¹«±â¸¦ ´õºíÅ¬¸¯ÇÏ°Å³ª, ´Ù¸¥ ¹«±â·Î ±³Ã¼ÇÏ´Â °æ¿ì > »õ·ÎÀåÂø
+        // ë¯¸ì¥ì°© ë¬´ê¸°ë¥¼ í´ë¦­í•˜ê±°ë‚˜ ë‹¤ë¥¸ ë¬´ê¸°ë¡œ êµì²´í•˜ëŠ” ê²½ìš° > ìƒˆë¡œ ì¥ì°©
         else
         {
-            CurrentWeapon = clickedWeapon;
+            CurrentWeaponInstance = clickedWeaponInstance;
         }
 
-        // º¯°æ »ç½ÇÀ» ¾Ë¸²
-        OnWeaponEquippedChanged?.Invoke(previousWeapon, CurrentWeapon);
+        // ë³€ê²½ ì‚¬ì‹¤ì„ ì•Œë¦¼ (ê°œë³„ ì¸ìŠ¤í„´ìŠ¤ ê¸°ì¤€)
+        OnWeaponEquippedChanged?.Invoke(previousWeaponInstance, CurrentWeaponInstance);
+    }
+
+    /// <summary>
+    /// ê¸°ì¡´ WeaponData í˜¸ì¶œë¶€ë¥¼ ì§€ì›í•˜ê¸° ìœ„í•œ í˜¸í™˜ ì˜¤ë²„ë¡œë“œ
+    /// </summary>
+    /// <param name="clickedWeapon"></param>
+    public void ToggleEquip(WeaponData clickedWeapon)
+    {
+        if (clickedWeapon == null) return;
+
+        // í˜„ì¬ ì´ë¯¸ ì´ WeaponDataì˜ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ì¥ì°© ì¤‘ì´ë¼ë©´ í•´ì œ
+        if (CurrentWeapon == clickedWeapon)
+        {
+            ToggleEquip(CurrentWeaponInstance);
+            return;
+        }
+
+        // ì¸ë²¤í† ë¦¬ì—ì„œ í•´ë‹¹ WeaponDataë¥¼ ì‚¬ìš©í•˜ëŠ” ì²« ë²ˆì§¸ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ì°¾ì•„ ì¥ì°©
+        var inventory = GetComponent<PlayerInventory>();
+        if (inventory != null)
+        {
+            for (int i = 0; i < inventory.GetMaxCapacity(); i++)
+            {
+                var slot = inventory.Getslot(i);
+                if (slot != null && !slot.IsEmpty && slot.ItemInstance != null && slot.itemData == clickedWeapon)
+                {
+                    ToggleEquip(slot.ItemInstance);
+                    return;
+                }
+            }
+        }
     }
 }

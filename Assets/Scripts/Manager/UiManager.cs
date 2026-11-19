@@ -16,6 +16,7 @@ public class UiManager : MonoBehaviour
     [SerializeField] GameObject InventoryPanel;
     [SerializeField] GameObject ShopPanel;
     [SerializeField] GameObject TeleportPanel;
+    [SerializeField] GameObject EnhancementPanel;
     [SerializeField] GameObject BossInfoGroup;
     [SerializeField] GameObject MainUiGroup;
 
@@ -70,7 +71,7 @@ public class UiManager : MonoBehaviour
     [SerializeField]List<GameObject> PanelList = new List<GameObject>();
 
     public event Action OffTalk;
-    // true: UI ¿­¸² (ÇÃ·¹ÀÌ¾î Á¶ÀÛ Â÷´Ü), false: UI ´İÈû (ÇÃ·¹ÀÌ¾î Á¶ÀÛ Çã¿ë)
+    // true: UI ì—´ë¦¼ (í”Œë ˆì´ì–´ ì¡°ì‘ ì°¨ë‹¨), false: UI ë‹«í˜ (í”Œë ˆì´ì–´ ì¡°ì‘ í—ˆìš©)
     public event Action<bool> OnUiStateChanged;
 
     public static UiManager Instance { get; private set; }
@@ -104,7 +105,7 @@ public class UiManager : MonoBehaviour
 
     private void Start()
     {
-        // UI ÃÊ±âÈ­
+        // UI ì´ˆê¸°í™”
         InteractPanel.SetActive(false);
         DialogueUi.SetActive(false);
         ChoiceUi.SetActive(false);
@@ -113,24 +114,25 @@ public class UiManager : MonoBehaviour
         InventoryPanel.SetActive(false);
         ShopPanel.SetActive(false);
         TeleportPanel.SetActive(false);
+        EnhancementPanel.SetActive(false);
         BossInfoGroup.SetActive(false);
         FadeCanvasGroup.gameObject.SetActive(false);
         FadeCanvasGroup.alpha = 0f;
 
-        // InputAction È°¼ºÈ­
+        // InputAction í™œì„±í™”
         IapCursor.action?.Enable();
         IapCharacterInfo.action?.Enable();
         IapInventory.action?.Enable();
         IapCancel.action?.Enable();
         IapShop.action?.Enable();
 
-        //Ä¿¼­Àá±İ
+        //ì»¤ì„œì ê¸ˆ
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
-        //°ÔÀÓ ½ÃÀÛ½Ã ±âº» µğ¹ÙÀÌ½º ±âÁØÀ¸·Î ÀüÃ¼ ui ¼ôÄÆ ÅØ½ºÆ® 1È¸ ÃÊ±âÈ­
+        //ê²Œì„ ì‹œì‘ì‹œ ê¸°ë³¸ ë””ë°”ì´ìŠ¤ ê¸°ì¤€ìœ¼ë¡œ ì „ì²´ ui ìˆì»· í…ìŠ¤íŠ¸ 1íšŒ ì´ˆê¸°í™”
         UpdateAllShortcutText();
     }
-    // ¼ôÄÆ ¹× µğ¹ÙÀÌ½º °ü¸®
+    // ìˆì»· ë° ë””ë°”ì´ìŠ¤ ê´€ë¦¬
     public void UpdateAllShortcutText()
     {
         ShowCharacterInfoKey();
@@ -149,7 +151,7 @@ public class UiManager : MonoBehaviour
         InteractKey = InputActions.FindActionMap("Player")
             .FindAction("Interact").GetBindingDisplayString(group: DeviceGroup);
 
-        InteractText.text = $"[{InteractKey} ´ëÈ­ÇÏ±â]";
+        InteractText.text = $"[{InteractKey} ìƒí˜¸ì‘ìš©]";
     }
 
     private void ShowCharacterInfoKey()
@@ -189,7 +191,7 @@ public class UiManager : MonoBehaviour
         CurrentQuest = quest;
         NpcNameText.text = name;
         DialoguesList = dialogue;
-        NextText.text = $"[{InteractKey}] ´ÙÀ½À¸·Î";
+        NextText.text = $"[{InteractKey}] ë‹¤ìŒìœ¼ë¡œ";
         DialogueIndex = 0;
         NextDialogueText();
     }
@@ -198,7 +200,7 @@ public class UiManager : MonoBehaviour
     {
         if (isChoice)
         {
-            StartNoticePanel("¼±ÅÃÁö¸¦ °ñ¶ó¾ß ´ÙÀ½À¸·Î ³Ñ¾î°¥ ¼ö ÀÖ½À´Ï´Ù.");
+            StartNoticePanel("ì„ íƒì§€ë¥¼ ê³¨ë¼ì•¼ ë‹¤ìŒìœ¼ë¡œ ë„˜ì–´ê°ˆ ìˆ˜ ìˆìŠµë‹ˆë‹¤.");
             return;
         }
 
@@ -208,10 +210,10 @@ public class UiManager : MonoBehaviour
             return;
         }
         DialogueText.text = DialoguesList[DialogueIndex];
-        //¸¸¾à ¼±ÅÃÁö°¡ ÀÖ´Â Äù½ºÆ®ÀÎÁö È®ÀÎ
+        //ë§Œì•½ ì„ íƒì§€ê°€ ìˆëŠ” í€˜ìŠ¤íŠ¸ì¸ì§€ í™•ì¸
         if(CurrentQuest != null && CurrentQuest.ischoicedialogue == true)
         {
-            //¼±ÅÃÁö·Î ¼³Á¤ÇÑ ´ëÈ­¿Í ÇöÀç ´ëÈ­°¡ °°ÀºÁö È®ÀÎ
+            //ì„ íƒì§€ë¡œ ì„¤ì •í•œ ëŒ€í™”ì™€ í˜„ì¬ ëŒ€í™”ê°€ ê°™ì€ì§€ í™•ì¸
             if(CurrentQuest.choiscedialogueindex == DialogueIndex)
             {
                 isChoice = true;
@@ -230,12 +232,12 @@ public class UiManager : MonoBehaviour
     {
         for(int i = 0; i < CurrentQuest.choices.Count; i++)
         {
-            //¶÷´Ù Å¬·ÎÀú ÀÌ½´ ¹æÁö¿ë º¯¼ö º¹»ç
+            //ëŒë‹¤ í´ë¡œì € ì´ìŠˆ ë°©ì§€ìš© ë³€ìˆ˜ ë³µì‚¬
             int index = i;
-            //¼±ÅÃÁö ¹®±¸ ¹İ¿µ
+            //ì„ íƒì§€ ë¬¸êµ¬ ë°˜ì˜
             BtnText[i].text = CurrentQuest.choices[i].ChoiceText;
             Button btn = BtnChoice[i];
-            //±âÁ¸ ÀÌº¥Æ® Á¦°Å ÈÄ »õ·Î Å¬¸¯ ÀÌº¥Æ® ¹ÙÀÎµù
+            //ê¸°ì¡´ ì´ë²¤íŠ¸ ì œê±° í›„ ìƒˆë¡œ í´ë¦­ ì´ë²¤íŠ¸ ë°”ì¸ë”©
             btn.onClick.RemoveAllListeners();
             btn.onClick.AddListener(() =>
             {
@@ -254,7 +256,7 @@ public class UiManager : MonoBehaviour
         DialogueIndex = 0;
         DialoguesList = null;
         DialogueUi.SetActive(false);
-        //´ëÈ­Ä· Á¾·á ÈÄ ÇÃ·¹ÀÌ¾î Ä«¸Ş¶ó·Î ÀüÈ¯
+        //ëŒ€í™”ìº  ì¢…ë£Œ í›„ í”Œë ˆì´ì–´ ì¹´ë©”ë¼ë¡œ ì „í™˜
         DialogueCamManager.Instance.EnddialogueCam();
         InteractPanel.SetActive(true);
         OffTalk?.Invoke();
@@ -274,11 +276,11 @@ public class UiManager : MonoBehaviour
 
     private void SaveDevice(object Obj, InputActionChange Change)
     {
-        //¹öÆ°ÀÌ ´­¸®°Å³ª Á¶ÀÛµÇ´Â ¼ø°£ÀÎÁö
+        //ë²„íŠ¼ì´ ëˆŒë¦¬ê±°ë‚˜ ì¡°ì‘ë˜ëŠ” ìˆœê°„ì¸ì§€
         if (Change == InputActionChange.ActionStarted || Change == InputActionChange.ActionPerformed)
         {
             var Action = Obj as InputAction;
-            //Á¸ÀçÇÑ´Ù¸é ÀåÄ¡¸¦ ºĞ¼®
+            //ì¡´ì¬í•œë‹¤ë©´ ì¥ì¹˜ë¥¼ ë¶„ì„
             if (Action != null && Action.activeControl != null)
             {
                 var DeviceName = Action.activeControl.device.name;
@@ -292,7 +294,7 @@ public class UiManager : MonoBehaviour
                 {
                     DeviceGroup = "Gamepad";
                 }
-                //ÀåÄ¡ ±×·ìÀÌ ½ÇÁ¦·Î º¯°æ¿Ü¾úÀ» ¶§¸¸ ui ÀüÃ¼ °»½Å
+                //ì¥ì¹˜ ê·¸ë£¹ì´ ì‹¤ì œë¡œ ë³€ê²½ì™¸ì—ˆì„ ë•Œë§Œ ui ì „ì²´ ê°±ì‹ 
                 if(DeviceGroup != newDeviceGroup)
                 {
                     DeviceGroup = newDeviceGroup;
@@ -325,12 +327,12 @@ public class UiManager : MonoBehaviour
 
     private void OnOffCursor()
     {
-        //Ã¢ÀÌ ¿­·ÁÀÖ´Ù¸é Ä¿¼­ On/Off ÀÔ·Â ÀÛµ¿¾ÈÇÔ
+        //ì°½ì´ ì—´ë ¤ìˆë‹¤ë©´ ì»¤ì„œ On/Off ì…ë ¥ ì‘ë™ì•ˆí•¨
         if (isCursorLock == true) return;
-        //Å° ÀÔ·Â ÁßÀÎÁö È®ÀÎ
+        //í‚¤ ì…ë ¥ ì¤‘ì¸ì§€ í™•ì¸
         isHolding = IapCursor.action.IsPressed();
 
-        //Å° ÀÔ·Â ÁßÀÌ¶ó¸é
+        //í‚¤ ì…ë ¥ ì¤‘ì´ë¼ë©´
         if(isHolding)
         {
             Cursor.lockState = CursorLockMode.None;
@@ -346,7 +348,7 @@ public class UiManager : MonoBehaviour
     public void ToggleCharacterInfo()
     {
         isStatPanel = InfoPanel.activeSelf;
-        //´İÇôÀÖ´Ù¸é ¿­±â
+        //ë‹«í˜€ìˆë‹¤ë©´ ì—´ê¸°
         if (!isStatPanel)
         {
             InfoPanel.SetActive(true);
@@ -354,7 +356,7 @@ public class UiManager : MonoBehaviour
             InfoPanel.transform.SetAsLastSibling();
             characterInfoUI.SettingStatPanel();
         }
-        //¿­·ÁÀÖ´Ù¸é ´İ±â
+        //ì—´ë ¤ìˆë‹¤ë©´ ë‹«ê¸°
         else
         {
             InfoPanel.SetActive(false);
@@ -397,27 +399,69 @@ public class UiManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Portal ½ºÅ©¸³Æ®¿¡¼­ ÅÚ·¹Æ÷Æ® °¨Áö ¹üÀ§¿¡ ÇÃ·¹ÀÌ¾î°¡ µé¾î¿Ã¶§ Ã¢À» ÄÑ°í ²û
+    /// Portal ìŠ¤í¬ë¦½íŠ¸ì—ì„œ í…”ë ˆí¬íŠ¸ ê°ì§€ ë²”ìœ„ì— í”Œë ˆì´ì–´ê°€ ë“¤ì–´ì˜¬ë•Œ ì°½ì„ ì¼œê³  ë”
     /// </summary>
     /// <param name="isOn"></param>
     public void ToggleTeleportPanel(bool isOn)
     {
-        TeleportPanel.SetActive(isOn);
-        
-        if(isOn)
+        if (isOn)
         {
-            PanelList.Add(TeleportPanel);
-            TeleportPanel.transform.SetAsLastSibling();
+            OpenPanel(TeleportPanel);
         }
         else
         {
-            PanelList.Remove(TeleportPanel);
+            ClosePanel(TeleportPanel);
         }
+    }
+
+    /// <summary>
+    /// ê°•í™” UI íŒ¨ë„ ì—´ê¸°/ë‹«ê¸°
+    /// </summary>
+    public void ToggleEnhancementPanel(bool isOn)
+    {
+        if (EnhancementPanel != null)
+        {
+            if (isOn)
+            {
+                OpenPanel(EnhancementPanel);
+            }
+            else
+            {
+                ClosePanel(EnhancementPanel);
+            }
+        }
+    }
+
+    /// <summary>
+    /// ì§€ì •í•œ UI íŒ¨ë„ì„ ì—´ê³  PanelListì— ë“±ë¡í•˜ì—¬ ì…ë ¥ ì°¨ë‹¨ ë° ì»¤ì„œë¥¼ í™œì„±í™”í•©ë‹ˆë‹¤.
+    /// </summary>
+    public void OpenPanel(GameObject panel)
+    {
+        if (panel == null) return;
+
+        panel.SetActive(true);
+        if (!PanelList.Contains(panel))
+        {
+            PanelList.Add(panel);
+        }
+        panel.transform.SetAsLastSibling();
         RefreshCursorState();
     }
 
     /// <summary>
-    /// º¸½º µîÀå ÄÆ½Å Á¾·áÂë È£ÃâÇÏ¿© º¸½º HUD Å°°í ²û
+    /// ì§€ì •í•œ UI íŒ¨ë„ì„ ë‹«ê³  PanelListì—ì„œ ì œê±°í•˜ì—¬ ìƒíƒœë¥¼ ê°±ì‹ í•©ë‹ˆë‹¤.
+    /// </summary>
+    public void ClosePanel(GameObject panel)
+    {
+        if (panel == null) return;
+
+        panel.SetActive(false);
+        PanelList.Remove(panel);
+        RefreshCursorState();
+    }
+
+    /// <summary>
+    /// ë³´ìŠ¤ ë“±ì¥ ì»·ì‹  ì¢…ë£Œì¯¤ í˜¸ì¶œí•˜ì—¬ ë³´ìŠ¤ HUD í‚¤ê³  ë”
     /// </summary>
     /// <param name="isOn"></param>
     public void ToggleBossInfoGroup(bool isOn)
@@ -429,7 +473,7 @@ public class UiManager : MonoBehaviour
         MainUiGroup.SetActive(isOn);
     }
     /// <summary>
-    /// ÄÆ½Å Á¾·á ½Ã ¾ÀÀÇ º¸½º MonsterStats¸¦ ¹Ş¾Æ UI¿Í ¿¬µ¿ÇÕ´Ï´Ù.
+    /// ì»·ì‹  ì¢…ë£Œ ì‹œ ì”¬ì˜ ë³´ìŠ¤ MonsterStatsë¥¼ ë°›ì•„ UIì™€ ì—°ë™í•©ë‹ˆë‹¤.
     /// </summary>
     /// <param name="bossStats"></param>
     /// <param name="bossName"></param>
@@ -441,19 +485,19 @@ public class UiManager : MonoBehaviour
         }
     }
     /// <summary>
-    /// º¸½º ÄÆ½Å ÁøÀÔ/Á¾·á ½Ã ¸ŞÀÎ UI Á¶Àı ¹× ÇÃ·¹ÀÌ¾î ÀÔ·Â/Ä¿¼­¸¦ Á¦¾îÇÕ´Ï´Ù.
+    /// ë³´ìŠ¤ ì»·ì‹  ì§„ì…/ì¢…ë£Œ ì‹œ ë©”ì¸ UI ì¡°ì ˆ ë° í”Œë ˆì´ì–´ ì…ë ¥/ì»¤ì„œë¥¼ ì œì–´í•©ë‹ˆë‹¤.
     /// </summary>
     /// <param name="isCutscene"></param>
     public void ToggleCutsceneMode(bool isCutscene)
     {
-        // ¸ŞÀÎ ui ÄÑ±â/²ô±â
+        // ë©”ì¸ ui ì¼œê¸°/ë„ê¸°
         ToggleMainUi(!isCutscene);
 
-        // ÄÆ½Å ÁøÇà ÁßÀÏ ¶§´Â ¸¶¿ì½º Ä¿½º¸¦ Ç×»ó ¼û±è ¹× Àá±İ
+        // ì»·ì‹  ì§„í–‰ ì¤‘ì¼ ë•ŒëŠ” ë§ˆìš°ìŠ¤ ì»¤ìŠ¤ë¥¼ í•­ìƒ ìˆ¨ê¹€ ë° ì ê¸ˆ
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 
-        // ÇÃ·¹ÀÌ¾î ÀÔ·Â Â÷´Ü
+        // í”Œë ˆì´ì–´ ì…ë ¥ ì°¨ë‹¨
         if(Player != null)
         {
             Player.SetInputState(!isCutscene);
@@ -462,26 +506,26 @@ public class UiManager : MonoBehaviour
 
     private void ExitWindow()
     {
-        // List ¸ñ·Ï¿¡ µî·ÏµÈ Ã¢ÀÌ ÀÖ´ÂÁö È®ÀÎ
+        // List ëª©ë¡ì— ë“±ë¡ëœ ì°½ì´ ìˆëŠ”ì§€ í™•ì¸
         if(PanelList.Count > 0)
         {
-            // ¸ñ·ÏÀÌ ÀÖ´Ù¸é ¸Ç ¸¶Áö¸· Ã¢ ÇÏ³ª¸¸ ´İ°í List ¸ñ·Ï¿¡¼­ Á¦°Å
+            // ëª©ë¡ì´ ìˆë‹¤ë©´ ë§¨ ë§ˆì§€ë§‰ ì°½ í•˜ë‚˜ë§Œ ë‹«ê³  List ëª©ë¡ì—ì„œ ì œê±°
             int lastIndex = PanelList.Count - 1;
             PanelList[lastIndex].gameObject.SetActive(false);
             PanelList.RemoveAt(lastIndex);
         }
-        // ³²¾ÆÀÖ´Â Ã¢ÀÇ °³¼ö°¡ 0°³¶ó¸é ¸¶¿ì½º Ä¿¼­¸¦ Àá±×°í ÇÃ·¹ÀÌ¾î Á¶ÀÛ¸ğµå·Î ÀüÈ¯
+        // ë‚¨ì•„ìˆëŠ” ì°½ì˜ ê°œìˆ˜ê°€ 0ê°œë¼ë©´ ë§ˆìš°ìŠ¤ ì»¤ì„œë¥¼ ì ê·¸ê³  í”Œë ˆì´ì–´ ì¡°ì‘ëª¨ë“œë¡œ ì „í™˜
         if(PanelList.Count == 0)
         {
             RefreshCursorState();
         }
     }
     /// <summary>
-    /// ¿­¸° UI ÆĞ³Î ¹× ´ëÈ­Ã¢ »óÅÂ¿¡ ¸ÂÃç ¸¶¿ì½º Ä¿¼­ ¹× ÇÃ·¹ÀÌ¾î ÀÔ·Â Á¦¾î
+    /// ì—´ë¦° UI íŒ¨ë„ ë° ëŒ€í™”ì°½ ìƒíƒœì— ë§ì¶° ë§ˆìš°ìŠ¤ ì»¤ì„œ ë° í”Œë ˆì´ì–´ ì…ë ¥ ì œì–´
     /// </summary>
     private void RefreshCursorState()
     {
-        // ¿­·ÁÀÖ´Â Ã¢ÀÌ ÀÖ´Ù¸é Ä¿¼­ º¸ÀÌ°Ô, 0°³¶ó¸é Ä¿¼­ ¼û±â±â
+        // ì—´ë ¤ìˆëŠ” ì°½ì´ ìˆë‹¤ë©´ ì»¤ì„œ ë³´ì´ê²Œ, 0ê°œë¼ë©´ ì»¤ì„œ ìˆ¨ê¸°ê¸°
         bool hasOpenPanel = PanelList.Count > 0;
         isCursorLock = hasOpenPanel;
         isHolding = hasOpenPanel;
@@ -489,7 +533,7 @@ public class UiManager : MonoBehaviour
         Cursor.lockState = hasOpenPanel ? CursorLockMode.None : CursorLockMode.Locked;
         Cursor.visible = hasOpenPanel;
 
-        // ÇÃ·¹ÀÌ¾î Á¶ÀÛ Â÷´Ü/Çã¿ë ÀÌº¥Æ® ¹ß»ı
+        // í”Œë ˆì´ì–´ ì¡°ì‘ ì°¨ë‹¨/í—ˆìš© ì´ë²¤íŠ¸ ë°œìƒ
         OnUiStateChanged?.Invoke(hasOpenPanel);
     }
 
@@ -499,7 +543,7 @@ public class UiManager : MonoBehaviour
     }
 
     /// <summary>
-    /// È­¸éÀ» ¸ÕÀú ¾îµÓ°Ô ¸¸µç µÚ LoadingSceneManager¸¦ È£ÃâÇÕ´Ï´Ù.
+    /// í™”ë©´ì„ ë¨¼ì € ì–´ë‘¡ê²Œ ë§Œë“  ë’¤ LoadingSceneManagerë¥¼ í˜¸ì¶œí•©ë‹ˆë‹¤.
     /// </summary>
     /// <param name="nextSceneName"></param>
     /// <param name="pos"></param>
@@ -512,7 +556,7 @@ public class UiManager : MonoBehaviour
             FadeCanvasGroup.gameObject.SetActive(true);
             float timer = 0f;
 
-            // È­¸éÀÌ ºÎµå·´°Ô ¾îµÎ¿öÁü (¾À ÀÌµ¿½Ã ¸ØÃã Çö»óÀ» °¡·ÁÁÜ)
+            // í™”ë©´ì´ ë¶€ë“œëŸ½ê²Œ ì–´ë‘ì›Œì§ (ì”¬ ì´ë™ì‹œ ë©ˆì¶¤ í˜„ìƒì„ ê°€ë ¤ì¤Œ)
             while(timer < fadeDuration)
             {
                 timer += Time.unscaledDeltaTime;
@@ -522,7 +566,7 @@ public class UiManager : MonoBehaviour
             FadeCanvasGroup.alpha = 1f;
         }
 
-        // È­¸éÀÌ ¿ÏÀüÈ÷ ¾ÏÀüµÇ¸é ·Îµù ¾À È£Ãâ
+        // í™”ë©´ì´ ì™„ì „íˆ ì•”ì „ë˜ë©´ ë¡œë”© ì”¬ í˜¸ì¶œ
         LoadingSceneManager.LoadScene(nextSceneName, pos);
     }
 

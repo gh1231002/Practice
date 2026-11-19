@@ -8,8 +8,9 @@ public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExit
     [SerializeField] Image ItemIcon;
     [SerializeField] TextMeshProUGUI QuantiyuText;
     [SerializeField] GameObject EquippedTag;
+    [SerializeField] TextMeshProUGUI EnhanceLevelText;
 
-    [Header("µå·¡±× ¿¬Ãâ¿ë º¯¼ö")]
+    [Header("ë“œë˜ê·¸ ì—°ì¶œìš© ë³€ìˆ˜")]
     Canvas parentCanvas;
     CanvasGroup canvasGroup;
     GameObject dragIconObject;
@@ -17,6 +18,7 @@ public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExit
     public int SlotIndex {  get; private set; }
     public int CurrentAmount { get; private set; }
     public ItemData CurrentItem { get; private set; }
+    public InventoryItemInstance CurrentInstance { get; private set; }
 
     bool isEmpty => CurrentItem == null;
 
@@ -30,36 +32,36 @@ public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExit
             player = obj.GetComponent<Player_CC>();
         }
 
-        // µå·¡±× ·¹ÀÌ¾î °è»ê ¹× ¸¶¿ì½º Åõ°ú Ã³¸®¸¦ À§ÇØ Ãß°¡
+        // ë“œë˜ê·¸ ë ˆì´ì–´ ê³„ì‚° ë° ë§ˆìš°ìŠ¤ íˆ¬ê³¼ ì²˜ë¦¬ë¥¼ ìœ„í•´ ì¶”ê°€
         parentCanvas = GetComponentInParent<Canvas>();
         canvasGroup = GetComponent<CanvasGroup>();
-        // ¾ø´Ù¸é ÄÄÆ÷³ÍÆ® »ı¼º
+        // ì—†ë‹¤ë©´ ì»´í¬ë„ŒíŠ¸ ìƒì„±
         if (canvasGroup == null) canvasGroup = gameObject.AddComponent<CanvasGroup>();
     }
     /// <summary>
-    /// µå·¡±× ½ÃÀÛ ½Ã ¸¶¿ì½º À§Ä¡¿¡ ÀÓ½Ã ¾ÆÀÌÄÜ(ÀÜ»ó) »ı¼º
+    /// ë“œë˜ê·¸ ì‹œì‘ ì‹œ ë§ˆìš°ìŠ¤ ìœ„ì¹˜ì— ì„ì‹œ ì•„ì´ì½˜(ì”ìƒ) ìƒì„±
     /// </summary>
     /// <param name="eventData"></param>
     public void OnBeginDrag(PointerEventData eventData)
     {
-        // ¾ÆÀÌÅÛÀÌ ¾ø´Â ºó ½½·ÔÀº µå·¡±× ¾ÈÇÔ
+        // ì•„ì´í…œì´ ì—†ëŠ” ë¹ˆ ìŠ¬ë¡¯ì€ ë“œë˜ê·¸ ì•ˆí•¨
         if(CurrentItem == null) return;
 
         dragIconObject = new GameObject("DragIcon");
         dragIconObject.transform.SetParent(parentCanvas.transform, false);
 
-        // ÃÖ»ó´Ü ·¹ÀÌ¾î·Î ÀÌµ¿
+        // ìµœìƒë‹¨ ë ˆì´ì–´ë¡œ ì´ë™
         dragIconObject.transform.SetAsLastSibling();
 
         Image dragImage = dragIconObject.AddComponent<Image>();
         dragImage.sprite = ItemIcon.sprite;
-        // µå·Ó °¨Áö(Drop Event)¸¦ ¹æÇØÇÏÁö ¾Êµµ·Ï ¼³Á¤
+        // ë“œë¡­ ê°ì§€(Drop Event)ë¥¼ ë°©í•´í•˜ì§€ ì•Šë„ë¡ ì„¤ì •
         dragImage.raycastTarget = false;
-        // ¸¶¿ì½º ½ÅÈ£°¡ ½½·ÔÀ» Åõ°úÇÏ¿© QuickSlotCellUI¿¡ ´êµµ·Ï ¼³Á¤
+        // ë§ˆìš°ìŠ¤ ì‹ í˜¸ê°€ ìŠ¬ë¡¯ì„ íˆ¬ê³¼í•˜ì—¬ QuickSlotCellUIì— ë‹¿ë„ë¡ ì„¤ì •
         canvasGroup.blocksRaycasts = false;
     }
     /// <summary>
-    /// µå·¡±× Áß Àå»ê ¾ÆÀÌÄÜÀÌ ¸¶¿ì½º Ä¿¼­¸¦ µû¶ó ÀÌµ¿
+    /// ë“œë˜ê·¸ ì¤‘ ì¥ì‚° ì•„ì´ì½˜ì´ ë§ˆìš°ìŠ¤ ì»¤ì„œë¥¼ ë”°ë¼ ì´ë™
     /// </summary>
     /// <param name="eventData"></param>
     public void OnDrag(PointerEventData eventData)
@@ -70,7 +72,7 @@ public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExit
         }
     }
     /// <summary>
-    /// µå·¡±× Á¾·á ½Ã ÀÜ»ó ¾ÆÀÌÄÜÀ» »èÁ¦ÇÏ°í Åõ°ú ¼³Á¤ ¿øº¹
+    /// ë“œë˜ê·¸ ì¢…ë£Œ ì‹œ ì”ìƒ ì•„ì´ì½˜ì„ ì‚­ì œí•˜ê³  íˆ¬ê³¼ ì„¤ì • ì›ë³µ
     /// </summary>
     /// <param name="eventData"></param>
     public void OnEndDrag(PointerEventData eventData)
@@ -80,35 +82,42 @@ public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExit
     }
     void IPointerClickHandler.OnPointerClick(PointerEventData eventData)
     {
-        // ºó ½½·ÔÀÌ°Å³ª. ¾ÆÀÌÅÛÀÌ ¾øÀ¸¸é ¸®ÅÏ
+        // ë¹ˆ ìŠ¬ë¡¯ì´ê±°ë‚˜. ì•„ì´í…œì´ ì—†ìœ¼ë©´ ë¦¬í„´
         if (isEmpty || CurrentItem == null || player == null) return;
 
-        // ¸¶¿ì½º ÁÂÅ¬¸¯ ´õºíÅ¬¸¯ÀÎ °æ¿ì
+        // ë§ˆìš°ìŠ¤ ì¢Œí´ë¦­ ë”ë¸”í´ë¦­ì¸ ê²½ìš°
         if (eventData.clickCount == 2 && eventData.button == PointerEventData.InputButton.Left)
         {
-            // ÆĞÅÏ ¸ÅÄª(is)¸¦ È°¿ëÇØ ÇöÀç ¾ÆÀÌÅÛÀÌ ¹«±â µ¥ÀÌÅÍÀÎÁö °Ë»ç
+            // íŒ¨í„´ ë§¤ì¹­(is)ë¥¼ í™œìš©í•´ í˜„ì¬ ì•„ì´í…œì´ ë¬´ê¸° ë°ì´í„°ì¸ì§€ ê²€ì‚¬
             if(CurrentItem is WeaponData weaponData)
             {
-                //ÇÃ·¹ÀÌ¾î ½ºÅ©¸³Æ®ÀÇ ÅëÇÕ ¹«±â ½Ã½ºÅÛ ÇÔ¼ö È£Ãâ
+                //í”Œë ˆì´ì–´ ìŠ¤í¬ë¦½íŠ¸ì˜ í†µí•© ë¬´ê¸° ì‹œìŠ¤í…œ í•¨ìˆ˜ í˜¸ì¶œ (ê°œë³„ ì¸ìŠ¤í„´ìŠ¤ ê¸°ì¤€)
                 EquipmentSystem equipSys = player.GetComponent<EquipmentSystem>();
                 if (equipSys != null)
                 {
-                    equipSys.ToggleEquip(weaponData);
+                    if (CurrentInstance != null)
+                    {
+                        equipSys.ToggleEquip(CurrentInstance);
+                    }
+                    else
+                    {
+                        equipSys.ToggleEquip(weaponData);
+                    }
                 }
             }
             else if(CurrentItem is PotionData potionData)
             {
-                // Ã¼·ÂÀÌ ÀÌ¹Ì °¡µæ Â÷ ÀÖ´Ù¸é »ç¿ë ºÒ°¡´É
+                // ì²´ë ¥ì´ ì´ë¯¸ ê°€ë“ ì°¨ ìˆë‹¤ë©´ ì‚¬ìš© ë¶ˆê°€ëŠ¥
                 if(player.ReturnCurHp() >= player.ReturnMaxHp())
                 {
-                    UiManager.Instance.StartNoticePanel("Ã¼·ÂÀÌ ÀÌ¹Ì °¡µæ Â÷ ÀÖ½À´Ï´Ù.");
+                    UiManager.Instance.StartNoticePanel("ì²´ë ¥ì´ ì´ë¯¸ ê°€ë“ ì°¨ ìˆìŠµë‹ˆë‹¤.");
                     return;
                 }
 
-                // Æ÷¼Ç È¸º¹ È¿°ú ½ÇÇà
+                // í¬ì…˜ íšŒë³µ íš¨ê³¼ ì‹¤í–‰
                 potionData.UseItem(player);
 
-                // ÀÎº¥Åä¸® ¼ö·® 1°³ Â÷°¨
+                // ì¸ë²¤í† ë¦¬ ìˆ˜ëŸ‰ 1ê°œ ì°¨ê°
                 PlayerInventory inv = player.GetComponent<PlayerInventory>();
                 if (inv != null)
                 {
@@ -124,17 +133,30 @@ public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExit
         ClearSlot();
     }
 
-    public void UpdateSlot(int amount, ItemData item, bool isEquipped = false)
+    public void UpdateSlot(InventoryItemInstance instance, bool isEquipped = false)
+    {
+        if (instance != null && instance.ItemData != null && instance.Amount > 0)
+        {
+            UpdateSlot(instance.Amount, instance.ItemData, isEquipped, instance);
+        }
+        else
+        {
+            ClearSlot();
+        }
+    }
+
+    public void UpdateSlot(int amount, ItemData item, bool isEquipped = false, InventoryItemInstance instance = null)
     {
         CurrentAmount = amount;
         CurrentItem = item;
+        CurrentInstance = instance;
 
         if(amount > 0 && item != null)
         {
             ItemIcon.sprite = item.itemIcon;
             ItemIcon.gameObject.SetActive(true);
 
-            //2°³ ÀÌ»óÀÏ¶§¸¸ ¼ö·® Ç¥½Ã
+            //2ê°œ ì´ìƒì¼ë•Œë§Œ ìˆ˜ëŸ‰ í‘œì‹œ
             if(amount > 1)
             {
                 QuantiyuText.text = amount.ToString();
@@ -143,6 +165,20 @@ public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExit
             else
             {
                 QuantiyuText.gameObject.SetActive(false);
+            }
+
+            // ê°•í™” ìˆ˜ì¹˜ í‘œì‹œ (ê°•í™”ëœ ë¬´ê¸°ì¼ ê²½ìš°)
+            if (EnhanceLevelText != null)
+            {
+                if (instance != null && instance.CanEnhance && instance.EnhanceLevel > 0)
+                {
+                    EnhanceLevelText.text = $"+{instance.EnhanceLevel}";
+                    EnhanceLevelText.gameObject.SetActive(true);
+                }
+                else
+                {
+                    EnhanceLevelText.gameObject.SetActive(false);
+                }
             }
 
             if(EquippedTag != null)
@@ -160,9 +196,15 @@ public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExit
     {
         CurrentAmount = 0;
         CurrentItem = null;
+        CurrentInstance = null;
         ItemIcon.sprite = null;
         ItemIcon.gameObject.SetActive(false);
         QuantiyuText.gameObject.SetActive(false);
+
+        if (EnhanceLevelText != null)
+        {
+            EnhanceLevelText.gameObject.SetActive(false);
+        }
 
         if(EquippedTag != null)
         {
@@ -174,7 +216,20 @@ public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExit
     {
         if (CurrentItem != null && ItemTooltipUi.instance != null)
         {
-            ItemTooltipUi.instance.ShowTooltip(CurrentItem.itemName, CurrentItem.itemInfo);
+            string displayName = CurrentItem.itemName;
+            string displayInfo = CurrentItem.itemInfo;
+
+            if (CurrentInstance != null && CurrentInstance.CanEnhance)
+            {
+                if (CurrentInstance.EnhanceLevel > 0)
+                {
+                    displayName = $"{CurrentItem.itemName} (+{CurrentInstance.EnhanceLevel})";
+                }
+                float enhancedAtk = Player_CC.CalculateWeaponAtk(CurrentInstance);
+                displayInfo = $"{CurrentItem.itemInfo}\n[ê³µê²©ë ¥: {enhancedAtk}] (ê°•í™” +{CurrentInstance.EnhanceLevel * 10}%)";
+            }
+
+            ItemTooltipUi.instance.ShowTooltip(displayName, displayInfo);
         }
     }
 
@@ -188,7 +243,7 @@ public class InventorySlotUi : MonoBehaviour, IPointerEnterHandler, IPointerExit
 
     private void OnDisable()
     {
-        // ÀÎº¥Åä¸® Ã¢ÀÌ ´İÈ÷°Å³ª ½½·ÔÀÌ ºñÈ°¼ºÈ­µÉ ¶§ ÅøÆÁµµ ÇÔ²¾ ¼û±è
+        // ì¸ë²¤í† ë¦¬ ì°½ì´ ë‹«íˆê±°ë‚˜ ìŠ¬ë¡¯ì´ ë¹„í™œì„±í™”ë  ë•Œ íˆ´íŒë„ í•¨ê¼ ìˆ¨ê¹€
         if(ItemTooltipUi.instance != null)
         {
             ItemTooltipUi.instance.HideTooltip();

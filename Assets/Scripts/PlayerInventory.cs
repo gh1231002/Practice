@@ -1,60 +1,62 @@
 using System;
 using UnityEngine;
 
-//ÀÎº¥Åä¸® ÇÑ Ä­ÀÇ µ¥ÀÌÅÍ¸¦ °ü¸®ÇÒ ÇïÆÛ Å¬·¡½º
+//ì¸ë²¤í† ë¦¬ í•œ ì¹¸ì˜ ë°ì´í„°ë¥¼ ê´€ë¦¬í•  í—¬í¼ í´ë˜ìŠ¤
 [Serializable]
 public class InventorySlot
 {
-    // ½ÇÁ¦·Î È¹µæÇÑ °³º° ¾ÆÀÌÅÛ µ¥ÀÌÅÍ¸¦ º¸°ü
-    [SerializeField] InventoryItemInstance itemInstance;
+    // ì‹¤ì œë¡œ íšë“í•œ ê°œë³„ ì•„ì´í…œ ë°ì´í„°ë¥¼ ë³´ê´€
+    [SerializeReference] InventoryItemInstance itemInstance;
 
-    //Ä­ÀÌ ºñ¾îÀÖ´ÂÁö È®ÀÎÇÏ´Â ÇÁ·ÎÆÛÆ¼
-    public bool IsEmpty => itemInstance == null;
-    // °³º° ¾ÆÀÌÅÛ µ¥ÀÌÅÍ Á¢±Ù
+    //ì¹¸ì´ ë¹„ì–´ìˆëŠ”ì§€ í™•ì¸í•˜ëŠ” í”„ë¡œí¼í‹°
+    public bool IsEmpty => itemInstance == null
+                        || itemInstance.ItemData == null
+                        || itemInstance.Amount <= 0;
+    // ê°œë³„ ì•„ì´í…œ ë°ì´í„° ì ‘ê·¼
     public InventoryItemInstance ItemInstance => itemInstance;
 
-    // ±âÁ¸ ÄÚµå¿ÍÀÇ È£È¯¼ºÀ» À§ÇØ À¯ÁöÇÏ´Â ÇÁ·ÎÆÛÆ¼
+    // ê¸°ì¡´ ì½”ë“œì™€ì˜ í˜¸í™˜ì„±ì„ ìœ„í•´ ìœ ì§€í•˜ëŠ” í”„ë¡œí¼í‹°
     public ItemData itemData => ItemInstance?.ItemData;
     public int amount => ItemInstance?.Amount ?? 0;
 
-    //½½·Ô ÃÊ±âÈ­
+    //ìŠ¬ë¡¯ ì´ˆê¸°í™”
     public void Clear()
     {
         itemInstance = null;
     }
 
-    //¾ÆÀÌÅÛ ¼ö·®À» Ãß°¡ÇÏ°Å³ª Â÷°¨ÇÏ´Â ÇÔ¼ö
+    //ì•„ì´í…œ ìˆ˜ëŸ‰ì„ ì¶”ê°€í•˜ê±°ë‚˜ ì°¨ê°í•˜ëŠ” í•¨ìˆ˜
     public void AddAmount(int value)
     {
-        // ºñ¾î ÀÖ´Â ½½·Ô¿¡´Â ¼ö·®À» º¯°æÇÒ ¾ÆÀÌÅÛÀÌ ¾ø´Ù.
+        // ë¹„ì–´ ìˆëŠ” ìŠ¬ë¡¯ì—ëŠ” ìˆ˜ëŸ‰ì„ ë³€ê²½í•  ì•„ì´í…œì´ ì—†ë‹¤.
         if (ItemInstance == null) return;
 
-        // ½ÇÁ¦ ¼ö·® º¯°æÀº °³º° ¾ÆÀÌÅÛ µ¥ÀÌÅÍ¿¡ À§ÀÓÇÑ´Ù.
+        // ì‹¤ì œ ìˆ˜ëŸ‰ ë³€ê²½ì€ ê°œë³„ ì•„ì´í…œ ë°ì´í„°ì— ìœ„ì„í•œë‹¤.
         ItemInstance.AddAmount(value);
     }
     
-    // ºó ½½·Ô¿¡ »õ·Î¿î ¾ÆÀÌÅÛÀ» ÇÒ´çÇÏ´Â ÇÔ¼ö
+    // ë¹ˆ ìŠ¬ë¡¯ì— ìƒˆë¡œìš´ ì•„ì´í…œì„ í• ë‹¹í•˜ëŠ” í•¨ìˆ˜
     public void SetItem(ItemData newItem, int newAmount)
     {
-        // À¯È¿ÇÏÁö ¾ÊÀº ¾ÆÀÌÅÛÀÌ³ª ¼ö·®Àº ÇÒ´çÇÏÁö ¾Ê´Â´Ù.
+        // ìœ íš¨í•˜ì§€ ì•Šì€ ì•„ì´í…œì´ë‚˜ ìˆ˜ëŸ‰ì€ í• ë‹¹í•˜ì§€ ì•ŠëŠ”ë‹¤.
         if (newItem == null || newAmount <= 0) return;
 
-        // »õ·Î¿î ¾ÆÀÌÅÛ ÀÎ½ºÅÏ½º¸¦ »ı¼ºÇÑ´Ù.
-        // ÀÌ¶§ °íÀ¯ ID°¡ ¹ß±ŞµÇ°í °­È­ ´Ü°è´Â +0À¸·Î ½ÃÀÛÇÑ´Ù.
+        // ìƒˆë¡œìš´ ì•„ì´í…œ ì¸ìŠ¤í„´ìŠ¤ë¥¼ ìƒì„±í•œë‹¤.
+        // ì´ë•Œ ê³ ìœ  IDê°€ ë°œê¸‰ë˜ê³  ê°•í™” ë‹¨ê³„ëŠ” +0ìœ¼ë¡œ ì‹œì‘í•œë‹¤.
         itemInstance = new InventoryItemInstance(newItem, newAmount);
     }
 }
 
 public class PlayerInventory : MonoBehaviour
 {
-    [Header("ÀÎº¥Åä¸® ¼¼ÆÃ")]
+    [Header("ì¸ë²¤í† ë¦¬ ì„¸íŒ…")]
     [SerializeField] int MaxStackAmount= 99;
     [SerializeField] int MaxCapacity;
     [SerializeField] InventorySlot[] Slots;
 
     public static PlayerInventory Instance;
 
-    //ÀÎº¥Åä¸®¿¡ º¯È­°¡ »ı°åÀ» ¶§ ui¿¡ ¾Ë¸®±â À§ÇÑ ÀÌº¥Æ®
+    //ì¸ë²¤í† ë¦¬ì— ë³€í™”ê°€ ìƒê²¼ì„ ë•Œ uiì— ì•Œë¦¬ê¸° ìœ„í•œ ì´ë²¤íŠ¸
     public event Action OnInventoryChanged;
 
     private void Awake()
@@ -69,16 +71,16 @@ public class PlayerInventory : MonoBehaviour
             return;
         }
 
-        //°ÔÀÓ ½ÃÀÛ½Ã ÁöÁ¤µÈ ¿ë·®¸¸Å­ ½½·Ô ¹è·Ä ÃÊ±âÈ­
+        //ê²Œì„ ì‹œì‘ì‹œ ì§€ì •ëœ ìš©ëŸ‰ë§Œí¼ ìŠ¬ë¡¯ ë°°ë ¬ ì´ˆê¸°í™”
         Slots = new InventorySlot[MaxCapacity];
         for(int i = 0; i < MaxCapacity; i++)
         {
             Slots[i] = new InventorySlot();
-        }
+        };
     }
 
     /// <summary>
-    /// ¿ÜºÎ¿¡¼­ ÀÎº¥Åä¸® ÃÖ´ë ¿ë·®À» °¡Á®°¥ ¼ö ÀÖ°Ô ÇÏ´Â ÇÔ¼ö
+    /// ì™¸ë¶€ì—ì„œ ì¸ë²¤í† ë¦¬ ìµœëŒ€ ìš©ëŸ‰ì„ ê°€ì ¸ê°ˆ ìˆ˜ ìˆê²Œ í•˜ëŠ” í•¨ìˆ˜
     /// </summary>
     public int GetMaxCapacity()
     {
@@ -86,7 +88,7 @@ public class PlayerInventory : MonoBehaviour
     }
 
     /// <summary>
-    /// Æ¯Á¤ ÀÎµ¦½ºÀÇ ½½·Ô µ¥ÀÌÅÍ¸¦ ¹İÈ¯ÇÏ´Â ÇÔ¼ö
+    /// íŠ¹ì • ì¸ë±ìŠ¤ì˜ ìŠ¬ë¡¯ ë°ì´í„°ë¥¼ ë°˜í™˜í•˜ëŠ” í•¨ìˆ˜
     /// </summary>
     public InventorySlot Getslot(int index)
     {
@@ -95,131 +97,151 @@ public class PlayerInventory : MonoBehaviour
     }
 
     /// <summary>
-    /// ¾ÆÀÌÅÛ È¹µæ ·ÎÁ÷
+    /// ì•„ì´í…œ íšë“ ë¡œì§
     /// </summary>
     public bool Additem(ItemData item, int amount = 1)
     {
-        // Àß¸øµÈ ¾ÆÀÌÅÛÀÌ³ª ¼ö·®ÀÌ Àü´ŞµÇ¸é Áö±ŞÇÏÁö ¾Ê´Â´Ù
+        return Additem(item, amount, out _);
+    }
+
+    /// <summary>
+    /// ì•„ì´í…œ íšë“ ë¡œì§ (ìƒì„±/í• ë‹¹ëœ ì²« ë²ˆì§¸ ì•„ì´í…œ ì¸ìŠ¤í„´ìŠ¤ë¥¼ outìœ¼ë¡œ ë°˜í™˜)
+    /// </summary>
+    public bool Additem(ItemData item, int amount, out InventoryItemInstance createdInstance)
+    {
+        createdInstance = null;
+
+        // ì˜ëª»ëœ ì•„ì´í…œì´ë‚˜ ìˆ˜ëŸ‰ì´ ì „ë‹¬ë˜ë©´ ì§€ê¸‰í•˜ì§€ ì•ŠëŠ”ë‹¤
         if(item == null || amount <= 0)
         {
-            Debug.LogWarning("[PlayerInventory] À¯È¿ÇÏÁö ¾ÊÀº ¾ÆÀÌÅÛ ¶Ç´Â ¼ö·®ÀÔ´Ï´Ù.");
+            Debug.LogWarning("[PlayerInventory] ìœ íš¨í•˜ì§€ ì•Šì€ ì•„ì´í…œ ë˜ëŠ” ìˆ˜ëŸ‰ì…ë‹ˆë‹¤.");
             return false;
         }
-        // ÀÎº¥Åä¸® ½½·ÔÀÌ ÃÊ±âÈ­µÇÁö ¾Ê¾Ò´Ù¸é Áö±ŞÇÒ ¼ö ¾ø´Ù
+        // ì¸ë²¤í† ë¦¬ ìŠ¬ë¡¯ì´ ì´ˆê¸°í™”ë˜ì§€ ì•Šì•˜ë‹¤ë©´ ì§€ê¸‰í•  ìˆ˜ ì—†ë‹¤
         if(Slots == null || Slots.Length == 0)
         {
-            Debug.LogWarning("[PlayerInventory] ÀÎº¥Åä¸® ½½·ÔÀÌ ÃÊ±âÈ­µÇÁö ¾Ê¾Ò½À´Ï´Ù.");
+            Debug.LogWarning("[PlayerInventory] ì¸ë²¤í† ë¦¬ ìŠ¬ë¡¯ì´ ì´ˆê¸°í™”ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.");
             return false;
         }
-        // ½½·Ô´ç ÃÖ´ë ÁßÃ¸ ¼ö·®ÀÌ 0 ÀÌÇÏ¶ó¸é Á¤»óÀûÀÎ Áö±ŞÀÌ ºÒ°¡´ÉÇÏ´Ù.
+        // ìŠ¬ë¡¯ë‹¹ ìµœëŒ€ ì¤‘ì²© ìˆ˜ëŸ‰ì´ 0 ì´í•˜ë¼ë©´ ì •ìƒì ì¸ ì§€ê¸‰ì´ ë¶ˆê°€ëŠ¥í•˜ë‹¤.
         if (item.isStackable && MaxStackAmount <= 0)
         {
-            Debug.LogWarning("[PlayerInventory] ÃÖ´ë ÁßÃ¸ ¼ö·®ÀÌ ¿Ã¹Ù¸£Áö ¾Ê½À´Ï´Ù.");
+            Debug.LogWarning("[PlayerInventory] ìµœëŒ€ ì¤‘ì²© ìˆ˜ëŸ‰ì´ ì˜¬ë°”ë¥´ì§€ ì•ŠìŠµë‹ˆë‹¤.");
             return false;
         }
 
-        // ºñÁßÃ¸ ¾ÆÀÌÅÛÀº ½½·Ô´ç 1°³
-        // ÁßÃ¸ °¡´É ¾ÆÀÌÅÛÀº ¼³Á¤µÈ ÃÖ´ë ¼ö·®±îÁö µé¾î°¥ ¼ö ÀÖ´Ù
+        // ë¹„ì¤‘ì²© ì•„ì´í…œì€ ìŠ¬ë¡¯ë‹¹ 1ê°œ
+        // ì¤‘ì²© ê°€ëŠ¥ ì•„ì´í…œì€ ì„¤ì •ëœ ìµœëŒ€ ìˆ˜ëŸ‰ê¹Œì§€ ë“¤ì–´ê°ˆ ìˆ˜ ìˆë‹¤
         int stackLimit = item.isStackable ? MaxStackAmount : 1;
-        // Áö±ŞÇÒ ¼ö·®À» ¾ÆÁ÷ º¯°æÇÏÁö ¾Ê°í º°µµ·Î °ü¸®
+        // ì§€ê¸‰í•  ìˆ˜ëŸ‰ì„ ì•„ì§ ë³€ê²½í•˜ì§€ ì•Šê³  ë³„ë„ë¡œ ê´€ë¦¬
         int remainingAmount = amount;
 
-        // 1. ÀüÃ¼ ¼ö·®À» ¼ö¿ëÇÒ ¼ö ÀÖ´ÂÁö »çÀü°Ë»ç
-        // ¾ÆÀÌÅÛÀÌ ÁßÃ¸°¡´ÉÇÏ´Ù¸é ±âÁ¸ µ¿ÀÏ ¾ÆÀÌÅÛ ½½·ÔÀÇ ¿©À¯ °ø°£À» È®ÀÎ
+        // 1. ì „ì²´ ìˆ˜ëŸ‰ì„ ìˆ˜ìš©í•  ìˆ˜ ìˆëŠ”ì§€ ì‚¬ì „ê²€ì‚¬
+        // ì•„ì´í…œì´ ì¤‘ì²©ê°€ëŠ¥í•˜ë‹¤ë©´ ê¸°ì¡´ ë™ì¼ ì•„ì´í…œ ìŠ¬ë¡¯ì˜ ì—¬ìœ  ê³µê°„ì„ í™•ì¸
         if(item.isStackable)
         {
             for (int i = 0; i < Slots.Length; i++)
             {
-                // ÃÊ±âÈ­µÇÁö ¾ÊÀº ½½·ÔÀº °Ç³Ê¶Ú´Ù
+                // ì´ˆê¸°í™”ë˜ì§€ ì•Šì€ ìŠ¬ë¡¯ì€ ê±´ë„ˆë›´ë‹¤
                 if(Slots[i] == null) continue;
-                // ºñ¾î ÀÖ°Å³ª ´Ù¸¥ ¾ÆÀÌÅÛÀÌ¶ó¸é È®ÀÎÇÒ ÇÊ¿ä ¾ø´Ù
+                // ë¹„ì–´ ìˆê±°ë‚˜ ë‹¤ë¥¸ ì•„ì´í…œì´ë¼ë©´ í™•ì¸í•  í•„ìš” ì—†ë‹¤
                 if(Slots[i].IsEmpty || Slots[i].itemData != item) continue;
 
-                // ÇöÀç ½½·Ô¿¡¼­ Ãß°¡·Î º¸°üÇÒ ¼ö ÀÖ´Â ¼ö·®À» °è»ê
+                // í˜„ì¬ ìŠ¬ë¡¯ì—ì„œ ì¶”ê°€ë¡œ ë³´ê´€í•  ìˆ˜ ìˆëŠ” ìˆ˜ëŸ‰ì„ ê³„ì‚°
                 int availableAmount = stackLimit - Slots[i].amount;
-                // À½¼ö ¶Ç´Â 0ÀÌ¶ó¸é ´õ ÀÌ»ó Ãß°¡ÇÒ °ø°£ÀÌ ¾ø´Ù
+                // ìŒìˆ˜ ë˜ëŠ” 0ì´ë¼ë©´ ë” ì´ìƒ ì¶”ê°€í•  ê³µê°„ì´ ì—†ë‹¤
                 if(availableAmount <= 0) continue;
-                // ±âÁ¸ ½½·ÔÀÇ ¿©À¯ °ø°£¸¸Å­ Áö±Ş ¿¹Á¤ ¼ö·®¿¡¼­ Â÷°¨
+                // ê¸°ì¡´ ìŠ¬ë¡¯ì˜ ì—¬ìœ  ê³µê°„ë§Œí¼ ì§€ê¸‰ ì˜ˆì • ìˆ˜ëŸ‰ì—ì„œ ì°¨ê°
                 remainingAmount -= Mathf.Min(remainingAmount, availableAmount);
-                // ¸ğµç ¼ö·®À» ±âÁ¸ ½½·Ô¿¡ º¸°üÇÒ ¼ö ÀÖ´Ù¸é °Ë»ç Á¾·á
+                // ëª¨ë“  ìˆ˜ëŸ‰ì„ ê¸°ì¡´ ìŠ¬ë¡¯ì— ë³´ê´€í•  ìˆ˜ ìˆë‹¤ë©´ ê²€ì‚¬ ì¢…ë£Œ
                 if(remainingAmount <= 0) break;
             }
         }
 
-        // ±âÁ¸ ½½·Ô¸¸À¸·Î ºÎÁ·ÇÏ´Ù¸é ºó ½½·ÔÀÌ ¾ó¸¶³ª ÇÊ¿äÇÑÁö È®ÀÎÇÑ´Ù
+        // ê¸°ì¡´ ìŠ¬ë¡¯ë§Œìœ¼ë¡œ ë¶€ì¡±í•˜ë‹¤ë©´ ë¹ˆ ìŠ¬ë¡¯ì´ ì–¼ë§ˆë‚˜ í•„ìš”í•œì§€ í™•ì¸í•œë‹¤
         if(remainingAmount > 0 )
         {
             int emptySlotCount = 0;
-            // »ç¿ë °¡´ÉÇÑ ºó ½½·Ô °³¼ö¸¦ È®ÀÎÇÑ´Ù
+            // ì‚¬ìš© ê°€ëŠ¥í•œ ë¹ˆ ìŠ¬ë¡¯ ê°œìˆ˜ë¥¼ í™•ì¸í•œë‹¤
             for(int i = 0; i < Slots.Length; i++)
             {
-                // nullÀÌ°Å³ª ºñ¾î ÀÖ´Â ½½·ÔÀ» »ç¿ëÇÒ ¼ö ÀÖ´Â ½½·ÔÀ¸·Î Ãë±ŞÇÑ´Ù
+                // nullì´ê±°ë‚˜ ë¹„ì–´ ìˆëŠ” ìŠ¬ë¡¯ì„ ì‚¬ìš©í•  ìˆ˜ ìˆëŠ” ìŠ¬ë¡¯ìœ¼ë¡œ ì·¨ê¸‰í•œë‹¤
                 if(Slots[i] == null || Slots[i].IsEmpty)
                 {
                     emptySlotCount++;
                 }
             }
 
-            // ºó ½½·Ô ÇÏ³ª¿¡ µé¾î°¥ ¼ö ÀÖ´Â ¼ö·®À» ±âÁØÀ¸·Î ÇÊ¿äÇÑ ½½·Ô ¼ö¸¦ °è»êÇÑ´Ù
+            // ë¹ˆ ìŠ¬ë¡¯ í•˜ë‚˜ì— ë“¤ì–´ê°ˆ ìˆ˜ ìˆëŠ” ìˆ˜ëŸ‰ì„ ê¸°ì¤€ìœ¼ë¡œ í•„ìš”í•œ ìŠ¬ë¡¯ ìˆ˜ë¥¼ ê³„ì‚°í•œë‹¤
             int requiredSlotCount = Mathf.CeilToInt((float)remainingAmount / stackLimit);
-            // ÇÊ¿äÇÑ ½½·Ôº¸´Ù ºó ½½·ÔÀÌ Àû´Ù¸é ÀüÃ¼ Áö±ŞÀ» Ãë¼ÒÇÑ´Ù
-            // ¾Ë¸²Àº AddItem()À» È£ÃâÇÑ ÇÔ¼ö¿¡¼­ Ã³¸®ÇÑ´Ù
+
+            // í•„ìš”í•œ ìŠ¬ë¡¯ë³´ë‹¤ ë¹ˆ ìŠ¬ë¡¯ì´ ì ë‹¤ë©´ ì „ì²´ ì§€ê¸‰ì„ ì·¨ì†Œí•œë‹¤
+            // ì•Œë¦¼ì€ AddItem()ì„ í˜¸ì¶œí•œ í•¨ìˆ˜ì—ì„œ ì²˜ë¦¬í•œë‹¤
             if(emptySlotCount < requiredSlotCount)
             {
                 return false;
             }
         }
 
-        // 2. »çÀü°Ë»ç¿¡ ¼º°øÇßÀ¸¹Ç·Î ½ÇÁ¦ ¾ÆÀÌÅÛ Áö±Ş
+        // 2. ì‚¬ì „ê²€ì‚¬ì— ì„±ê³µí–ˆìœ¼ë¯€ë¡œ ì‹¤ì œ ì•„ì´í…œ ì§€ê¸‰
         remainingAmount = amount;
-        // ÁßÃ¸ °¡´ÉÇÑ ¾ÆÀÌÅÛÀº ±âÁ¸ µ¿ÀÏ ¾ÆÀÌÅÛ ½½·ÔºÎÅÍ Ã¤¿î´Ù
+        // ì¤‘ì²© ê°€ëŠ¥í•œ ì•„ì´í…œì€ ê¸°ì¡´ ë™ì¼ ì•„ì´í…œ ìŠ¬ë¡¯ë¶€í„° ì±„ìš´ë‹¤
         if(item.isStackable)
         {
             for(int i = 0; i < Slots.Length; i++)
             {
                 if(Slots[i] == null) continue;
-                // °°Àº ¾ÆÀÌÅÛÀÌ µé¾î ÀÖ´Â ½½·Ô¸¸ Ã³¸®ÇÑ´Ù
+                // ê°™ì€ ì•„ì´í…œì´ ë“¤ì–´ ìˆëŠ” ìŠ¬ë¡¯ë§Œ ì²˜ë¦¬í•œë‹¤
                 if(Slots[i].IsEmpty || Slots[i].itemData != item) continue;
-                // ±âÁ¸ ½½·Ô¿¡ Ãß°¡ÇÒ ¼ö ÀÖ´Â ¼ö·®À» °è»êÇÑ´Ù
+                // ê¸°ì¡´ ìŠ¬ë¡¯ì— ì¶”ê°€í•  ìˆ˜ ìˆëŠ” ìˆ˜ëŸ‰ì„ ê³„ì‚°í•œë‹¤
                 int availableAmount = stackLimit - Slots[i].amount;
                 if(availableAmount <= 0) continue;
 
-                // ³²Àº ¼ö·®°ú ½½·ÔÀÇ ¿©À¯ °ø°£ Áß ÀÛÀº °ªÀ» Ãß°¡ÇÑ´Ù
+                // ë‚¨ì€ ìˆ˜ëŸ‰ê³¼ ìŠ¬ë¡¯ì˜ ì—¬ìœ  ê³µê°„ ì¤‘ ì‘ì€ ê°’ì„ ì¶”ê°€í•œë‹¤
                 int addAmount = Mathf.Min(remainingAmount, availableAmount);
                 Slots[i].AddAmount(addAmount);
-                // ½ÇÁ¦ Ãß°¡ÇÑ ¼ö·®¸¸Å­ ³²Àº ¼ö·®À» ÁÙÀÎ´Ù
+                if (createdInstance == null)
+                {
+                    createdInstance = Slots[i].ItemInstance;
+                }
+                // ì‹¤ì œ ì¶”ê°€í•œ ìˆ˜ëŸ‰ë§Œí¼ ë‚¨ì€ ìˆ˜ëŸ‰ì„ ì¤„ì¸ë‹¤
                 remainingAmount -= addAmount;
 
-                // ¸ğµç ¼ö·®À» Áö±ŞÇß´Ù¸é ±âÁ¸ ½½·Ô Ã³¸®¸¦ Á¾·áÇÑ´Ù
+                // ëª¨ë“  ìˆ˜ëŸ‰ì„ ì§€ê¸‰í–ˆë‹¤ë©´ ê¸°ì¡´ ìŠ¬ë¡¯ ì²˜ë¦¬ë¥¼ ì¢…ë£Œí•œë‹¤
                 if(remainingAmount <= 0) break;
             }
         }
-        // ³²Àº ¼ö·®À» ºó ½½·Ô¿¡ ¹èÄ¡ÇÑ´Ù
+        // ë‚¨ì€ ìˆ˜ëŸ‰ì„ ë¹ˆ ìŠ¬ë¡¯ì— ë°°ì¹˜í•œë‹¤
         for(int i = 0; i < Slots.Length; i++)
         {
-            // ´õ Áö±ŞÇÒ ¼ö·®ÀÌ ¾ø´Ù¸é Á¾·áÇÑ´Ù
+            // ë” ì§€ê¸‰í•  ìˆ˜ëŸ‰ì´ ì—†ë‹¤ë©´ ì¢…ë£Œí•œë‹¤
             if(remainingAmount <= 0) break;
-            // null ½½·ÔÀº »õ ½½·Ô °´Ã¼·Î ÃÊ±âÈ­ÇÑ´Ù
+            // null ìŠ¬ë¡¯ì€ ìƒˆ ìŠ¬ë¡¯ ê°ì²´ë¡œ ì´ˆê¸°í™”í•œë‹¤
             if(Slots[i] == null)
             {
                 Slots[i] = new InventorySlot();
             }
-            // ÀÌ¹Ì ¾ÆÀÌÅÛÀÌ µé¾î ÀÖ´Â ½½·ÔÀº °Ç³Ê¶Ú´Ù
+            // ì´ë¯¸ ì•„ì´í…œì´ ë“¤ì–´ ìˆëŠ” ìŠ¬ë¡¯ì€ ê±´ë„ˆë›´ë‹¤
             if(!Slots[i].IsEmpty) continue;
 
-            // ºñÁßÃ¸ ¾ÆÀÌÅÛÀº 1°³¾¿
-            // ÁßÃ¸ °¡´ÉÇÑ ¾ÆÀÌÅÛÀº ÃÖ´ë Á¦ÇÑ ¼ö·®¸¸Å­ ¹èÄ¡ÇÑ´Ù
+            // ë¹„ì¤‘ì²© ì•„ì´í…œì€ 1ê°œì”©
+            // ì¤‘ì²© ê°€ëŠ¥í•œ ì•„ì´í…œì€ ìµœëŒ€ ì œí•œ ìˆ˜ëŸ‰ë§Œí¼ ë°°ì¹˜í•œë‹¤
             int addAmount = Mathf.Min(remainingAmount, stackLimit);
             Slots[i].SetItem(item, addAmount);
+            if (createdInstance == null)
+            {
+                createdInstance = Slots[i].ItemInstance;
+            }
             remainingAmount -= addAmount;
         }
-        // ¸ğµç Áö±ŞÀÌ ³¡³­ µÚ UI °»½ÅÀ» ÇÑ¹ø ¿äÃ»
+
+        // ëª¨ë“  ì§€ê¸‰ì´ ëë‚œ ë’¤ UI ê°±ì‹ ì„ í•œë²ˆ ìš”ì²­
         OnInventoryChanged?.Invoke();
         return true;
     }
 
     /// <summary>
-    /// ÀÎº¥Åä¸®¿¡ Æ¯Á¤ itemdata°¡ Á¸ÀçÇÏ´ÂÁö Ã¼Å©
+    /// ì¸ë²¤í† ë¦¬ì— íŠ¹ì • itemdataê°€ ì¡´ì¬í•˜ëŠ”ì§€ ì²´í¬
     /// </summary>
     public bool HasItem(ItemData item)
     {
@@ -229,42 +251,42 @@ public class PlayerInventory : MonoBehaviour
             {
                 if (Slots[i].itemData == item)
                 {
-                    return true; // ¼ÒÁöÁß
+                    return true; // ì†Œì§€ì¤‘
                 }
             }
         }
-        return false; // ¹Ì¼ÒÁö
+        return false; // ë¯¸ì†Œì§€
     }
 
     /// <summary>
-    /// ÁöÁ¤ÇÑ ½½·ÔÀÇ ¾ÆÀÌÅÛ ¼ö·®À» Â÷°¨ÇÏ°í 0°³°¡ µÇ¸é ½½·ÔÀ» ºñ¿ò
+    /// ì§€ì •í•œ ìŠ¬ë¡¯ì˜ ì•„ì´í…œ ìˆ˜ëŸ‰ì„ ì°¨ê°í•˜ê³  0ê°œê°€ ë˜ë©´ ìŠ¬ë¡¯ì„ ë¹„ì›€
     /// </summary>
     public void ConsumeItem(int slotIndex, int amount = 1)
     {
-        // ÀÎº¥Åä¸® ¹è¿­ÀÌ ÃÊ±âÈ­µÇÁö ¾Ê¾Ò°Å³ª Â÷°¨ ¼ö·®ÀÌ Àß¸øµÇ¾ú´Ù¸é Á¾·á
+        // ì¸ë²¤í† ë¦¬ ë°°ì—´ì´ ì´ˆê¸°í™”ë˜ì§€ ì•Šì•˜ê±°ë‚˜ ì°¨ê° ìˆ˜ëŸ‰ì´ ì˜ëª»ë˜ì—ˆë‹¤ë©´ ì¢…ë£Œ
         if (Slots == null || amount <= 0) return;
 
-        // ½½·Ô ¹øÈ£°¡ À¯È¿ÇÑ ¹üÀ§¸¦ ¹ş¾î³ª¸é Á¾·á
+        // ìŠ¬ë¡¯ ë²ˆí˜¸ê°€ ìœ íš¨í•œ ë²”ìœ„ë¥¼ ë²—ì–´ë‚˜ë©´ ì¢…ë£Œ
         if (slotIndex < 0 || slotIndex >= Slots.Length) return;
 
-        // ÇØ´ç ½½·Ô °´Ã¼°¡ Á¸ÀçÇÏÁö ¾Ê°Å³ª ºñ¾î ÀÖ´Ù¸é Á¾·á
+        // í•´ë‹¹ ìŠ¬ë¡¯ ê°ì²´ê°€ ì¡´ì¬í•˜ì§€ ì•Šê±°ë‚˜ ë¹„ì–´ ìˆë‹¤ë©´ ì¢…ë£Œ
         if (Slots[slotIndex] == null || Slots[slotIndex].IsEmpty) return;
 
-        // ¼ö·®¸¸Å­ Â÷°¨
+        // ìˆ˜ëŸ‰ë§Œí¼ ì°¨ê°
         Slots[slotIndex].AddAmount(-amount);
 
-        // ¼ö·®ÀÌ 0 ÀÌÇÏ°¡ µÇ¸é ½½·Ô ºñ¿ì±â
+        // ìˆ˜ëŸ‰ì´ 0 ì´í•˜ê°€ ë˜ë©´ ìŠ¬ë¡¯ ë¹„ìš°ê¸°
         if (Slots[slotIndex].amount <= 0)
         {
             Slots[slotIndex].Clear();
         }
 
-        // ÀÎº¥Åä¸® UI °»½Å ÀÌº¥Æ® È£Ãâ
+        // ì¸ë²¤í† ë¦¬ UI ê°±ì‹  ì´ë²¤íŠ¸ í˜¸ì¶œ
         OnInventoryChanged?.Invoke();
     }
 
     /// <summary>
-    /// ÀÎº¥Åä¸® ÀüÃ¼¿¡¼­ Æ¯Á¤ ¾ÆÀÌÅÛÀÇ ÃÑ º¸À¯ ¼ö·®À» ¹İÈ¯ÇÏ´Â ÇÔ¼ö
+    /// ì¸ë²¤í† ë¦¬ ì „ì²´ì—ì„œ íŠ¹ì • ì•„ì´í…œì˜ ì´ ë³´ìœ  ìˆ˜ëŸ‰ì„ ë°˜í™˜í•˜ëŠ” í•¨ìˆ˜
     /// </summary>
     public int GetItemCount(ItemData item)
     {
@@ -283,8 +305,8 @@ public class PlayerInventory : MonoBehaviour
     }
 
     /// <summary>
-    /// Æ¯Á¤ ItemData¸¦ ¼ÒÁöÇÑ Ã¹ ¹øÂ° ½½·ÔÀ» Ã£¾Æ ¼ö·®À» Â÷°¨ÇÏ´Â ÇÔ¼ö
-    /// (Äü½½·Ô »ç¿ë ½Ã È£Ãâ)
+    /// íŠ¹ì • ItemDataë¥¼ ì†Œì§€í•œ ì²« ë²ˆì§¸ ìŠ¬ë¡¯ì„ ì°¾ì•„ ìˆ˜ëŸ‰ì„ ì°¨ê°í•˜ëŠ” í•¨ìˆ˜
+    /// (í€µìŠ¬ë¡¯ ì‚¬ìš© ì‹œ í˜¸ì¶œ)
     /// </summary>
     public bool ConsumeItem(ItemData item, int amount = 1)
     {
@@ -299,7 +321,7 @@ public class PlayerInventory : MonoBehaviour
             }
         }
         
-        // ÇØ´ç ¾ÆÀÌÅÛÀÌ ÀÎº¥Åä¸®¿¡ ¾øÀ½
+        // í•´ë‹¹ ì•„ì´í…œì´ ì¸ë²¤í† ë¦¬ì— ì—†ìŒ
         return false;
     }
 
@@ -307,8 +329,60 @@ public class PlayerInventory : MonoBehaviour
     {
        InventorySlot slot = Getslot(index);
        
-       // ½½·ÔÀÌ ¾ø°Å³ª ºñ¾î ÀÖ´Ù¸é null ¹İÈ¯
+       // ìŠ¬ë¡¯ì´ ì—†ê±°ë‚˜ ë¹„ì–´ ìˆë‹¤ë©´ null ë°˜í™˜
        if(slot == null || slot.IsEmpty) return null;
        return slot.ItemInstance;
+    }
+
+    /// <summary>
+    /// ì¸ë²¤í† ë¦¬ ì „ì²´ì—ì„œ íŠ¹ì • ItemDataë¥¼ ì§€ì • ìˆ˜ëŸ‰ë§Œí¼ ì°¨ê°í•©ë‹ˆë‹¤.
+    /// (ë³´ìœ ëŸ‰ì´ ë¶€ì¡±í•˜ë©´ ì°¨ê°í•˜ì§€ ì•Šê³  false ë°˜í™˜)
+    /// </summary>
+    public bool ConsumeItemTotal(ItemData item, int amount)
+    {
+        if (item == null || amount <= 0) return false;
+
+        // ë¨¼ì € ì´ ë³´ìœ ëŸ‰ í™•ì¸
+        if (GetItemCount(item) < amount)
+        {
+            return false;
+        }
+
+        int remainingToConsume = amount;
+        for (int i = 0; i < Slots.Length; i++)
+        {
+            if (Slots[i] != null && !Slots[i].IsEmpty && Slots[i].itemData == item)
+            {
+                int consumeAmount = Mathf.Min(remainingToConsume, Slots[i].amount);
+                Slots[i].AddAmount(-consumeAmount);
+                remainingToConsume -= consumeAmount;
+
+                if (Slots[i].amount <= 0)
+                {
+                    Slots[i].Clear();
+                }
+
+                if (remainingToConsume <= 0) break;
+            }
+        }
+
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
+    /// <summary>
+    /// íŠ¹ì • ì¸ìŠ¤í„´ìŠ¤ê°€ ì—¬ì „íˆ ì¸ë²¤í† ë¦¬ì— ì¡´ì¬í•˜ëŠ”ì§€ í™•ì¸
+    /// </summary>
+    public bool ContainsInstance(InventoryItemInstance instance)
+    {
+        if (instance == null || Slots == null) return false;
+        for (int i = 0; i < Slots.Length; i++)
+        {
+            if (Slots[i] != null && !Slots[i].IsEmpty && Slots[i].ItemInstance == instance)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

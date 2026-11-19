@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -36,6 +36,7 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
     float CurrentAtkRadius; // 도끼 4타 범위
 
     GameObject CurrentWeapon;
+    InventoryItemInstance currentWeaponInstance;
     WeaponData currentWeaponData;
     Transform TrsAtkPoint;
     HitCheckType CurrentHitType = HitCheckType.none;
@@ -45,6 +46,7 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
     List<ITakeDamage> HitTartgetList = new List<ITakeDamage>();
     Collider[] hitBuffer = new Collider[20];
 
+    public InventoryItemInstance CurrentWeaponInstance => currentWeaponInstance;
     public WeaponData CurrentWeaponData => currentWeaponData;
 
     [Header("플레이어 세팅값")]
@@ -123,6 +125,9 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
     public event Action OnDialogue;
     public event Action OffDialogue;
     public event Action OnHeal;
+
+    // 대화창이 아닌 기능형 오브젝트(강화기 등) 상호작용 전용 액션
+    public Action CustomInteractAction;
 
     public Transform IkFootRoot => ikFootRoot;
     public void SetSuperArmor(bool state) => isSuperArmor = state;
@@ -321,6 +326,8 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
         IapWalk.action?.Disable();
         IapLeftAttack.action?.Disable();
         IapRightAttack.action?.Disable();
+        IapInteract.action?.Disable();
+        IapLook.action?.Disable();
 
         MoveDir = Vector3.zero;
     }
@@ -676,9 +683,17 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
             isDialogue = false;
             OffDialogue?.Invoke();
         }
-        //플레이어가 npc트리거에 닿아있고 상호작용키를 누른다면
+        //플레이어가 상호작용 트리거에 닿아있고 상호작용키를 누른다면
         if(isInteract == true && isDialogue == false && IapInteract.action.WasPressedThisFrame())
         {
+            // 기능형 오브젝트(강화기 등) 상호작용인 경우 대화 모드에 진입하지 않고 커스텀 액션만 단독 실행
+            if (CustomInteractAction != null)
+            {
+                CustomInteractAction.Invoke();
+                return;
+            }
+
+            // 일반 NPC 상호작용인 경우 대화 모드 진입
             isDialogue = true;
             ResetAni();
             OnDialogue?.Invoke();
@@ -1131,11 +1146,38 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
     }
 
     /// <summary>
-    /// 무기 장착 상태 변경 시 실행되는 이벤트 함수
+    /// 무기 인스턴스의 강화 수치가 반영된 최종 무기 공격력을 계산합니다.
+    /// 계산식: 기본 무기 공격력 * (1 + 강화 단계 * 0.1)
     /// </summary>
-    /// <param name="odlweapon"></param>
-    /// <param name="newweapon"></param>
-    private void WeaponEquipChanged(WeaponData odlweapon, WeaponData newweapon)
+    public static float CalculateWeaponAtk(InventoryItemInstance weaponInstance)
+    {
+        if (weaponInstance == null || !(weaponInstance.ItemData is WeaponData weaponData))
+        {
+            return 0f;
+        }
+
+        return weaponData.weaponAtk * (1f + weaponInstance.EnhanceLevel * 0.1f);
+    }
+
+    /// <summary>
+    /// 현재 장착 중인 무기의 강화 단계 변경 시 실시간으로 공격력을 재계산하여 반영합니다.
+    /// </summary>
+    public void RefreshEquippedWeaponStats()
+    {
+        if (currentWeaponInstance != null && currentWeaponData != null)
+        {
+            CurrentWeaponAtk = CalculateWeaponAtk(currentWeaponInstance);
+        }
+        else
+        {
+            CurrentWeaponAtk = 0f;
+        }
+    }
+
+    /// <summary>
+    /// 무기 장착 상태 변경 시 실행되는 이벤트 함수 (개별 인스턴스 기준)
+    /// </summary>
+    private void WeaponEquipChanged(InventoryItemInstance oldWeapon, InventoryItemInstance newWeapon)
     {
         // 기존 생성된 무기 삭제
         if(CurrentWeapon != null)
@@ -1144,28 +1186,25 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
             CurrentWeapon = null;
         }
 
+        currentWeaponInstance = newWeapon;
+
         //새로운 무기 장착 시 3D 무기 생성 및 정보 갱신
-        if(newweapon != null)
+        if(newWeapon != null && newWeapon.ItemData is WeaponData newWeaponData)
         {
-            currentWeaponData = newweapon;
-            CurrentWeaponAtk = newweapon.weaponAtk;
-            CurrentWeaponAtkHalfBox = newweapon.atkHalfbox;
-            CurrentAtkRadius = newweapon.atkRadius;
+            currentWeaponData = newWeaponData;
+            CurrentWeaponAtk = CalculateWeaponAtk(newWeapon);
+            CurrentWeaponAtkHalfBox = newWeaponData.atkHalfbox;
+            CurrentAtkRadius = newWeaponData.atkRadius;
 
-            if (newweapon.objWeapon != null && TrsWeapons != null)
+            if (newWeaponData.objWeapon != null && TrsWeapons != null)
             {
-                CurrentWeapon = Instantiate(newweapon.objWeapon, TrsWeapons);
-                // 공격 판점 지점을 가져옴
+                CurrentWeapon = Instantiate(newWeaponData.objWeapon, TrsWeapons);
+                // 공격 판정 지점을 가져옴
                 CurrentWeapon.TryGetComponent<WeaponController>(out var weaponCtrl);
-                TrsAtkPoint = weaponCtrl.atkPoint;
-                if(weaponCtrl == null)
-                {
-                    // 예외 처리
-                    TrsAtkPoint = CurrentWeapon.transform;
-                }
+                TrsAtkPoint = weaponCtrl != null ? weaponCtrl.atkPoint : CurrentWeapon.transform;
 
-                CurrentWeapon.transform.localPosition = newweapon.trsWeapon;
-                CurrentWeapon.transform.localRotation = Quaternion.Euler(newweapon.rotWeapon);
+                CurrentWeapon.transform.localPosition = newWeaponData.trsWeapon;
+                CurrentWeapon.transform.localRotation = Quaternion.Euler(newWeaponData.rotWeapon);
                 CurrentWeapon.transform.localScale = Vector3.one;
                 CurrentWeapon.SetActive(isCombat);
             }

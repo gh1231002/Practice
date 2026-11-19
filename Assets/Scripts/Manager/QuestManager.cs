@@ -281,7 +281,6 @@ public class QuestManager : MonoBehaviour
     /// <summary>
     /// 몬스터가 상망했을 때 MonsterStats에서 호출하는 함수
     /// </summary>
-    /// <param name="killedType"></param>
     public void OnMonsterKilled(MonsterType killedType)
     {
         bool isAnyQuestUpdated = false;

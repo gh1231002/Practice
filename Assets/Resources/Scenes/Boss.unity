@@ -4546,6 +4546,9 @@ MonoBehaviour:
   chaseSpeed: 5
   monsterType: 2
   damageTextPoint: {fileID: 1276068635}
+  worldDropPrefab: {fileID: 0}
+  dropSpawnHeight: 1.3
+  itemDrops: []
 --- !u!95 &509350808 stripped
 Animator:
   m_CorrespondingSourceObject: {fileID: 2550935751187727211, guid: 4534b9cc6330aed499be54b02abf5283, type: 3}
@@ -5756,7 +5759,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 671669737}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.00017333995, y: 0.999745, z: 0.021023294, w: -0.008243036}
+  m_LocalRotation: {x: 0.00017333911, y: 0.999745, z: 0.021023288, w: -0.008242997}
   m_LocalPosition: {x: 212.11, y: 14.67, z: 14.81}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -6506,7 +6509,7 @@ MonoBehaviour:
         value:
           x: 0.00000004397199
           y: 0.8291303
-          z: 0.000000029648872
+          z: 0.000000029648875
           w: 0.55905545
     - Position:
         x: 7.4299927
@@ -8318,7 +8321,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 975679371}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.016537376, y: 0.9831633, z: 0.11586291, w: 0.14032914}
+  m_LocalRotation: {x: -0.016537389, y: 0.9831633, z: 0.11586294, w: 0.1403292}
   m_LocalPosition: {x: 207.869, y: 12, z: 3.726}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0

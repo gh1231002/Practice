@@ -31,7 +31,7 @@ public class MonsterStats : MonoBehaviour, ITakeDamage
 
     [Header("월드 드롭 설정")]
     [SerializeField] WorldDropItem worldDropPrefab;
-    [SerializeField] float dropSpawnHeight = 1.0f;
+    [SerializeField] float dropSpawnHeight = 1.3f;
 
     [Header("아이템 드롭 설정")]
     [SerializeField] List<ItemDropEntry> itemDrops;

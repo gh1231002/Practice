@@ -16,19 +16,13 @@ public class InventoryUi : MonoBehaviour
     private void Awake()
     {
         GameObject obj = GameObject.FindWithTag("Player");
-        Inventory = obj.GetComponent<PlayerInventory>();
-        Player = obj.GetComponent<Player_CC>();
-        equipSys = obj.GetComponent<EquipmentSystem>();
-        
-        //playerinventoryÀÇ µ¥ÀÌÅÍ º¯°æ ÀÌº¥Æ® ±¸µ¶
-        if(Inventory != null)
+        if (obj != null)
         {
-            Inventory.OnInventoryChanged += RefreshInventoryUi;
+            Inventory = obj.GetComponent<PlayerInventory>();
+            Player = obj.GetComponent<Player_CC>();
+            equipSys = obj.GetComponent<EquipmentSystem>();
         }
-        if(equipSys != null)
-        {
-            equipSys.OnWeaponEquippedChanged += EquipChanged;
-        }
+
         SetSlot();
     }
 
@@ -36,18 +30,20 @@ public class InventoryUi : MonoBehaviour
     {
         if(Inventory != null)
         {
+            Inventory.OnInventoryChanged -= RefreshInventoryUi;
             Inventory.OnInventoryChanged += RefreshInventoryUi;
         }
         if(equipSys != null)
         {
+            equipSys.OnWeaponEquippedChanged -= EquipChanged;
             equipSys.OnWeaponEquippedChanged += EquipChanged;
         }
-        //ÀÎº¥Åä¸® Ã¢ÀÌ ÄÑÁú ¶§¸¶´Ù ÃÖ½Å »óÅÂ·Î »õ·Î°íÄ§
+        //ì¸ë²¤í† ë¦¬ ì°½ì´ ì¼œì§ˆ ë•Œë§ˆë‹¤ ìµœì‹  ìƒíƒœë¡œ ìƒˆë¡œê³ ì¹¨
         RefreshInventoryUi();
     }
     private void OnDisable()
     {
-        //¸Ş¸ğ¸® ´©¼ö ¹æÁö¸¦ À§ÇØ ¿ÀºêÁ§Æ® ÆÄ±« ½Ã ÀÌº¥Æ® ±¸µ¶ ÇØÁ¦
+        //ë©”ëª¨ë¦¬ ëˆ„ìˆ˜ ë°©ì§€ë¥¼ ìœ„í•´ ì˜¤ë¸Œì íŠ¸ íŒŒê´´ ì‹œ ì´ë²¤íŠ¸ êµ¬ë… í•´ì œ
         if(Inventory != null)
         {
             Inventory.OnInventoryChanged -= RefreshInventoryUi;
@@ -60,6 +56,7 @@ public class InventoryUi : MonoBehaviour
 
     private void SetSlot()
     {
+        if (Inventory == null) return;
         int count = Inventory.GetMaxCapacity();
         for(int i = 0; i < count; i++)
         {
@@ -71,34 +68,34 @@ public class InventoryUi : MonoBehaviour
             slotList.Add(slotUi);
         }
     }
-    private void EquipChanged(WeaponData oldweapn, WeaponData newweapon)
+    private void EquipChanged(InventoryItemInstance oldWeapon, InventoryItemInstance newWeapon)
     {
         RefreshInventoryUi();
     }
 
-    //È­¸é »õ·Î°íÄ§ ÇÔ¼ö
+    //í™”ë©´ ìƒˆë¡œê³ ì¹¨ í•¨ìˆ˜
     public void RefreshInventoryUi()
     {
         if (Inventory == null) return;
 
-        //ÇÃ·¹ÀÌ¾î ÇöÀç ÀåÂø ¹«±â weapondata °¡Á®¿È
-        WeaponData data = Player.CurrentWeaponData;
+        //í”Œë ˆì´ì–´ í˜„ì¬ ì¥ì°© ë¬´ê¸° ì¸ìŠ¤í„´ìŠ¤ ê°€ì ¸ì˜´
+        InventoryItemInstance equippedInstance = equipSys != null ? equipSys.CurrentWeaponInstance : null;
 
-        //»ı¼ºµÈ ui ½½·Ô °¹¼ö¸¸Å­ ¹İº¹ÇÏ¸ç µ¥ÀÌÅÍ¸¦ Ã¤¿ö ³Ö½À´Ï´Ù.
+        //ìƒì„±ëœ ui ìŠ¬ë¡¯ ê°¯ìˆ˜ë§Œí¼ ë°˜ë³µí•˜ë©° ë°ì´í„°ë¥¼ ì±„ì›Œ ë„£ìŠµë‹ˆë‹¤.
         for(int i = 0; i < slotList.Count; i++)
         {
-            //playerinventory¿¡¼­ ÇØ´ç ½½·ÔÀÇ µ¥ÀÌÅÍ¸¦ °¡Á®¿È
+            //playerinventoryì—ì„œ í•´ë‹¹ ìŠ¬ë¡¯ì˜ ë°ì´í„°ë¥¼ ê°€ì ¸ì˜´
             var slotData = Inventory.Getslot(i);
 
-            //µ¥ÀÌÅÍ°¡ Á¸ÀçÇÏ°í, ºñ¾îÀÖÁö ¾Ê´Ù¸é
-            if(slotData != null && !slotData.IsEmpty)
+            //ë°ì´í„°ê°€ ì¡´ì¬í•˜ê³ , ë¹„ì–´ìˆì§€ ì•Šë‹¤ë©´
+            if(slotData != null && !slotData.IsEmpty && slotData.ItemInstance != null)
             {
-                bool isEquipped = (data != null && slotData.itemData == data);
-                slotList[i].UpdateSlot(slotData.amount, slotData.itemData, isEquipped);
+                bool isEquipped = equippedInstance != null && slotData.ItemInstance == equippedInstance;
+                slotList[i].UpdateSlot(slotData.amount, slotData.itemData, isEquipped, slotData.ItemInstance);
             }
             else
             {
-                //µ¥ÀÌÅÍ°¡ ºñ¾îÀÖ´Ù¸é ½½·Ô È­¸é¼­ ºñ¿öÁÜ
+                //ë°ì´í„°ê°€ ë¹„ì–´ìˆë‹¤ë©´ ìŠ¬ë¡¯ í™”ë©´ì„œ ë¹„ì›Œì¤Œ
                 slotList[i].ClearSlot();
             }
         }

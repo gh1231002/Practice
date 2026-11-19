@@ -14,5 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EnhancementMaterialData
   ItemName: "\uAC15\uD654\uC11D"
   ItemIcon: {fileID: 21300000, guid: 3e4fcc84a0ac95b429c56452575f6021, type: 3}
-  ItemInfo: "\uBB34\uAE30 \uAC15\uD654\uC5D0 \uC0AC\uC6A9\uD558\uB294 \uC7AC\uB8CC."
+  ItemInfo: "\uAC15\uD654\uC5D0 \uC0AC\uC6A9\uD558\uB294 \uC7AC\uB8CC."
   IsStackable: 1

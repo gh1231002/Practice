@@ -82,6 +82,7 @@ public class WorldDropItem : MonoBehaviour
 
         // 인벤토리에 아이템 지급을 시도한다
         bool success = inventory.Additem(itemData, dropAmount);
+        
         if(success)
         {
             Destroy(gameObject);
