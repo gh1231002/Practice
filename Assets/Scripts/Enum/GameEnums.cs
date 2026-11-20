@@ -60,7 +60,7 @@ public enum HitCheckType
 public enum SceneName
 {
     Town,
-    Grave,
+    Church,
     Boss
 }
 

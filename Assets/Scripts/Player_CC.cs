@@ -186,7 +186,6 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
     /// <summary>
     /// 플레이어 조작 가능 여부를 켜고 끄는 함수
     /// </summary>
-    /// <param name="canMove"></param>
     public void SetInputState(bool canMove)
     {
         isCanMove = canMove;
@@ -202,7 +201,6 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
     /// <summary>
     /// 체력 회복 함수
     /// </summary>
-    /// <param name="amount"></param>
     public void Heal(float amount)
     {
         if (isDeath) return;
@@ -247,7 +245,7 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
         Anim = GetComponent<Animator>();
 
         // 시작 위치 설정
-        //Teleport(StartPos);
+        Teleport(StartPos);
 
         //인풋액션이 연결되있다면 활성화
         OnInputAction();
@@ -302,7 +300,6 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
     /// <summary>
     /// UI 열림/닫힘 상태에 따라 플레이어 입력을 활성화/비활성화
     /// </summary>
-    /// <param name="isUiopen"></param>
     private void UIStateChanged(bool isUiopen)
     {
         if(isUiopen)
@@ -1084,8 +1081,6 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
     /// 넉백 없이 피격 상태만 유지하는 코루틴
     /// 이동 입력 제한과 추가 피격 방지 기능을 유지하기 위해 사용한다.
     /// </summary>
-    /// <param name="timer"></param>
-    /// <returns></returns>
     private IEnumerator NormalHitReaction(float timer)
     {
         // 피격 상태를 활성화해 이동 입력과 추가 피해를 제한한다.

@@ -198,6 +198,10 @@ public class UiManager : MonoBehaviour
 
     public void NextDialogueText()
     {
+        // 다음 대화를 진행할 때 기본적으로 커서 제어 제한을 해제한다.
+        // 선택지가 나타나는 경우 아래에서 다시 true로 설정한다.
+        isCursorLock = false;
+
         if (isChoice)
         {
             StartNoticePanel("선택지를 골라야 다음으로 넘어갈 수 있습니다.");
@@ -210,6 +214,7 @@ public class UiManager : MonoBehaviour
             return;
         }
         DialogueText.text = DialoguesList[DialogueIndex];
+
         //만약 선택지가 있는 퀘스트인지 확인
         if(CurrentQuest != null && CurrentQuest.ischoicedialogue == true)
         {
@@ -219,12 +224,13 @@ public class UiManager : MonoBehaviour
                 isChoice = true;
                 ShowChoices();
                 ChoiceUi.SetActive(true);
+                // 선택지 UI가 활성화된 동안 OnOffCursor()가
+                // 커서를 강제로 잠그거나 숨기지 못하도록 설정한다.
                 isCursorLock = true;
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
             }
         }
-        isCursorLock = false;
         DialogueIndex++;
     }
 
@@ -241,6 +247,8 @@ public class UiManager : MonoBehaviour
             btn.onClick.RemoveAllListeners();
             btn.onClick.AddListener(() =>
             {
+                // 선택지 UI 종료 후 커서 제한 해제
+                isCursorLock = false;
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible = false;
                 isChoice = false;
@@ -266,7 +274,7 @@ public class UiManager : MonoBehaviour
     {
         NoticePanel.SetActive(true);
         InfoText.text = info;
-        Invoke("EndInfoPanel", 0.5f);
+        Invoke("EndInfoPanel", 1f);
     }
 
     public void EndInfoPanel()
@@ -401,7 +409,6 @@ public class UiManager : MonoBehaviour
     /// <summary>
     /// Portal 스크립트에서 텔레포트 감지 범위에 플레이어가 들어올때 창을 켜고 끔
     /// </summary>
-    /// <param name="isOn"></param>
     public void ToggleTeleportPanel(bool isOn)
     {
         if (isOn)
@@ -463,7 +470,6 @@ public class UiManager : MonoBehaviour
     /// <summary>
     /// 보스 등장 컷신 종료쯤 호출하여 보스 HUD 키고 끔
     /// </summary>
-    /// <param name="isOn"></param>
     public void ToggleBossInfoGroup(bool isOn)
     {
         BossInfoGroup.SetActive(isOn);
@@ -475,8 +481,6 @@ public class UiManager : MonoBehaviour
     /// <summary>
     /// 컷신 종료 시 씬의 보스 MonsterStats를 받아 UI와 연동합니다.
     /// </summary>
-    /// <param name="bossStats"></param>
-    /// <param name="bossName"></param>
     public void InitBossHpUi(MonsterStats bossStats, string bossName)
     {
         if(bossHpBarUi  != null)
@@ -487,7 +491,6 @@ public class UiManager : MonoBehaviour
     /// <summary>
     /// 보스 컷신 진입/종료 시 메인 UI 조절 및 플레이어 입력/커서를 제어합니다.
     /// </summary>
-    /// <param name="isCutscene"></param>
     public void ToggleCutsceneMode(bool isCutscene)
     {
         // 메인 ui 켜기/끄기
@@ -545,10 +548,6 @@ public class UiManager : MonoBehaviour
     /// <summary>
     /// 화면을 먼저 어둡게 만든 뒤 LoadingSceneManager를 호출합니다.
     /// </summary>
-    /// <param name="nextSceneName"></param>
-    /// <param name="pos"></param>
-    /// <param name="fadeDuration"></param>
-    /// <returns></returns>
     private IEnumerator FadeOutAndLoad(string nextSceneName, Vector3 pos, float fadeDuration = 0.3f)
     {
         if(FadeCanvasGroup != null)

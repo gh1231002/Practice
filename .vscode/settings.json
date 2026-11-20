@@ -67,5 +67,6 @@
         "*.sln": "*.csproj",
         "*.slnx": "*.csproj"
     },
-    "dotnet.defaultSolution": "Practice.slnx"
+    "dotnet.defaultSolution": "Practice.slnx",
+    "antigravity.enableInlineDiff": false
 }

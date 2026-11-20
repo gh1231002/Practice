@@ -397,7 +397,7 @@ public class EnhancementUi : MonoBehaviour
         // 상태 뱃지 텍스트
         if (MaterialStatusText != null)
         {
-            MaterialStatusText.text = hasEnoughMaterials ? "✔ 충분" : "✘ 부족";
+            MaterialStatusText.text = hasEnoughMaterials ? "충분" : "부족";
             MaterialStatusText.color = hasEnoughMaterials ? new Color(0.2f, 0.9f, 0.3f) : new Color(0.9f, 0.3f, 0.3f);
         }
 

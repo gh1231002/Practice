@@ -110,6 +110,7 @@ public class BossCombat : MonoBehaviour
     readonly HashSet<ITakeDamageWithReaction> jumpAndStompAttackTargets = new HashSet<ITakeDamageWithReaction>();
     readonly HashSet<ITakeDamageWithReaction> comboTargets = new HashSet<ITakeDamageWithReaction>();
     readonly HashSet<ITakeDamageWithReaction> spinTargets = new HashSet<ITakeDamageWithReaction>();
+    readonly HashSet<ITakeDamageWithReaction> rockSpikeTargets = new HashSet<ITakeDamageWithReaction>();
 
     private void Awake()
     {
@@ -451,6 +452,7 @@ public class BossCombat : MonoBehaviour
         // 이번 공격이 광폭화 상태라면 대지 분쇄 패턴 추가
         if(bossAi != null && bossAi.IsCurrentAttackEnraged)
         {
+            rockSpikeTargets.Clear();
             StartCoroutine(PlayEarthShatterRoutine());
         }
     }
@@ -643,7 +645,7 @@ public class BossCombat : MonoBehaviour
                 // 기존 피해 처리 함수를 사용해 피해와 넉백을 적용한다
                 // 내려찍기에 이미 맞은 대상은 같은 HashSet에 등록되어
                 // 이번 대지 분쇄 공격에서 중복 피해를 받지 않는다
-                ApplyDamageToTargets(hits, jumpAndStompAttackTargets, rockSpikeDamageMultiplier, HitReactionType.Knockback);
+                ApplyDamageToTargets(hits, rockSpikeTargets, rockSpikeDamageMultiplier, HitReactionType.Knockback);
             }
             // 다음 프레임에 파티클 위치를 다시 확인하도록 대기한다
             elapsed += Time.deltaTime;
@@ -654,10 +656,6 @@ public class BossCombat : MonoBehaviour
     /// <summary>
     /// 바위의 밑부분에서 성장 방향으로 이어지는 직선과 지면이 만나는 위치를 찾는다
     /// </summary>
-    /// <param name="meshBasePos"></param>
-    /// <param name="growthDir"></param>
-    /// <param name="groundPoint"></param>
-    /// <returns></returns>
     private bool TryGetRockGroundPoint(Vector3 meshBasePos, Vector3 growthDir, out Vector3 groundPoint)
     {
         groundPoint = Vector3.zero;
@@ -727,6 +725,7 @@ public class BossCombat : MonoBehaviour
         comboTargets.Clear();
         spinTargets.Clear();
         jumpAndStompAttackTargets.Clear();
+        rockSpikeTargets.Clear();
 
         // 저장한 착지 위치가 다음 공격에 재사용되지 않도록 무효화한다.
         hasJumpLandingPos = false;

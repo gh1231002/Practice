@@ -16,7 +16,6 @@ MonoBehaviour:
   materialItem: {fileID: 11400000, guid: e0cfc932e1d9f1543817ba4de6b3900a, type: 2}
   successRates:
   - 100
-  - 90
   - 80
   - 70
   - 60
@@ -25,4 +24,5 @@ MonoBehaviour:
   - 30
   - 20
   - 10
+  - 5
   materialCosts: 01000000010000000200000002000000030000000300000004000000040000000500000005000000
