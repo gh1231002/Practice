@@ -1,6 +1,6 @@
 # Practice
 
-Unity로 제작한 3D 액션 RPG 프로젝트입니다. 플레이어 전투와 무기 장비, 몬스터 및 보스 전투, NPC 퀘스트, 인벤토리와 상점 등 RPG의 주요 시스템을 구현했습니다.
+Unity로 제작한 3D 액션 RPG 프로젝트입니다. 플레이어 전투와 무기 장비, 무기 강화, 몬스터 및 보스 전투, NPC 퀘스트, 인벤토리와 상점 등 RPG의 주요 시스템을 구현했습니다.
 
 ## 프로젝트 정보
 
@@ -22,21 +22,23 @@ Unity로 제작한 3D 액션 RPG 프로젝트입니다. 플레이어 전투와 �
 
 ### 무기, 장비 및 아이템
 
-- 무기 해금과 장착, 장착 상태 전환
-- ScriptableObject 기반 아이템·무기·포션 데이터 관리
+- 무기 해금과 장착, 인벤토리 아이템 인스턴스(`InventoryItemInstance`) 기반 장착 상태 관리
+- 대장간 모루(`EnhancementStation`) 상호작용 및 전용 UI를 통한 무기 강화 시스템 (강화석 소모 및 성공 확률 기반 최대 10단계 강화, 강화 단계에 따른 무기 공격력 증가)
+- 몬스터 처치 시 전리품 획득 및 필드 드롭 아이템(`WorldDropItem`) 습득
+- ScriptableObject 기반 아이템·무기·포션·강화 데이터 관리
 - 인벤토리 아이템 표시, 툴팁, 드래그 앤 드롭
 - 퀵슬롯에 아이템을 배치하고 단축키로 사용
 - 상점 UI를 통한 아이템 구매
 
-관련 스크립트: `EquipmentSystem.cs`, `PlayerInventory.cs`, `WeaponData.cs`, `ItemData.cs`, `PotionData.cs`, `InventoryUi.cs`, `QuickSlotManager.cs`, `ShopUi.cs`
+관련 스크립트: `EquipmentSystem.cs`, `PlayerInventory.cs`, `InventoryItemInstance.cs`, `EnhancementSystem.cs`, `EnhancementStation.cs`, `EnhancementUi.cs`, `WorldDropItem.cs`, `WeaponData.cs`, `ItemData.cs`, `PotionData.cs`, `EnhancementData.cs`, `EnhancementMaterialData.cs`, `InventoryUi.cs`, `QuickSlotManager.cs`, `ShopUi.cs`
 
 ### 몬스터 및 보스 전투
 
-- 몬스터 감지, 순찰, 추적, 공격과 피격 처리
+- 몬스터 감지, 순찰, 추적, 공격과 피격 및 전리품 드롭 처리
 - NavMeshAgent를 이용한 몬스터 이동
-- 보스 상태 관리와 복수 공격 패턴
+- 보스 상태 관리와 복수 공격 패턴 (광폭화 상태 및 점프 공격 충격파 판정)
 - 공격 범위 표시와 공격 판정, 보스 체력 UI
-- 보스 진입 컷신 및 전투 시작 처리
+- 보스 진입 컷신 및 전투 구역 차단/해제 처리
 
 관련 스크립트: `MonsterAIController.cs`, `MonsterDetect.cs`, `MonsterCombat.cs`, `MonsterStats.cs`, `BossAIController.cs`, `BossCombat.cs`, `BossCutsceneManager.cs`
 
@@ -52,9 +54,9 @@ Unity로 제작한 3D 액션 RPG 프로젝트입니다. 플레이어 전투와 �
 ### 게임 UI 및 월드 기능
 
 - 플레이어·몬스터·보스 체력 UI와 데미지 표시
-- 캐릭터 정보, 인벤토리, 상점, 텔레포트, 퀵슬롯 UI
+- 캐릭터 정보, 인벤토리, 상점, 텔레포트, 퀵슬롯, 무기 강화 UI
 - 낮과 밤에 따른 조명·하늘 변화
-- 마을, 묘지, 보스 지역 간 씬 이동과 로딩 화면
+- 마을, 교회, 보스 지역 간 씬 이동과 로딩 화면
 - 미니맵 카메라 및 보스 전투 연출
 
 관련 스크립트: `UiManager.cs`, `DayNightCycle.cs`, `LoadingSceneManager.cs`, `Portal.cs`, `MiniMapCameraManager.cs`, `DamageTextManager.cs`
@@ -78,6 +80,7 @@ Unity로 제작한 3D 액션 RPG 프로젝트입니다. 플레이어 전투와 �
 | 상점 | `B` |
 | 퀵슬롯 | `1` `2` `3` `4` |
 | 커서 표시 전환 | `Left Alt` |
+| UI 닫기 / 취소 | `Escape` |
 
 입력은 프로젝트의 Input System 액션 맵에 설정된 기본 키 기준입니다. 일부 입력은 게임패드 바인딩도 포함합니다.
 
@@ -98,21 +101,22 @@ Unity로 제작한 3D 액션 RPG 프로젝트입니다. 플레이어 전투와 �
 
 ```text
 Assets/Scripts/
-├── Animation/  # 애니메이션 상태 동작 및 Root Motion 처리
-├── Enum/       # 퀘스트, 몬스터, 보스 등 게임 열거형
-├── Manager/    # UI, 퀘스트, 보상, 컷신, 로딩, 카메라 관리
-├── Monster/    # 몬스터·보스 AI, 감지, 능력치 및 전투
-├── Npc/        # NPC 순찰 및 상호작용
-├── SoData/     # ScriptableObject 데이터 에셋
-├── SoScript/   # 아이템, 무기, 대화, 퀘스트 데이터 정의
-└── Ui/         # 인벤토리, 퀘스트, 상점, 체력 등 UI
+├── Animation/    # 애니메이션 상태 동작 및 Root Motion 처리
+├── Enhancement/  # 무기 강화 시스템, 강화 UI 및 대장간 상호작용
+├── Enum/         # 퀘스트, 몬스터, 보스 등 게임 열거형
+├── Manager/      # UI, 퀘스트, 보상, 컷신, 로딩, 카메라 관리
+├── Monster/      # 몬스터·보스 AI, 감지, 능력치 및 전투
+├── Npc/          # NPC 순찰 및 상호작용
+├── SoData/       # ScriptableObject 데이터 에셋
+├── SoScript/     # 아이템, 무기, 강화, 대화, 퀘스트 데이터 정의
+└── Ui/           # 인벤토리, 퀘스트, 상점, 체력 등 UI
 ```
 
 ## 빌드 씬
 
 - `Assets/Resources/Scenes/Town.unity` — 시작 마을
 - `Assets/Resources/Scenes/Loading.unity` — 씬 전환 로딩
-- `Assets/Resources/Scenes/Grave.unity` — 묘지 지역
+- `Assets/Resources/Scenes/Church.unity` — 교회 지역
 - `Assets/Resources/Scenes/Boss.unity` — 보스 지역
 
 ## 저장소
