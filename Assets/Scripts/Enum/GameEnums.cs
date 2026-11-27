@@ -1,9 +1,9 @@
 public enum QuestType
 {
-    General,//ÀÏ¹Ý
-    Hunt,//»ç³É
-    Collect,//¼öÁý
-    Reward//º¸»ó
+    General,//ï¿½Ï¹ï¿½
+    Hunt,//ï¿½ï¿½ï¿½
+    Collect,//ï¿½ï¿½ï¿½ï¿½
+    Reward//ï¿½ï¿½ï¿½ï¿½
 }
 
 public enum MonsterType
@@ -29,7 +29,7 @@ public enum TalkType
     Default
 }
 
-// ¸ó½ºÅÍ »óÅÂ Á¤ÀÇ
+// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 public enum MonsterState
 {
     Idle,
@@ -56,9 +56,10 @@ public enum HitCheckType
     Sphere
 }
 
-// Æ÷Å»ÀÌ ÀÌµ¿½ÃÄÑ¾ßÇÏ´Â ¾ÀÀÇ ÀÌ¸§µéÀ» ENUMÇüÅÂ·Î ¼±¾ð
+// ï¿½ï¿½Å»ï¿½ï¿½ ï¿½Ìµï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¸ï¿½ï¿½ï¿½ï¿½ï¿½ ENUMï¿½ï¿½ï¿½Â·ï¿½ ï¿½ï¿½ï¿½ï¿½
 public enum SceneName
 {
+    Title,
     Town,
     Church,
     Boss
@@ -80,7 +81,7 @@ public enum BossAttackPattern
     JumpAttack,
     StompAttack
 }
-// °ø°ÝÀ» ¸Â¾ÒÀ» ¶§ ÇÃ·¹ÀÌ¾î¿¡°Ô Àû¿ëÇÒ ÇÇ°Ý ¹ÝÀÀÀ» ±¸ºÐÇÑ´Ù.
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Â¾ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾î¿¡ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ç°ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ñ´ï¿½.
 public enum HitReactionType
 {
     Normal,

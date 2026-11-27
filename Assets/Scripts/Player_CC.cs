@@ -119,6 +119,7 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
     bool isDialogue;
     bool isCanMove = true;
     bool isSuperArmor;
+    bool hasTeleportedBeforeStart;
 
     //이벤트 함수들
     public event Action<float,float> ChangeHp;
@@ -175,6 +176,8 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
 
     public void Teleport(Vector3 pos)
     {
+        hasTeleportedBeforeStart = true;
+
         // CharacterController 사용 시 위치 씹힘 방지
         if (TryGetComponent<CharacterController>(out var cc))
         {
@@ -244,8 +247,11 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
         ContPlayer = GetComponent<CharacterController>();
         Anim = GetComponent<Animator>();
 
-        // 시작 위치 설정
-        Teleport(StartPos);
+        // 시작 위치 설정 (씬 로드 직후 외부 Teleport가 이미 호출된 경우 덮어쓰지 않음)
+        if (!hasTeleportedBeforeStart)
+        {
+            Teleport(StartPos);
+        }
 
         //인풋액션이 연결되있다면 활성화
         OnInputAction();
@@ -294,6 +300,7 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
         }
         if(UiManager.Instance != null)
         {
+            UiManager.Instance.OffTalk -= UnlockMove;
             UiManager.Instance.OnUiStateChanged -= UIStateChanged;
         }
     }
@@ -396,7 +403,7 @@ public class Player_CC : MonoBehaviour, ITakeDamageWithReaction
         Vector3 CamForward = TrsMainCam.forward;
         Vector3 CamRight = TrsMainCam.right;
         //커서가 보이고있는 상태라면 카메라 회전만 금지
-        if (UiManager.Instance.CurrentCursorState())
+        if (UiManager.Instance != null && UiManager.Instance.CurrentCursorState())
         {
             MoveDir = new Vector3(move.x, 0f, move.y).normalized;
         }

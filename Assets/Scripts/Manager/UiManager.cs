@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class UiManager : MonoBehaviour
@@ -48,6 +49,9 @@ public class UiManager : MonoBehaviour
     [Header("Boss Ui")]
     [SerializeField] BossHpBarUi bossHpBarUi;
 
+    [Header("종료 확인 UI")]
+    [SerializeField] ExitConfirmPanelController exitConfirmPanelController;
+
     string InteractKey;
     string InventoryKey;
     string ShopKey;
@@ -84,10 +88,12 @@ public class UiManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            SceneManager.sceneLoaded += OnSceneLoaded;
         }
         else
         {
             Destroy(gameObject);
+            return;
         }
         GameObject obj = GameObject.FindWithTag("Player");
         Player = obj.GetComponent<Player_CC>();
@@ -99,8 +105,55 @@ public class UiManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (Instance == this)
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            Instance = null;
+        }
         InputSystem.onActionChange -= SaveDevice;
         if(Player != null) Player.OnDialogue -= StartDialoguePanel;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name == SceneName.Title.ToString())
+        {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+            PanelList.Clear();
+
+            // 인게임 DontDestroyOnLoad 매니저 및 플레이어 관련 객체 일괄 정리
+            if (QuestManager.instance != null) Destroy(QuestManager.instance.gameObject);
+            if (RewardManager.instance != null) Destroy(RewardManager.instance.gameObject);
+            if (DebugManager.Instance != null) Destroy(DebugManager.Instance.gameObject);
+
+            MiniMapCameraManager miniMap = FindAnyObjectByType<MiniMapCameraManager>(FindObjectsInactive.Include);
+            if (miniMap != null)
+            {
+                miniMap.gameObject.SetActive(false);
+                Destroy(miniMap.gameObject);
+            }
+
+            UiStudio uiStudio = FindAnyObjectByType<UiStudio>(FindObjectsInactive.Include);
+            if (uiStudio != null)
+            {
+                uiStudio.gameObject.SetActive(false);
+                Destroy(uiStudio.gameObject);
+            }
+
+            Player_CC targetPlayer = Player != null
+                ? Player
+                : FindAnyObjectByType<Player_CC>(FindObjectsInactive.Include);
+            if (targetPlayer != null)
+            {
+                targetPlayer.gameObject.SetActive(false);
+                Destroy(targetPlayer.gameObject);
+                Player = null;
+            }
+
+            Instance = null;
+            gameObject.SetActive(false);
+            Destroy(gameObject);
+        }
     }
 
     private void Start()
@@ -478,6 +531,28 @@ public class UiManager : MonoBehaviour
     {
         MainUiGroup.SetActive(isOn);
     }
+
+    /// <summary>
+    /// 인게임에서 종료 확인 패널을 열고 PanelList에 등록합니다.
+    /// 커서 활성화 및 플레이어 입력 차단이 자동으로 처리됩니다.
+    /// </summary>
+    public void OpenExitConfirmPanel()
+    {
+        if(exitConfirmPanelController == null) return;
+        OpenPanel(exitConfirmPanelController.Panel);
+    }
+
+    /// <summary>
+    /// 종료 확인 패널을 닫고 페이드 효과 및 로딩 씬을 거쳐 타이틀 씬으로 이동합니다.
+    /// </summary>
+    public void ReturnToTitleScene()
+    {
+        if (exitConfirmPanelController != null)
+        {
+            ClosePanel(exitConfirmPanelController.Panel);
+        }
+        StartCoroutine(FadeOutAndLoad(SceneName.Title.ToString(), Vector3.zero, false));
+    }
     /// <summary>
     /// 컷신 종료 시 씬의 보스 MonsterStats를 받아 UI와 연동합니다.
     /// </summary>
@@ -516,12 +591,22 @@ public class UiManager : MonoBehaviour
             int lastIndex = PanelList.Count - 1;
             PanelList[lastIndex].gameObject.SetActive(false);
             PanelList.RemoveAt(lastIndex);
+
+            // 남아있는 창의 개수가 0개라면 마우스 커서를 잠그고 플레이어 조작모드로 전환
+            if(PanelList.Count == 0)
+            {
+                RefreshCursorState();
+            }
+            return;
         }
-        // 남아있는 창의 개수가 0개라면 마우스 커서를 잠그고 플레이어 조작모드로 전환
-        if(PanelList.Count == 0)
+
+        // 대화 UI 또는 선택지 UI가 열려있지 않고, 열린 패널이 없을 때만 종료 확인 패널 열기
+        if ((DialogueUi != null && DialogueUi.activeSelf) || (ChoiceUi != null && ChoiceUi.activeSelf))
         {
-            RefreshCursorState();
+            return;
         }
+
+        OpenExitConfirmPanel();
     }
     /// <summary>
     /// 열린 UI 패널 및 대화창 상태에 맞춰 마우스 커서 및 플레이어 입력 제어
@@ -548,7 +633,7 @@ public class UiManager : MonoBehaviour
     /// <summary>
     /// 화면을 먼저 어둡게 만든 뒤 LoadingSceneManager를 호출합니다.
     /// </summary>
-    private IEnumerator FadeOutAndLoad(string nextSceneName, Vector3 pos, float fadeDuration = 0.3f)
+    private IEnumerator FadeOutAndLoad(string nextSceneName, Vector3 pos, bool shouldTeleport = true, float fadeDuration = 0.3f)
     {
         if(FadeCanvasGroup != null)
         {
@@ -566,7 +651,14 @@ public class UiManager : MonoBehaviour
         }
 
         // 화면이 완전히 암전되면 로딩 씬 호출
-        LoadingSceneManager.LoadScene(nextSceneName, pos);
+        if (shouldTeleport)
+        {
+            LoadingSceneManager.LoadScene(nextSceneName, pos);
+        }
+        else
+        {
+            LoadingSceneManager.LoadScene(nextSceneName);
+        }
     }
 
     public void LoadSceneWithFade(string sceneName, Vector3 pos)

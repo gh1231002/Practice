@@ -11,6 +11,8 @@ public class LoadingSceneManager : MonoBehaviour
     private static string NextSceneName;
 
     static Vector3 targetPos;
+    // 씬 전환 후 지정 좌표로 텔레포트할지 여부
+    static bool shouldTeleport;
 
     [Header("UI 연결")]
     [SerializeField] TextMeshProUGUI LoadingText;
@@ -31,7 +33,7 @@ public class LoadingSceneManager : MonoBehaviour
         }
     }
     /// <summary>
-    /// 외부 스크립트에서 호출하여 로딩 씬을 시작하는 함수
+    /// 외부 스크립트에서 호출하여 로딩 씬을 시작하는 함수 (지정 좌표로 텔레포트)
     /// </summary>
     /// <param name="sceneName"></param>
     /// <param name="pos"></param>
@@ -39,7 +41,28 @@ public class LoadingSceneManager : MonoBehaviour
     {
         NextSceneName = sceneName;
         targetPos = pos;
+        shouldTeleport = true;
         SceneManager.LoadSceneAsync("Loading");
+    }
+
+    /// <summary>
+    /// 외부 스크립트에서 호출하여 로딩 씬을 시작하는 함수 (텔레포트 없이 씬 기본 위치 사용)
+    /// </summary>
+    /// <param name="sceneName"></param>
+    public static void LoadScene(string sceneName)
+    {
+        NextSceneName = sceneName;
+        targetPos = Vector3.zero;
+        shouldTeleport = false;
+        SceneManager.LoadSceneAsync("Loading");
+    }
+
+    /// <summary>
+    /// SceneName 열거형으로 로딩 씬을 시작하는 함수 (텔레포트 없이 씬 기본 위치 사용)
+    /// </summary>
+    public static void LoadScene(SceneName sceneName)
+    {
+        LoadScene(sceneName.ToString());
     }
 
     /// <summary>
@@ -145,14 +168,16 @@ public class LoadingSceneManager : MonoBehaviour
             yield return null;
         }
         
-        // 플레이어의 위치이동을 위해 값을 전달하고 위치 이동
-        GameObject playerobj = GameObject.FindWithTag("Player");
+        bool isTitleScene = NextSceneName == SceneName.Title.ToString();
+
+        // 타이틀 씬이 아닐 때만 플레이어 위치 이동 및 입력 복구 대상 탐색
+        GameObject playerobj = isTitleScene ? null : GameObject.FindWithTag("Player");
         Player_CC player = null;
 
         if(playerobj != null)
         {
             player = playerobj.GetComponent<Player_CC>();
-            if (player != null)
+            if (player != null && shouldTeleport)
             {
                 player.Teleport(targetPos);
             }
